@@ -168,13 +168,12 @@ export default function TrackerClient() {
                   </div>
                 </div>
                 
-                {/* Droppable Area */}
                 <Droppable droppableId={columnId}>
                   {(provided, snapshot) => (
                     <div
                       {...provided.droppableProps}
                       ref={provided.innerRef}
-                      className={`flex-1 min-h-[50px] flex flex-col gap-2 transition-colors ${
+                      className={`min-h-[10px] flex flex-col gap-2 transition-colors ${
                         snapshot.isDraggingOver ? "brightness-110" : ""
                       }`}
                     >

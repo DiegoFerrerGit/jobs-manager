@@ -105,6 +105,17 @@ export default function TrackerClient() {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
 
   useEffect(() => {
+    // Hydrate from localStorage
+    const savedColumns = localStorage.getItem("jobs-tracker-columns");
+    const savedOrder = localStorage.getItem("jobs-tracker-column-order");
+    
+    if (savedColumns) {
+      try { setColumns(JSON.parse(savedColumns)); } catch (e) { console.error(e); }
+    }
+    if (savedOrder) {
+      try { setColumnOrder(JSON.parse(savedOrder)); } catch (e) { console.error(e); }
+    }
+    
     setIsMounted(true);
     
     const handleClickOutside = () => setActiveDropdown(null);
@@ -115,6 +126,19 @@ export default function TrackerClient() {
       document.removeEventListener("touchstart", handleClickOutside);
     };
   }, []);
+
+  // Sync to localStorage
+  useEffect(() => {
+    if (isMounted) {
+      localStorage.setItem("jobs-tracker-columns", JSON.stringify(columns));
+    }
+  }, [columns, isMounted]);
+
+  useEffect(() => {
+    if (isMounted) {
+      localStorage.setItem("jobs-tracker-column-order", JSON.stringify(columnOrder));
+    }
+  }, [columnOrder, isMounted]);
 
   const deleteColumn = (id: string) => {
     setColumnOrder(prev => prev.filter(c => c !== id));

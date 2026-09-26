@@ -204,11 +204,13 @@ export default function TrackerClient() {
                       ))}
                       {provided.placeholder}
                       
-                      {/* Add new button (matches column color) */}
-                      <button className={`flex items-center gap-2 text-xs p-2 rounded-lg transition-colors w-full mt-1 border ${column.button}`}>
-                        <Plus className="w-3 h-3" />
-                        Nueva página
-                      </button>
+                      {/* Add new button (only for the first column) */}
+                      {columnId === 'people' && (
+                        <button className={`flex items-center gap-2 text-xs p-2 rounded-lg transition-colors w-full mt-1 border ${column.button}`}>
+                          <Plus className="w-3 h-3" />
+                          Nuevo proceso
+                        </button>
+                      )}
                     </div>
                   )}
                 </Droppable>

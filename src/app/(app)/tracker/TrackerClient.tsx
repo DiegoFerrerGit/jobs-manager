@@ -86,14 +86,50 @@ const initialColumns = {
   }
 };
 
+const COLUMN_COLORS = {
+  gris: { name: "Gris", badge: "bg-[#454545] text-[#cccccc]", wrapperBg: "bg-[#202020]", cardBg: "bg-[#2f2f2f]", cardHover: "hover:bg-[#383838]" },
+  marron: { name: "Marrón", badge: "bg-[#67442f] text-[#e2c8b5]", wrapperBg: "bg-[#291d17]", cardBg: "bg-[#3f2c21]", cardHover: "hover:bg-[#4c3629]" },
+  naranja: { name: "Naranja", badge: "bg-[#673c1d] text-[#e6bc9c]", wrapperBg: "bg-[#2e2118]", cardBg: "bg-[#453022]", cardHover: "hover:bg-[#523928]" },
+  amarillo: { name: "Amarillo", badge: "bg-[#5f4f22] text-[#e5d4a1]", wrapperBg: "bg-[#2b2718]", cardBg: "bg-[#3d3822]", cardHover: "hover:bg-[#494328]" },
+  verde: { name: "Verde", badge: "bg-[#2c4a35] text-[#b4deb8]", wrapperBg: "bg-[#1e2621]", cardBg: "bg-[#283a2d]", cardHover: "hover:bg-[#304536]" },
+  azul: { name: "Azul", badge: "bg-[#2b4b66] text-[#b3d3ed]", wrapperBg: "bg-[#1c242c]", cardBg: "bg-[#263645]", cardHover: "hover:bg-[#2d4052]" },
+  morado: { name: "Morado", badge: "bg-[#443560] text-[#c9b7e3]", wrapperBg: "bg-[#231f2b]", cardBg: "bg-[#322a3d]", cardHover: "hover:bg-[#3c3349]" },
+  rosa: { name: "Rosa", badge: "bg-[#672b49] text-[#e6c1d3]", wrapperBg: "bg-[#281b21]", cardBg: "bg-[#402232]", cardHover: "hover:bg-[#4c293c]" },
+  rojo: { name: "Rojo", badge: "bg-[#602e2e] text-[#e8b5b5]", wrapperBg: "bg-[#2d1d1d]", cardBg: "bg-[#422828]", cardHover: "hover:bg-[#4f3030]" }
+};
+
 export default function TrackerClient() {
   const [columns, setColumns] = useState(initialColumns);
   const [columnOrder, setColumnOrder] = useState(Object.keys(initialColumns));
   const [isMounted, setIsMounted] = useState(false);
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
 
   useEffect(() => {
     setIsMounted(true);
+    
+    const handleClickOutside = () => setActiveDropdown(null);
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
   }, []);
+
+  const deleteColumn = (id: string) => {
+    setColumnOrder(prev => prev.filter(c => c !== id));
+    setActiveDropdown(null);
+  };
+
+  const changeColumnColor = (id: string, colorDef: any) => {
+    setColumns(prev => ({
+      ...prev,
+      [id]: {
+        ...prev[id as keyof typeof prev],
+        badge: colorDef.badge,
+        wrapperBg: colorDef.wrapperBg,
+        cardBg: colorDef.cardBg,
+        cardHover: colorDef.cardHover
+      }
+    }));
+    setActiveDropdown(null);
+  };
 
   const onDragEnd = (result: DropResult) => {
     if (!result.destination) return;
@@ -187,9 +223,51 @@ export default function TrackerClient() {
                     </div>
                     <span className="text-muted-foreground text-sm font-medium">{column.jobs.length}</span>
                   </div>
-                  <div className="flex items-center gap-2 text-muted-foreground/60">
-                    <span className="text-lg leading-none cursor-pointer hover:text-muted-foreground pb-2">...</span>
-                    <Plus className="w-4 h-4 cursor-pointer hover:text-muted-foreground" />
+                  <div className="relative flex items-center text-muted-foreground/60">
+                    <div 
+                      className="cursor-pointer hover:bg-white/10 p-1.5 rounded-md transition-colors flex items-center justify-center"
+                      onClick={(e) => { e.stopPropagation(); setActiveDropdown(activeDropdown === columnId ? null : columnId); }}
+                    >
+                      <span className="text-xl leading-none pb-2">...</span>
+                    </div>
+                    
+                    {activeDropdown === columnId && (
+                      <div 
+                        className="absolute right-0 top-8 w-[220px] bg-[#202020] border border-[#303030] rounded-xl shadow-2xl z-50 overflow-hidden text-[13px] text-muted-foreground"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="p-1">
+                          <button 
+                            className="w-full text-left px-3 py-1.5 hover:bg-[#303030] rounded text-foreground transition-colors flex items-center gap-2"
+                            onClick={() => deleteColumn(columnId)}
+                          >
+                            <span className="w-4 h-4 flex items-center justify-center text-lg">👁️</span>
+                            Ocultar columna
+                          </button>
+                          <button 
+                            className="w-full text-left px-3 py-1.5 hover:bg-[#303030] rounded text-destructive hover:text-red-400 transition-colors flex items-center gap-2" 
+                            onClick={() => deleteColumn(columnId)}
+                          >
+                            <span className="w-4 h-4 flex items-center justify-center text-lg">🗑️</span>
+                            Mover a la Papelera
+                          </button>
+                        </div>
+                        <div className="border-t border-[#303030] my-1"></div>
+                        <div className="p-1">
+                          <div className="px-3 py-1.5 text-xs font-semibold text-muted-foreground/50 tracking-wider mb-1">Colores</div>
+                          {Object.entries(COLUMN_COLORS).map(([colorKey, colorDef]) => (
+                            <button 
+                              key={colorKey}
+                              className="w-full text-left px-3 py-1.5 hover:bg-[#303030] rounded text-foreground transition-colors flex items-center gap-2"
+                              onClick={() => changeColumnColor(columnId, colorDef)}
+                            >
+                              <div className={`w-3.5 h-3.5 rounded-sm ${colorDef.badge.split(' ')[0]}`}></div>
+                              {colorDef.name}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 

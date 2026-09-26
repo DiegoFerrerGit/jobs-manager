@@ -1,0 +1,166 @@
+{
+  "name": "Job Hunter 1 - Process chunk (sub)",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "name": "Receive chunk",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -160,
+        -80
+      ],
+      "id": "b7928fdf-ae2d-4aca-bd6b-89e8f6423e78"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "name": "Download chunk",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        64,
+        -80
+      ],
+      "id": "5bf1fb07-8198-42a9-8152-db273b6e73ed"
+    },
+    {
+      "parameters": {
+        "jsCode": "// El archivo viene comprimido (.gz); lo marcamos así para que el nodo Compression lo abra\nreturn $input.all().map(item => {\n  const b = item.binary?.data;\n  if (b) {\n    b.fileExtension = 'gz';\n    b.mimeType = 'application/gzip';\n    b.fileName = 'chunk.json.gz';\n  }\n  return item;\n});\n"
+      },
+      "name": "Tag as gzip",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        288,
+        -80
+      ],
+      "id": "a2cb7eec-7998-4f33-9acc-2b6a95144f4f"
+    },
+    {
+      "parameters": {},
+      "name": "Decompress",
+      "type": "n8n-nodes-base.compression",
+      "typeVersion": 1.1,
+      "position": [
+        512,
+        -80
+      ],
+      "id": "eb16e05c-f159-43a8-a0b1-97b2e054b84f"
+    },
+    {
+      "parameters": {
+        "operation": "fromJson",
+        "binaryPropertyName": "file_0",
+        "destinationKey": "jobs",
+        "options": {}
+      },
+      "name": "Parse JSON",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        720,
+        -80
+      ],
+      "id": "229ad662-90ef-4aad-bf2b-b1411ba22acc"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Empresas (Ashby, Greenhouse, Lever) con al menos una oferta de ingeniería para Argentina o LATAM\nconst IS_ENGINEERING = /engineer|engineering|developer|\\bsre\\b|devops|architect|tech lead|forward deployed|machine learning|\\bml\\b|\\bcto\\b|head of eng|vp.*eng/i;\nconst EXCLUDE = /recruit|talent|sales(?! engineer)|account exec|marketing|designer|legal|finance|intern/i;\nconst ARGENTINA = /argentin|buenos aires/i;\nconst LATAM = /latam|latin america|south america|\\bamericas\\b/i;\nconst REMOTE = /remote|remoto|anywhere|worldwide|global|latam|latin america/i;\nconst SLUG = {\n  Ashby: /jobs\\.ashbyhq\\.com\\/([^\\/?#]+)/i,\n  Greenhouse: /greenhouse\\.io\\/([^\\/?#&]+)/i,\n  Lever: /jobs\\.lever\\.co\\/([^\\/?#]+)/i,\n};\n\nconst companies = {};\n\nfor (const item of $input.all()) {\n  for (const j of item.json.jobs || []) {\n    const re = SLUG[j.ats];\n    if (!re) continue;\n    const m = re.exec(j.url || '');\n    if (!m || m[1] === 'embed') continue;\n\n    const slug = m[1];\n    const k = `${j.ats.toLowerCase()}|${slug.toLowerCase()}`;\n    const c = companies[k] ||= {\n      ats: j.ats.toLowerCase(), slug, company: j.company || slug,\n      latam_jobs: 0, is_recruiter: false, source: 'aggregator', places: {},\n    };\n\n    if (j.is_recruiter) { c.is_recruiter = true; continue; }\n\n    const loc = j.location || '';\n    if (loc && !REMOTE.test(loc)) c.places[loc] = (c.places[loc] || 0) + 1;\n\n    const t = j.title || '';\n    if (!IS_ENGINEERING.test(t) || EXCLUDE.test(t)) continue;\n    if (ARGENTINA.test(loc) || /\\bAR\\b/.test(loc) || LATAM.test(loc)) c.latam_jobs++;\n  }\n}\n\nreturn Object.values(companies)\n  .filter(c => c.latam_jobs > 0)\n  .map(c => {\n    const top = Object.entries(c.places).sort((a, b) => b[1] - a[1])[0];\n    delete c.places;\n    return { json: { ...c, hq: top ? top[0] : '' } };\n  });\n"
+      },
+      "name": "LATAM companies in chunk",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        944,
+        -80
+      ],
+      "alwaysOutputData": true,
+      "id": "203fff9d-41c2-43a5-9a9d-9e8f9187f63f"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Receive chunk": {
+      "main": [
+        [
+          {
+            "node": "Download chunk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download chunk": {
+      "main": [
+        [
+          {
+            "node": "Tag as gzip",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tag as gzip": {
+      "main": [
+        [
+          {
+            "node": "Decompress",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decompress": {
+      "main": [
+        [
+          {
+            "node": "Parse JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse JSON": {
+      "main": [
+        [
+          {
+            "node": "LATAM companies in chunk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "timezone": "America/Argentina/Buenos_Aires",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "6c60d494-73fd-4b71-85e1-c337b14f0de0",
+  "meta": {
+    "instanceId": "c8e03284fedae7c7bb5912c0b9affd9cd6710895eb85eb9dee489290028313d5"
+  },
+  "nodeGroups": [],
+  "id": "ZQRyPt1sQAAvBGBn",
+  "tags": []
+}

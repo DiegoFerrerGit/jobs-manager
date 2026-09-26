@@ -7,6 +7,48 @@ import { Job, IgnoredKeyword } from "@/db/schema";
 import { toggleJobStatus, hideJob } from "@/app/actions";
 import KeywordManager from "./KeywordManager";
 
+
+const getSourceBadge = (source: string | null | undefined, externalId: string | null | undefined) => {
+  const src = source || (externalId ? externalId.split(':')[0] : null);
+  if (!src) return null;
+  
+  const s = src.toLowerCase();
+  if (s.includes('gh') || s.includes('greenhouse')) {
+    return (
+      <span className="text-[11px] text-[#00b289] bg-[#00b289]/10 border border-[#00b289]/20 px-2 py-0.5 rounded-md font-bold shrink-0 ml-2 shadow-sm">
+        Greenhouse
+      </span>
+    );
+  }
+  if (s.includes('ashby')) {
+    return (
+      <span className="text-[11px] text-[#8e49ff] bg-[#8e49ff]/10 border border-[#8e49ff]/20 px-2 py-0.5 rounded-md font-bold shrink-0 ml-2 shadow-sm">
+        Ashby
+      </span>
+    );
+  }
+  if (s.includes('lever')) {
+    return (
+      <span className="text-[11px] text-[#2c84cc] bg-[#2c84cc]/10 border border-[#2c84cc]/20 px-2 py-0.5 rounded-md font-bold shrink-0 ml-2 shadow-sm">
+        Lever
+      </span>
+    );
+  }
+  if (s.includes('yc')) {
+    return (
+      <span className="text-[11px] text-orange-500 bg-orange-500/10 border border-orange-500/20 px-2 py-0.5 rounded-md font-bold shrink-0 ml-2 shadow-sm">
+        YCombinator
+      </span>
+    );
+  }
+  
+  return (
+    <span className="text-[11px] text-muted-foreground bg-secondary px-2 py-1 rounded-md font-mono shrink-0 ml-2">
+      {src.toUpperCase()}
+    </span>
+  );
+};
+
 export default function JobsClientView({ initialJobs, initialKeywords, userId }: { initialJobs: Job[], initialKeywords: IgnoredKeyword[], userId: number }) {
   const [jobs, setJobs] = useState<Job[]>(initialJobs);
   const [view, setView] = useState<"grid" | "table">("grid");
@@ -161,6 +203,14 @@ export default function JobsClientView({ initialJobs, initialKeywords, userId }:
 
         {/* Left Side: Search & Filters */}
         <div className="flex flex-wrap items-center gap-3 text-sm flex-1">
+          {/* Job Count */}
+          <div className="flex items-center gap-1.5 px-3 py-2 bg-primary/10 text-primary border border-primary/20 rounded-lg text-sm font-bold shrink-0 shadow-sm">
+            <span>{processedJobs.length}</span>
+            <span className="font-medium text-xs opacity-80">
+              {processedJobs.length === 1 ? 'Job' : 'Jobs'}
+            </span>
+          </div>
+
           {/* Search */}
           <div className="relative w-full sm:max-w-xs shrink-0">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -288,15 +338,7 @@ export default function JobsClientView({ initialJobs, initialKeywords, userId }:
                     </span>
                   )}
                 </div>
-                {job.externalId?.startsWith('yc:') ? (
-                  <span className="text-[11px] text-orange-500 bg-orange-500/10 border border-orange-500/20 px-2 py-0.5 rounded-md font-bold shrink-0 ml-2 shadow-sm">
-                    YCombinator
-                  </span>
-                ) : (
-                  <span className="text-[11px] text-muted-foreground bg-secondary px-2 py-1 rounded-md font-mono shrink-0 ml-2">
-                    {job.externalId?.split(':')[0]?.toUpperCase()}
-                  </span>
-                )}
+                {getSourceBadge(job.source, job.externalId)}
               </div>
 
               <div className="flex items-start justify-between gap-2 mb-1.5">

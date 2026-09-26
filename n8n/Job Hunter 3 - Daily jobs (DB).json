@@ -1,0 +1,387 @@
+{
+  "name": "Job Hunter 3 - Daily jobs (DB)",
+  "nodes": [
+    {
+      "parameters": {},
+      "name": "Run manually",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        80,
+        -64
+      ],
+      "id": "c57b2922-8ee6-40b7-ad36-7be75b7f1905"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 9
+            },
+            {
+              "triggerAtHour": 18
+            }
+          ]
+        }
+      },
+      "name": "Daily 9am and 6pm",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        80,
+        128
+      ],
+      "id": "15ae2f3a-8e4d-400e-91fe-be6ce5aa074c"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT id FROM users ORDER BY id LIMIT 1",
+        "options": {}
+      },
+      "name": "Get user",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        304,
+        32
+      ],
+      "id": "6c04b95a-da7c-44f4-bf60-11cdcff21d70",
+      "credentials": {
+        "postgres": {
+          "id": "5Ggn116ONj0zb4KN",
+          "name": "Jobs Manager Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT id AS company_id, slug, ats::text AS ats, name AS company, hq, size, stage, linkedin_slug\nFROM companies\nWHERE status = 'active'\nORDER BY id",
+        "options": {}
+      },
+      "name": "Read Companies",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        752,
+        -64
+      ],
+      "alwaysOutputData": true,
+      "id": "51f8632f-9ed6-496e-aae8-06644dbe21ee",
+      "credentials": {
+        "postgres": {
+          "id": "5Ggn116ONj0zb4KN",
+          "name": "Jobs Manager Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.ats === 'greenhouse' ? 'https://boards-api.greenhouse.io/v1/boards/' + $json.slug + '/jobs' : $json.ats === 'lever' ? 'https://api.lever.co/v0/postings/' + $json.slug + '?mode=json' : 'https://api.ashbyhq.com/posting-api/job-board/' + $json.slug + '?includeCompensation=true' }}",
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 5
+            }
+          },
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "name": "Fetch ATS jobs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        976,
+        -64
+      ],
+      "id": "abb81915-9fae-4879-a61c-b5db057b4b1b"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ---- Reglas compartidas ----\nconst MIN_SALARY_K = 60; // mínimo anual en miles de USD (solo si la oferta publica salario)\n\nconst IS_ENGINEERING = /engineer|engineering|developer|\\bsre\\b|devops|architect|tech lead|forward deployed|machine learning|\\bml\\b|\\bcto\\b|head of eng|vp.*eng/i;\nconst EXCLUDE = /recruit|talent|sales(?! engineer)|account exec|marketing|designer|legal|finance|intern/i;\nconst ARGENTINA = /argentin|buenos aires/i;\nconst LATAM = /latam|latin america|south america|\\bamericas\\b/i;\nconst GLOBAL = /\\b(anywhere|worldwide|global)\\b/i;\nconst REMOTE_ONLY = /^(remote|remoto|fully remote)$/i;\nconst US_ONLY = /(must|need to|required to)\\s+(be\\s+)?(based|located|live|reside)[^.]{0,40}(united states|u\\.s\\.|\\busa\\b)|(authorized|authorization|eligible)\\s+to\\s+work\\s+in\\s+the\\s+(united states|u\\.s\\.)|u\\.s\\.\\s+(citizen|work authorization)|citizen\\/visa only/i;\n\nconst MANAGER = /manager|head of|director|\\bvp\\b|vice president|\\bcto\\b/i;\nconst LEAD = /lead|staff|principal|forward deployed|product engineer|founding/i;\n\n// Devuelve [accepts_argentina, location_match]\nfunction classify(loc, extra) {\n  if (ARGENTINA.test(loc) || /\\bAR\\b/.test(loc)) return ['yes', 'argentina_in_location'];\n  if (LATAM.test(loc)) return ['yes', 'latam_in_location'];\n  const restricted = US_ONLY.test(extra);\n  const parts = loc.split(/\\s*[|\\/;]\\s*/).map(p => p.trim()).filter(Boolean);\n  const remoteOnly = parts.length > 0 && parts.every(p => REMOTE_ONLY.test(p) || GLOBAL.test(p));\n  if (remoteOnly && !restricted) {\n    return /not required/i.test(extra)\n      ? ['maybe', 'remote_visa_not_required']\n      : ['maybe', 'remote_no_country'];\n  }\n  if ((ARGENTINA.test(extra) || LATAM.test(extra)) && !restricted) return ['maybe', 'latam_in_description'];\n  return ['no', ''];\n}\n\n// Máximo anual en miles de USD. Los rangos chicos se interpretan como sueldo mensual.\nfunction salaryMaxK(s) {\n  const m = (s || '').match(/\\$([\\d.,]+)\\s*(K?)\\s*[-–]\\s*\\$([\\d.,]+)\\s*(K?)/i);\n  if (!m) return null;\n  let max = parseFloat(m[3].replace(/,/g, ''));\n  if (!m[4]) max = max / 1000;\n  return max < 20 ? Math.round(max * 12) : max;\n}\n\nfunction roleCategory(title) {\n  if (MANAGER.test(title)) return 'manager';\n  if (LEAD.test(title)) return 'lead_staff';\n  return 'ic';\n}\nconst PRIORITY = { manager: 1, lead_staff: 2, ic: 3 };\n\n// Sede aproximada: la ubicación presencial más repetida de la empresa\nfunction guessHq(locations) {\n  const count = {};\n  for (const raw of locations) {\n    for (const p of String(raw || '').split(/\\s*[|\\/;]\\s*/)) {\n      const v = p.trim();\n      if (!v || /remote|remoto|anywhere|worldwide|global|latam|latin america/i.test(v)) continue;\n      count[v] = (count[v] || 0) + 1;\n    }\n  }\n  const top = Object.entries(count).sort((a, b) => b[1] - a[1])[0];\n  return top ? top[0] : '';\n}\n\n// Convierte una oferta de cualquier plataforma al mismo formato\nfunction normalize(ats, j) {\n  if (ats === 'greenhouse') return {\n    job_id: `gh:${j.id}`,\n    title: j.title || '',\n    locations: j.location?.name || '',\n    description: '',\n    salary: '',\n    published_at: (j.first_published || j.updated_at || '').slice(0, 10),\n    apply_url: j.absolute_url,\n  };\n  if (ats === 'lever') {\n    const sr = j.salaryRange;\n    return {\n      job_id: `lever:${j.id}`,\n      title: j.text || '',\n      locations: [...new Set([j.categories?.location, ...(j.categories?.allLocations || [])].filter(Boolean))].join(' | '),\n      description: j.descriptionPlain || '',\n      salary: sr && sr.max ? `$${Math.round(sr.min / 1000)}K - $${Math.round(sr.max / 1000)}K` : '',\n      published_at: j.createdAt ? new Date(j.createdAt).toISOString().slice(0, 10) : '',\n      apply_url: j.hostedUrl,\n    };\n  }\n  return {\n    job_id: `ashby:${j.id}`,\n    title: j.title || '',\n    locations: [j.location, ...(j.secondaryLocations || []).map(l => l.location)].filter(Boolean).join(' | '),\n    description: j.descriptionPlain || '',\n    salary: j.compensation?.scrapeableCompensationSalarySummary || j.compensation?.compensationTierSummary || '',\n    published_at: (j.publishedAt || '').slice(0, 10),\n    apply_url: j.jobUrl,\n  };\n}\n\nconst companies = $('Read Companies').all();\nconst out = [];\nconst seen = new Set();\n\n$input.all().forEach((item, i) => {\n  const p = Array.isArray(item.pairedItem) ? item.pairedItem[0] : item.pairedItem;\n  const c = companies[p?.item ?? i]?.json || {};\n  if (!c.slug) return;\n  const ats = (c.ats || 'ashby').toLowerCase();\n\n  // Ashby y Greenhouse devuelven { jobs: [...] }; Lever, una oferta por item\n  let raws = [];\n  if (Array.isArray(item.json?.jobs)) raws = item.json.jobs;\n  else if (item.json?.hostedUrl) raws = [item.json];\n\n  const all = raws.map(r => normalize(ats, r)).filter(o => o.apply_url);\n  const hq = c.hq || guessHq(all.map(o => o.locations));\n  const li = c.linkedin_slug ? `https://www.linkedin.com/company/${c.linkedin_slug}` : '';\n\n  for (const o of all) {\n    if (seen.has(o.job_id)) continue;\n    seen.add(o.job_id);\n    if (!IS_ENGINEERING.test(o.title) || EXCLUDE.test(o.title)) continue;\n\n    const [accepts, match] = classify(o.locations, o.description);\n    if (accepts === 'no') continue;\n\n    const maxK = salaryMaxK(o.salary);\n    if (maxK !== null && maxK < MIN_SALARY_K) continue;\n\n    const role = roleCategory(o.title);\n    out.push({ json: {\n      job_id: o.job_id,\n      company_id: c.company_id || '',\n      priority: PRIORITY[role],\n      role_category: role,\n      accepts_argentina: accepts,\n      location_match: match,\n      company: c.company,\n      company_slug: c.slug,\n      company_hq: hq,\n      company_size: c.size || '',\n      company_stage: c.stage || '',\n      title: o.title.trim(),\n      salary: o.salary,\n      salary_max_k: maxK ?? '',\n      locations: o.locations,\n      published_at: o.published_at,\n      apply_url: o.apply_url,\n      company_linkedin: li,\n      linkedin_people_ar: li ? `${li}/people/?facetGeoRegion=100446943` : '',\n      source: ats,\n    }});\n  }\n});\n\nreturn out;\n"
+      },
+      "name": "Filter ATS",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        -64
+      ],
+      "alwaysOutputData": true,
+      "id": "147e1a93-9aac-4971-92c2-c0ba6b903156"
+    },
+    {
+      "parameters": {
+        "url": "https://devasheeshg.github.io/yc-api/companies/hiring.json",
+        "options": {}
+      },
+      "name": "Fetch YC",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        976,
+        128
+      ],
+      "id": "28a3cd50-bc87-4f0e-93c2-d1ccb9f4ff3e"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ---- Reglas compartidas ----\nconst MIN_SALARY_K = 60; // mínimo anual en miles de USD (solo si la oferta publica salario)\n\nconst IS_ENGINEERING = /engineer|engineering|developer|\\bsre\\b|devops|architect|tech lead|forward deployed|machine learning|\\bml\\b|\\bcto\\b|head of eng|vp.*eng/i;\nconst EXCLUDE = /recruit|talent|sales(?! engineer)|account exec|marketing|designer|legal|finance|intern/i;\nconst ARGENTINA = /argentin|buenos aires/i;\nconst LATAM = /latam|latin america|south america|\\bamericas\\b/i;\nconst GLOBAL = /\\b(anywhere|worldwide|global)\\b/i;\nconst REMOTE_ONLY = /^(remote|remoto|fully remote)$/i;\nconst US_ONLY = /(must|need to|required to)\\s+(be\\s+)?(based|located|live|reside)[^.]{0,40}(united states|u\\.s\\.|\\busa\\b)|(authorized|authorization|eligible)\\s+to\\s+work\\s+in\\s+the\\s+(united states|u\\.s\\.)|u\\.s\\.\\s+(citizen|work authorization)|citizen\\/visa only/i;\n\nconst MANAGER = /manager|head of|director|\\bvp\\b|vice president|\\bcto\\b/i;\nconst LEAD = /lead|staff|principal|forward deployed|product engineer|founding/i;\n\n// Devuelve [accepts_argentina, location_match]\nfunction classify(loc, extra) {\n  if (ARGENTINA.test(loc) || /\\bAR\\b/.test(loc)) return ['yes', 'argentina_in_location'];\n  if (LATAM.test(loc)) return ['yes', 'latam_in_location'];\n  const restricted = US_ONLY.test(extra);\n  const parts = loc.split(/\\s*[|\\/;]\\s*/).map(p => p.trim()).filter(Boolean);\n  const remoteOnly = parts.length > 0 && parts.every(p => REMOTE_ONLY.test(p) || GLOBAL.test(p));\n  if (remoteOnly && !restricted) {\n    return /not required/i.test(extra)\n      ? ['maybe', 'remote_visa_not_required']\n      : ['maybe', 'remote_no_country'];\n  }\n  if ((ARGENTINA.test(extra) || LATAM.test(extra)) && !restricted) return ['maybe', 'latam_in_description'];\n  return ['no', ''];\n}\n\n// Máximo anual en miles de USD. Los rangos chicos se interpretan como sueldo mensual.\nfunction salaryMaxK(s) {\n  const m = (s || '').match(/\\$([\\d.,]+)\\s*(K?)\\s*[-–]\\s*\\$([\\d.,]+)\\s*(K?)/i);\n  if (!m) return null;\n  let max = parseFloat(m[3].replace(/,/g, ''));\n  if (!m[4]) max = max / 1000;\n  return max < 20 ? Math.round(max * 12) : max;\n}\n\nfunction roleCategory(title) {\n  if (MANAGER.test(title)) return 'manager';\n  if (LEAD.test(title)) return 'lead_staff';\n  return 'ic';\n}\nconst PRIORITY = { manager: 1, lead_staff: 2, ic: 3 };\n\n// Sede aproximada: la ubicación presencial más repetida de la empresa\nfunction guessHq(locations) {\n  const count = {};\n  for (const raw of locations) {\n    for (const p of String(raw || '').split(/\\s*[|\\/;]\\s*/)) {\n      const v = p.trim();\n      if (!v || /remote|remoto|anywhere|worldwide|global|latam|latin america/i.test(v)) continue;\n      count[v] = (count[v] || 0) + 1;\n    }\n  }\n  const top = Object.entries(count).sort((a, b) => b[1] - a[1])[0];\n  return top ? top[0] : '';\n}\n\nconst out = [];\n\nfor (const item of $input.all()) {\n  const c = item.json;\n  if (c.status !== 'Active') continue;\n\n  const li = (c.linkedin_url || '').replace(/\\/+$/, '');\n\n  for (const j of c.jobs || []) {\n    const title = j.title || '';\n    const isEng = j.role === 'Engineering' || IS_ENGINEERING.test(title);\n    if (!isEng || EXCLUDE.test(title) || j.type === 'Internship') continue;\n\n    const [accepts, match] = classify(j.location || '', j.visa || '');\n    if (accepts === 'no') continue;\n\n    const maxK = salaryMaxK(j.salary_range);\n    if (maxK !== null && maxK < MIN_SALARY_K) continue;\n\n    const role = roleCategory(title);\n    out.push({ json: {\n      job_id: `yc:${j.id}`,\n      priority: PRIORITY[role],\n      role_category: role,\n      accepts_argentina: accepts,\n      location_match: match,\n      company: c.name,\n      company_slug: c.slug,\n      company_hq: c.all_locations || '',\n      company_size: c.team_size || '',\n      company_stage: c.batch || '',\n      title: title.trim(),\n      salary: j.salary_range || '',\n      salary_max_k: maxK ?? '',\n      locations: j.location || '',\n      published_at: '',\n      apply_url: j.url,\n      company_linkedin: li,\n      linkedin_people_ar: li ? `${li}/people/?facetGeoRegion=100446943` : '',\n      source: 'yc',\n    }});\n  }\n}\n\nreturn out;\n"
+      },
+      "name": "Filter YC",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        128
+      ],
+      "alwaysOutputData": true,
+      "id": "42a4f95c-ec59-4fc1-aae5-ccc2934eee5f"
+    },
+    {
+      "parameters": {},
+      "name": "Merge sources",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        1424,
+        32
+      ],
+      "id": "9c7534a5-a700-4b7a-8978-e8a94495a248"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Arma una sola consulta con todas las ofertas.\n// Los datos viajan como parámetro JSON ($1), no dentro del texto SQL:\n// así los signos $ de los sueldos no rompen nada.\nconst userId = Number($('Get user').first().json.id);\nif (!userId) throw new Error('No se encontró el usuario');\n\nconst txt = v => (v === null || v === undefined || v === '' ? null : String(v));\nconst num = v => { const x = Number(v); return Number.isFinite(x) ? Math.round(x) : null; };\n\nconst ids = new Set();\nconst pairs = new Set();\nconst rows = [];\n\nfor (const item of $input.all()) {\n  const o = item.json;\n  if (!o.job_id || !o.apply_url) continue;\n  const pair = `${String(o.company).toLowerCase().trim()}|${String(o.title).toLowerCase().trim()}`;\n  if (ids.has(o.job_id) || pairs.has(pair)) continue; // duplicados dentro de esta corrida\n  ids.add(o.job_id);\n  pairs.add(pair);\n\n  rows.push({\n    user_id: userId,\n    external_id: txt(o.job_id),\n    title: txt(o.title),\n    apply_url: txt(o.apply_url),\n    locations: txt(o.locations),\n    published_at: txt(o.published_at),\n    priority: num(o.priority) ?? 3,\n    role_category: txt(o.role_category) || 'ic',\n    accepts_argentina: txt(o.accepts_argentina),\n    location_match: txt(o.location_match),\n    source: txt(o.source),\n    salary: txt(o.salary),\n    salary_max_k: num(o.salary_max_k),\n    company_id: num(o.company_id),\n    company: txt(o.company),\n    company_slug: txt(o.company_slug),\n    company_hq: txt(o.company_hq),\n    company_size: num(o.company_size),\n    company_stage: txt(o.company_stage),\n    company_linkedin: txt(o.company_linkedin),\n    linkedin_people_ar: txt(o.linkedin_people_ar),\n  });\n}\n\nconst sql = `\nINSERT INTO jobs (\n  user_id, external_id, title, apply_url, locations, published_at, priority,\n  role_category, accepts_argentina, location_match, source, salary, salary_max_k,\n  company_id, company, company_slug, company_hq, company_size, company_stage,\n  company_linkedin, linkedin_people_ar\n)\nSELECT v.user_id, v.external_id, v.title, v.apply_url, v.locations, v.published_at,\n       v.priority, v.role_category::role_category, v.accepts_argentina::argentina_fit,\n       v.location_match, v.source::job_source, v.salary, v.salary_max_k,\n       v.company_id, v.company, v.company_slug, v.company_hq, v.company_size,\n       v.company_stage, v.company_linkedin, v.linkedin_people_ar\nFROM jsonb_to_recordset($1::jsonb) AS v(\n  user_id int, external_id text, title text, apply_url text, locations text,\n  published_at date, priority smallint, role_category text, accepts_argentina text,\n  location_match text, source text, salary text, salary_max_k int,\n  company_id int, company text, company_slug text, company_hq text, company_size int,\n  company_stage text, company_linkedin text, linkedin_people_ar text\n)\nWHERE NOT EXISTS (\n  SELECT 1 FROM jobs j\n  WHERE j.user_id = v.user_id\n    AND lower(j.company) = lower(v.company)\n    AND lower(j.title) = lower(v.title)\n    AND j.external_id <> v.external_id\n)\nON CONFLICT (user_id, external_id) DO UPDATE SET\n  last_seen_at   = CURRENT_DATE,\n  republished_at = CASE WHEN EXCLUDED.published_at IS NOT NULL\n                         AND jobs.published_at IS NOT NULL\n                         AND EXCLUDED.published_at > jobs.published_at\n                        THEN CURRENT_DATE ELSE jobs.republished_at END,\n  published_at   = GREATEST(jobs.published_at, EXCLUDED.published_at),\n  locations      = EXCLUDED.locations,\n  salary         = COALESCE(EXCLUDED.salary, jobs.salary),\n  salary_max_k   = COALESCE(EXCLUDED.salary_max_k, jobs.salary_max_k),\n  company_hq     = COALESCE(EXCLUDED.company_hq, jobs.company_hq),\n  company_size   = COALESCE(EXCLUDED.company_size, jobs.company_size),\n  company_id     = COALESCE(EXCLUDED.company_id, jobs.company_id)\nRETURNING (xmax = 0) AS inserted, external_id, company, title`;\n\nreturn [{ json: { sql, params: JSON.stringify(rows), rows: rows.length } }];"
+      },
+      "name": "Build jobs SQL",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1872,
+        32
+      ],
+      "id": "edbe92da-43fc-431b-bf69-6be9e0b4650d"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "{{ $json.sql }}",
+        "options": {
+          "queryReplacement": "=   {{ $json.params }}"
+        }
+      },
+      "name": "Save jobs",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        2096,
+        32
+      ],
+      "id": "3495d189-a5b4-4568-b4c3-3e6f1d7d7f99",
+      "credentials": {
+        "postgres": {
+          "id": "5Ggn116ONj0zb4KN",
+          "name": "Jobs Manager Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT lower(keyword) AS keyword FROM ignored_keywords",
+        "options": {}
+      },
+      "name": "Read ignored keywords",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        528,
+        -64
+      ],
+      "alwaysOutputData": true,
+      "id": "97fa2e54-f09f-4d4c-818f-d855ad25c996",
+      "credentials": {
+        "postgres": {
+          "id": "5Ggn116ONj0zb4KN",
+          "name": "Jobs Manager Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Descarta las ofertas cuyo título contenga alguna palabra de ignored_keywords\nconst words = $('Read ignored keywords').all()\n  .map(i => String(i.json.keyword || '').trim().toLowerCase())\n  .filter(Boolean);\n\nif (!words.length) return $input.all();\n\nconst esc = w => w.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&');\nconst re = new RegExp(`(^|[^a-z0-9])(${words.map(esc).join('|')})([^a-z0-9]|$)`, 'i');\n\nreturn $input.all().filter(item => !re.test(String(item.json.title || '')));"
+      },
+      "name": "Filter ignored",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1648,
+        32
+      ],
+      "id": "13f76506-d74e-4813-ad68-c9e5f94110ae"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Run manually": {
+      "main": [
+        [
+          {
+            "node": "Get user",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Daily 9am and 6pm": {
+      "main": [
+        [
+          {
+            "node": "Get user",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get user": {
+      "main": [
+        [
+          {
+            "node": "Fetch YC",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Read ignored keywords",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Companies": {
+      "main": [
+        [
+          {
+            "node": "Fetch ATS jobs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch ATS jobs": {
+      "main": [
+        [
+          {
+            "node": "Filter ATS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter ATS": {
+      "main": [
+        [
+          {
+            "node": "Merge sources",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch YC": {
+      "main": [
+        [
+          {
+            "node": "Filter YC",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter YC": {
+      "main": [
+        [
+          {
+            "node": "Merge sources",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge sources": {
+      "main": [
+        [
+          {
+            "node": "Filter ignored",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build jobs SQL": {
+      "main": [
+        [
+          {
+            "node": "Save jobs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read ignored keywords": {
+      "main": [
+        [
+          {
+            "node": "Read Companies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter ignored": {
+      "main": [
+        [
+          {
+            "node": "Build jobs SQL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "timezone": "America/Argentina/Buenos_Aires",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "6fac684b-2cb3-476d-9222-a75ce78e0532",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "c8e03284fedae7c7bb5912c0b9affd9cd6710895eb85eb9dee489290028313d5"
+  },
+  "nodeGroups": [],
+  "id": "fy5nReKHsAB0hPiF",
+  "tags": []
+}

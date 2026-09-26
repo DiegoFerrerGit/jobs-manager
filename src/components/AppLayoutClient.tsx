@@ -46,6 +46,15 @@ export default function AppLayoutClient({ children, user }: { children: React.Re
               <Target className="w-5 h-5 shrink-0" />
               {!isCollapsed && <span>HUNTER</span>}
             </Link>
+            
+            <Link 
+              href="/tracker" 
+              className={`flex items-center gap-3 py-2.5 rounded-lg text-sm font-bold transition-colors cursor-pointer ${pathname === '/tracker' ? 'bg-secondary/40 text-pink-500 hover:bg-secondary/60 hover:text-pink-400' : 'text-muted-foreground hover:bg-secondary/20 hover:text-foreground'} ${isCollapsed ? 'justify-center px-0' : 'px-3'}`}
+              title="Tracker"
+            >
+              <BriefcaseBusiness className="w-5 h-5 shrink-0" />
+              {!isCollapsed && <span>TRACKER</span>}
+            </Link>
           </nav>
         </div>
 

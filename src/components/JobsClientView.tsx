@@ -203,14 +203,6 @@ export default function JobsClientView({ initialJobs, initialKeywords, userId }:
 
         {/* Left Side: Search & Filters */}
         <div className="flex flex-wrap items-center gap-3 text-sm flex-1">
-          {/* Job Count */}
-          <div className="flex items-center gap-1.5 px-3 py-2 bg-primary/10 text-primary border border-primary/20 rounded-lg text-sm font-bold shrink-0 shadow-sm">
-            <span>{processedJobs.length}</span>
-            <span className="font-medium text-xs opacity-80">
-              {processedJobs.length === 1 ? 'Job' : 'Jobs'}
-            </span>
-          </div>
-
           {/* Search */}
           <div className="relative w-full sm:max-w-xs shrink-0">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -282,6 +274,14 @@ export default function JobsClientView({ initialJobs, initialKeywords, userId }:
               Limpiar
             </button>
           )}
+          
+          {/* Job Count */}
+          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-lg text-sm font-bold shrink-0 shadow-sm">
+            <span>{processedJobs.length}</span>
+            <span className="font-medium text-[11px] opacity-80 uppercase tracking-wide">
+              {processedJobs.length === 1 ? 'Job' : 'Jobs'}
+            </span>
+          </div>
         </div>
 
         {/* Right Side: View Toggles */}
@@ -368,7 +368,7 @@ export default function JobsClientView({ initialJobs, initialKeywords, userId }:
                 )}
                 {job.companyHq && (
                   <>
-                    <span className="text-muted-foreground/50 mx-1 shrink-0">-</span>
+                    <span className="text-muted-foreground/50 shrink-0">-</span>
                     <span className="truncate text-muted-foreground" title={job.companyHq}>📍 {job.companyHq}</span>
                   </>
                 )}
@@ -520,7 +520,7 @@ export default function JobsClientView({ initialJobs, initialKeywords, userId }:
                       )}
                       {job.companyHq && (
                         <>
-                          <span className="text-muted-foreground/50 mx-1 shrink-0">-</span>
+                          <span className="text-muted-foreground/50 shrink-0">-</span>
                           <span className="truncate text-muted-foreground" title={job.companyHq}>📍 {job.companyHq}</span>
                         </>
                       )}

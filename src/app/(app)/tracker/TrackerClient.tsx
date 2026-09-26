@@ -244,7 +244,15 @@ export default function TrackerClient() {
                     <button 
                       type="button"
                       className="cursor-pointer hover:bg-white/10 p-1.5 rounded-md transition-colors flex items-center justify-center border-0 bg-transparent"
-                      onClick={(e) => { e.stopPropagation(); setActiveDropdown(activeDropdown === columnId ? null : columnId); }}
+                      onMouseDown={(e) => { 
+                        e.stopPropagation(); 
+                        setActiveDropdown(activeDropdown === columnId ? null : columnId); 
+                      }}
+                      onTouchStart={(e) => { 
+                        e.stopPropagation(); 
+                        setActiveDropdown(activeDropdown === columnId ? null : columnId); 
+                      }}
+                      onClick={(e) => e.stopPropagation()}
                       onPointerDown={(e) => e.stopPropagation()}
                     >
                       <span className="text-xl leading-none pb-2">...</span>
@@ -253,6 +261,8 @@ export default function TrackerClient() {
                     {activeDropdown === columnId && (
                       <div 
                         className="absolute right-0 top-8 w-[220px] bg-[#202020] border border-[#303030] rounded-xl shadow-2xl z-50 overflow-hidden text-[13px] text-muted-foreground"
+                        onMouseDown={(e) => e.stopPropagation()}
+                        onTouchStart={(e) => e.stopPropagation()}
                         onClick={(e) => e.stopPropagation()}
                       >
                         <div className="p-1">

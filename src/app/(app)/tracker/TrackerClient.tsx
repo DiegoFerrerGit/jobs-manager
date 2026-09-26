@@ -139,16 +139,16 @@ export default function TrackerClient() {
   if (!isMounted) return null;
 
   return (
-    <div className="flex-1 p-4 md:p-8 h-screen flex flex-col overflow-hidden bg-[#101014]">
-      <div className="flex justify-between items-center mb-6 shrink-0">
-        <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-foreground flex items-center gap-3">
-            <span>🗃️</span> Jobs
-          </h1>
+    <DragDropContext onDragEnd={onDragEnd}>
+      <div className="flex-1 p-4 md:p-8 h-screen flex flex-col overflow-hidden bg-[#101014]">
+        <div className="flex justify-between items-center mb-6 shrink-0">
+          <div>
+            <h1 className="text-3xl font-extrabold tracking-tight text-foreground flex items-center gap-3">
+              <span>🗃️</span> Jobs
+            </h1>
+          </div>
         </div>
-      </div>
-
-      <DragDropContext onDragEnd={onDragEnd}>
+        
         <div className="flex-1 overflow-x-auto pb-4 custom-scrollbar">
           <div className="flex gap-4 h-full min-w-max items-start">
             {Object.entries(columns).map(([columnId, column]) => (
@@ -228,25 +228,25 @@ export default function TrackerClient() {
             ))}
           </div>
         </div>
-      </DragDropContext>
-
-      <style dangerouslySetInnerHTML={{
-        __html: `
-        .custom-scrollbar::-webkit-scrollbar {
-          height: 8px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: rgba(255, 255, 255, 0.02);
-          border-radius: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: rgba(255, 255, 255, 0.1);
-          border-radius: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: rgba(255, 255, 255, 0.15);
-        }
-      `}} />
-    </div>
+        
+        <style dangerouslySetInnerHTML={{
+          __html: `
+          .custom-scrollbar::-webkit-scrollbar {
+            height: 8px;
+          }
+          .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 4px;
+          }
+          .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+          }
+          .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.15);
+          }
+        `}} />
+      </div>
+    </DragDropContext>
   );
 }

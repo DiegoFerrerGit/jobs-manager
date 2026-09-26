@@ -30,12 +30,19 @@ async function main() {
       let acceptsAr: "yes" | "maybe" = "maybe";
       if (item.acepta_argentina === "si") acceptsAr = "yes";
 
+      const fakeHqs = [
+        "San Francisco, CA", "New York, NY", "London, UK", "Austin, TX", 
+        "Seattle, WA", "Berlin, Germany", "Miami, FL", null, "Boston, MA", null
+      ];
+      const randomHq = fakeHqs[Math.floor(Math.random() * fakeHqs.length)];
+
       await db.insert(jobs).values({
         userId: user.id,
         externalId: item.id || Math.random().toString(36).substring(7),
         title: item.titulo || "Untitled",
         company: item.empresa || "Unknown",
         companySize: item.empleados ? parseInt(item.empleados) : null,
+        companyHq: randomHq,
         salary: item.salario ? String(item.salario) : null,
         locations: item.ubicaciones,
         locationMatch: item.motivo,

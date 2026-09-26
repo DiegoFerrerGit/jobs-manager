@@ -324,6 +324,12 @@ export default function JobsClientView({ initialJobs, initialKeywords, userId }:
                 ) : (
                   <span className="font-semibold text-sky-400 truncate">{job.company}</span>
                 )}
+                {job.companyHq && (
+                  <>
+                    <span className="text-muted-foreground/50 mx-1 shrink-0">-</span>
+                    <span className="truncate text-muted-foreground" title={job.companyHq}>📍 {job.companyHq}</span>
+                  </>
+                )}
                 {job.companySize && (
                   <span className="text-[10px] px-1 py-0.5 rounded-sm bg-secondary/50 whitespace-nowrap">
                     {job.companySize} empleados
@@ -469,6 +475,12 @@ export default function JobsClientView({ initialJobs, initialKeywords, userId }:
                         </a>
                       ) : (
                         <span className="text-sky-400 font-semibold">{job.company}</span>
+                      )}
+                      {job.companyHq && (
+                        <>
+                          <span className="text-muted-foreground/50 mx-1 shrink-0">-</span>
+                          <span className="truncate text-muted-foreground" title={job.companyHq}>📍 {job.companyHq}</span>
+                        </>
                       )}
                     </div>
                   </td>

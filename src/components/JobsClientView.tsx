@@ -357,22 +357,22 @@ export default function JobsClientView({ initialJobs, initialKeywords, userId }:
                 </button>
               </div>
 
-              <div className="flex items-center gap-1.5 text-muted-foreground mb-3 text-xs">
+              <div className="flex flex-wrap items-center gap-1.5 text-muted-foreground mb-3 text-xs">
                 <Building2 className="w-3.5 h-3.5 shrink-0" />
                 {job.companyLinkedin ? (
-                  <a href={job.companyLinkedin} target="_blank" rel="noopener noreferrer" className="font-semibold text-sky-400 hover:text-sky-300 hover:underline truncate">
+                  <a href={job.companyLinkedin} target="_blank" rel="noopener noreferrer" className="font-semibold text-sky-400 hover:text-sky-300 hover:underline">
                     {job.company}
                   </a>
                 ) : (
-                  <span className="font-semibold text-sky-400 truncate">{job.company}</span>
+                  <span className="font-semibold text-sky-400">{job.company}</span>
                 )}
                 {job.companyHq && (
                   <>
                     <span className="text-muted-foreground/50 shrink-0">-</span>
-                    <span className="truncate text-muted-foreground" title={job.companyHq}>📍 {job.companyHq}</span>
+                    <span className="text-muted-foreground" title={job.companyHq}>📍 {job.companyHq}</span>
                   </>
                 )}
-                {job.companySize && (
+                {job.companySize != null && job.companySize > 0 && (
                   <span className="text-[10px] px-1 py-0.5 rounded-sm bg-secondary/50 whitespace-nowrap">
                     {job.companySize} empleados
                   </span>
@@ -509,8 +509,8 @@ export default function JobsClientView({ initialJobs, initialKeywords, userId }:
                         {job.status === "REJECTED" ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
                       </button>
                     </div>
-                    <div className="flex items-center gap-1.5 text-muted-foreground text-xs">
-                      <Building2 className="w-3 h-3" />
+                    <div className="flex flex-wrap items-center gap-1.5 text-muted-foreground text-xs">
+                      <Building2 className="w-3 h-3 shrink-0" />
                       {job.companyLinkedin ? (
                         <a href={job.companyLinkedin} target="_blank" rel="noopener noreferrer" className="text-sky-400 font-semibold hover:text-sky-300 hover:underline">
                           {job.company}
@@ -521,7 +521,7 @@ export default function JobsClientView({ initialJobs, initialKeywords, userId }:
                       {job.companyHq && (
                         <>
                           <span className="text-muted-foreground/50 shrink-0">-</span>
-                          <span className="truncate text-muted-foreground" title={job.companyHq}>📍 {job.companyHq}</span>
+                          <span className="text-muted-foreground" title={job.companyHq}>📍 {job.companyHq}</span>
                         </>
                       )}
                     </div>

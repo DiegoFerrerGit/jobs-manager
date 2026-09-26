@@ -119,11 +119,9 @@ export default function TrackerClient() {
     setIsMounted(true);
     
     const handleClickOutside = () => setActiveDropdown(null);
-    document.addEventListener("mousedown", handleClickOutside);
-    document.addEventListener("touchstart", handleClickOutside);
+    document.addEventListener("click", handleClickOutside);
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("touchstart", handleClickOutside);
+      document.removeEventListener("click", handleClickOutside);
     };
   }, []);
 
@@ -258,25 +256,21 @@ export default function TrackerClient() {
                           {...provided.draggableProps}
                         >
                           {/* Column Header */}
-                          <div 
-                            className="flex items-center justify-between mb-3 px-1 pt-1 cursor-grab active:cursor-grabbing"
-                            {...provided.dragHandleProps}
-                          >
-                            <div className="flex items-center gap-2">
-                    <div className={`px-2 py-0.5 rounded text-sm font-medium ${column.badge}`}>
-                      {column.title}
-                    </div>
-                    <span className="text-muted-foreground text-sm font-medium">{column.jobs.length}</span>
-                  </div>
+                          <div className="flex items-center justify-between mb-3 px-1 pt-1">
+                            <div 
+                              className="flex items-center gap-2 cursor-grab active:cursor-grabbing flex-1"
+                              {...provided.dragHandleProps}
+                            >
+                              <div className={`px-2 py-0.5 rounded text-sm font-medium ${column.badge}`}>
+                                {column.title}
+                              </div>
+                              <span className="text-muted-foreground text-sm font-medium">{column.jobs.length}</span>
+                            </div>
                   <div className="relative flex items-center text-muted-foreground/60">
                     <button 
                       type="button"
                       className="cursor-pointer hover:bg-white/10 p-1.5 rounded-md transition-colors flex items-center justify-center border-0 bg-transparent"
-                      onMouseDown={(e) => { 
-                        e.stopPropagation(); 
-                        setActiveDropdown(prev => prev === columnId ? null : columnId); 
-                      }}
-                      onTouchStart={(e) => { 
+                      onClick={(e) => { 
                         e.stopPropagation(); 
                         setActiveDropdown(prev => prev === columnId ? null : columnId); 
                       }}
@@ -287,15 +281,13 @@ export default function TrackerClient() {
                     {activeDropdown === columnId && (
                       <div 
                         className="absolute right-0 top-8 w-[220px] bg-[#202020] border border-[#303030] rounded-xl shadow-2xl z-50 overflow-hidden text-[13px] text-muted-foreground"
-                        onMouseDown={(e) => e.stopPropagation()}
-                        onTouchStart={(e) => e.stopPropagation()}
+                        onClick={(e) => e.stopPropagation()}
                       >
                         <div className="p-1">
                           <button 
                             type="button"
                             className="w-full text-left px-3 py-1.5 hover:bg-[#303030] rounded text-foreground transition-colors flex items-center gap-2"
-                            onMouseDown={() => deleteColumn(columnId)}
-                            onTouchStart={() => deleteColumn(columnId)}
+                            onClick={() => deleteColumn(columnId)}
                           >
                             <span className="w-4 h-4 flex items-center justify-center text-lg">👁️</span>
                             Ocultar columna
@@ -303,8 +295,7 @@ export default function TrackerClient() {
                           <button 
                             type="button"
                             className="w-full text-left px-3 py-1.5 hover:bg-[#303030] rounded text-destructive hover:text-red-400 transition-colors flex items-center gap-2" 
-                            onMouseDown={() => deleteColumn(columnId)}
-                            onTouchStart={() => deleteColumn(columnId)}
+                            onClick={() => deleteColumn(columnId)}
                           >
                             <span className="w-4 h-4 flex items-center justify-center text-lg">🗑️</span>
                             Eliminar columna
@@ -318,8 +309,7 @@ export default function TrackerClient() {
                               type="button"
                               key={colorKey}
                               className="w-full text-left px-3 py-1.5 hover:bg-[#303030] rounded text-foreground transition-colors flex items-center gap-2"
-                              onMouseDown={() => changeColumnColor(columnId, colorDef)}
-                              onTouchStart={() => changeColumnColor(columnId, colorDef)}
+                              onClick={() => changeColumnColor(columnId, colorDef)}
                             >
                               <div className={`w-3.5 h-3.5 rounded-sm ${colorDef.badge.split(' ')[0]}`}></div>
                               {colorDef.name}

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Spinner from "@/components/Spinner";
 
 declare global {
   interface Window {
@@ -168,7 +169,12 @@ export default function LoginClient({ clientId }: { clientId: string }) {
               disabled={isLoading}
               className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg px-4 py-2.5 mt-2 transition-colors disabled:opacity-50"
             >
-              {isLoading ? "Validando..." : "Habilitar Acceso"}
+              {isLoading ? (
+                <div className="flex items-center justify-center gap-2">
+                  <Spinner className="w-5 h-5 text-primary-foreground" />
+                  <span>Validando...</span>
+                </div>
+              ) : "Habilitar Acceso"}
             </button>
             <button 
               type="button"

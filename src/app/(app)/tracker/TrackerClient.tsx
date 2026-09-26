@@ -117,6 +117,23 @@ export default function TrackerClient() {
     setActiveDropdown(null);
   };
 
+  const addNewColumn = () => {
+    const newId = `col-${Date.now()}`;
+    setColumns(prev => ({
+      ...prev,
+      [newId]: {
+        id: newId,
+        title: "Nueva columna",
+        badge: COLUMN_COLORS.gris.badge,
+        wrapperBg: COLUMN_COLORS.gris.wrapperBg,
+        cardBg: COLUMN_COLORS.gris.cardBg,
+        cardHover: COLUMN_COLORS.gris.cardHover,
+        jobs: []
+      }
+    }));
+    setColumnOrder(prev => [...prev, newId]);
+  };
+
   const changeColumnColor = (id: string, colorDef: any) => {
     setColumns(prev => ({
       ...prev,
@@ -224,12 +241,14 @@ export default function TrackerClient() {
                     <span className="text-muted-foreground text-sm font-medium">{column.jobs.length}</span>
                   </div>
                   <div className="relative flex items-center text-muted-foreground/60">
-                    <div 
-                      className="cursor-pointer hover:bg-white/10 p-1.5 rounded-md transition-colors flex items-center justify-center"
+                    <button 
+                      type="button"
+                      className="cursor-pointer hover:bg-white/10 p-1.5 rounded-md transition-colors flex items-center justify-center border-0 bg-transparent"
                       onClick={(e) => { e.stopPropagation(); setActiveDropdown(activeDropdown === columnId ? null : columnId); }}
+                      onPointerDown={(e) => e.stopPropagation()}
                     >
                       <span className="text-xl leading-none pb-2">...</span>
-                    </div>
+                    </button>
                     
                     {activeDropdown === columnId && (
                       <div 
@@ -238,6 +257,7 @@ export default function TrackerClient() {
                       >
                         <div className="p-1">
                           <button 
+                            type="button"
                             className="w-full text-left px-3 py-1.5 hover:bg-[#303030] rounded text-foreground transition-colors flex items-center gap-2"
                             onClick={() => deleteColumn(columnId)}
                           >
@@ -245,11 +265,12 @@ export default function TrackerClient() {
                             Ocultar columna
                           </button>
                           <button 
+                            type="button"
                             className="w-full text-left px-3 py-1.5 hover:bg-[#303030] rounded text-destructive hover:text-red-400 transition-colors flex items-center gap-2" 
                             onClick={() => deleteColumn(columnId)}
                           >
                             <span className="w-4 h-4 flex items-center justify-center text-lg">🗑️</span>
-                            Mover a la Papelera
+                            Eliminar columna
                           </button>
                         </div>
                         <div className="border-t border-[#303030] my-1"></div>
@@ -257,6 +278,7 @@ export default function TrackerClient() {
                           <div className="px-3 py-1.5 text-xs font-semibold text-muted-foreground/50 tracking-wider mb-1">Colores</div>
                           {Object.entries(COLUMN_COLORS).map(([colorKey, colorDef]) => (
                             <button 
+                              type="button"
                               key={colorKey}
                               className="w-full text-left px-3 py-1.5 hover:bg-[#303030] rounded text-foreground transition-colors flex items-center gap-2"
                               onClick={() => changeColumnColor(columnId, colorDef)}
@@ -333,6 +355,18 @@ export default function TrackerClient() {
                   );
                 })}
                 {provided.placeholder}
+
+                {/* Add new column button */}
+                <div className="w-[280px] shrink-0 p-2">
+                  <button 
+                    type="button"
+                    onClick={addNewColumn}
+                    className="flex items-center gap-2 text-sm p-3 rounded-xl transition-colors w-full text-muted-foreground hover:bg-white/5 hover:text-foreground border border-dashed border-white/10 hover:border-white/20 font-medium"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Agregar columna
+                  </button>
+                </div>
               </div>
             )}
           </Droppable>

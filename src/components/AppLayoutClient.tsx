@@ -67,12 +67,12 @@ export default function AppLayoutClient({ children, user }: { children: React.Re
               )}
             </div>
           )}
-          <div className={isCollapsed ? "flex justify-center" : "px-1"}>
+          <div className={isCollapsed ? "flex justify-center" : ""}>
             <LogoutButton 
               isCollapsed={isCollapsed} 
               className={isCollapsed 
                 ? 'p-2 w-10 h-10 rounded-lg flex items-center justify-center hover:bg-red-500/10 text-red-400 transition-colors' 
-                : 'w-full py-2 px-3 flex items-center gap-3 rounded-lg hover:bg-red-500/10 text-red-400 font-medium transition-colors text-sm'} 
+                : 'w-full py-2 px-2 flex items-center gap-3 rounded-lg hover:bg-red-500/10 text-red-400 font-bold transition-colors text-sm'} 
             />
           </div>
         </div>

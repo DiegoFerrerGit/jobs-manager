@@ -98,8 +98,18 @@ const COLUMN_COLORS = {
   rojo: { name: "Rojo", badge: "bg-[#602e2e] text-[#e8b5b5]", wrapperBg: "bg-[#2d1d1d]", cardBg: "bg-[#422828]", cardHover: "hover:bg-[#4f3030]" }
 };
 
+type ColumnData = {
+  id: string;
+  title: string;
+  badge: string;
+  wrapperBg: string;
+  cardBg: string;
+  cardHover: string;
+  jobs: { id: string; company: string; location: string; locationColor: string; role: string; roleColor: string; salary: string; equity: string; }[];
+};
+
 export default function TrackerClient() {
-  const [columns, setColumns] = useState(initialColumns);
+  const [columns, setColumns] = useState<Record<string, ColumnData>>(initialColumns);
   const [columnOrder, setColumnOrder] = useState(Object.keys(initialColumns));
   const [isMounted, setIsMounted] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
@@ -117,12 +127,6 @@ export default function TrackerClient() {
     }
     
     setIsMounted(true);
-    
-    const handleClickOutside = () => setActiveDropdown(null);
-    document.addEventListener("click", handleClickOutside);
-    return () => {
-      document.removeEventListener("click", handleClickOutside);
-    };
   }, []);
 
   // Sync to localStorage
@@ -144,27 +148,33 @@ export default function TrackerClient() {
   };
 
   const addNewColumn = () => {
+    const colorKeys = Object.keys(COLUMN_COLORS);
+    // Pick a color that's visually different - cycle through based on column count
+    const usedCount = columnOrder.length;
+    const colorKey = colorKeys[usedCount % colorKeys.length] as keyof typeof COLUMN_COLORS;
+    const color = COLUMN_COLORS[colorKey];
+    
     const newId = `col-${Date.now()}`;
     setColumns(prev => ({
       ...prev,
       [newId]: {
         id: newId,
         title: "Nueva columna",
-        badge: COLUMN_COLORS.gris.badge,
-        wrapperBg: COLUMN_COLORS.gris.wrapperBg,
-        cardBg: COLUMN_COLORS.gris.cardBg,
-        cardHover: COLUMN_COLORS.gris.cardHover,
+        badge: color.badge,
+        wrapperBg: color.wrapperBg,
+        cardBg: color.cardBg,
+        cardHover: color.cardHover,
         jobs: []
       }
     }));
     setColumnOrder(prev => [...prev, newId]);
   };
 
-  const changeColumnColor = (id: string, colorDef: any) => {
+  const changeColumnColor = (id: string, colorDef: typeof COLUMN_COLORS[keyof typeof COLUMN_COLORS]) => {
     setColumns(prev => ({
       ...prev,
       [id]: {
-        ...prev[id as keyof typeof prev],
+        ...prev[id],
         badge: colorDef.badge,
         wrapperBg: colorDef.wrapperBg,
         cardBg: colorDef.cardBg,
@@ -188,7 +198,7 @@ export default function TrackerClient() {
     }
 
     if (source.droppableId === destination.droppableId) {
-      const column = columns[source.droppableId as keyof typeof columns];
+      const column = columns[source.droppableId];
       const copiedItems = [...column.jobs];
       const [removed] = copiedItems.splice(source.index, 1);
       copiedItems.splice(destination.index, 0, removed);
@@ -201,8 +211,8 @@ export default function TrackerClient() {
         }
       });
     } else {
-      const sourceCol = columns[source.droppableId as keyof typeof columns];
-      const destCol = columns[destination.droppableId as keyof typeof columns];
+      const sourceCol = columns[source.droppableId];
+      const destCol = columns[destination.droppableId];
 
       const sourceItems = [...sourceCol.jobs];
       const destItems = [...destCol.jobs];
@@ -270,53 +280,54 @@ export default function TrackerClient() {
                     <button 
                       type="button"
                       className="cursor-pointer hover:bg-white/10 p-1.5 rounded-md transition-colors flex items-center justify-center border-0 bg-transparent"
-                      onClick={(e) => { 
-                        e.stopPropagation(); 
-                        setActiveDropdown(prev => prev === columnId ? null : columnId); 
-                      }}
+                      onClick={() => setActiveDropdown(prev => prev === columnId ? null : columnId)}
                     >
                       <span className="text-xl leading-none pb-2">...</span>
                     </button>
                     
                     {activeDropdown === columnId && (
-                      <div 
-                        className="absolute right-0 top-8 w-[220px] bg-[#202020] border border-[#303030] rounded-xl shadow-2xl z-50 overflow-hidden text-[13px] text-muted-foreground"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <div className="p-1">
-                          <button 
-                            type="button"
-                            className="w-full text-left px-3 py-1.5 hover:bg-[#303030] rounded text-foreground transition-colors flex items-center gap-2"
-                            onClick={() => deleteColumn(columnId)}
-                          >
-                            <span className="w-4 h-4 flex items-center justify-center text-lg">👁️</span>
-                            Ocultar columna
-                          </button>
-                          <button 
-                            type="button"
-                            className="w-full text-left px-3 py-1.5 hover:bg-[#303030] rounded text-destructive hover:text-red-400 transition-colors flex items-center gap-2" 
-                            onClick={() => deleteColumn(columnId)}
-                          >
-                            <span className="w-4 h-4 flex items-center justify-center text-lg">🗑️</span>
-                            Eliminar columna
-                          </button>
-                        </div>
-                        <div className="border-t border-[#303030] my-1"></div>
-                        <div className="p-1">
-                          <div className="px-3 py-1.5 text-xs font-semibold text-muted-foreground/50 tracking-wider mb-1">Colores</div>
-                          {Object.entries(COLUMN_COLORS).map(([colorKey, colorDef]) => (
+                      <>
+                        {/* Invisible overlay to close dropdown when clicking outside */}
+                        <div 
+                          className="fixed inset-0 z-40" 
+                          onClick={() => setActiveDropdown(null)}
+                        />
+                        <div className="absolute right-0 top-8 w-[220px] bg-[#202020] border border-[#303030] rounded-xl shadow-2xl z-50 overflow-hidden text-[13px] text-muted-foreground">
+                          <div className="p-1">
                             <button 
                               type="button"
-                              key={colorKey}
                               className="w-full text-left px-3 py-1.5 hover:bg-[#303030] rounded text-foreground transition-colors flex items-center gap-2"
-                              onClick={() => changeColumnColor(columnId, colorDef)}
+                              onClick={() => { /* TODO: ocultar con filtros */ setActiveDropdown(null); }}
                             >
-                              <div className={`w-3.5 h-3.5 rounded-sm ${colorDef.badge.split(' ')[0]}`}></div>
-                              {colorDef.name}
+                              <span className="w-4 h-4 flex items-center justify-center text-lg">👁️</span>
+                              Ocultar columna
                             </button>
-                          ))}
+                            <button 
+                              type="button"
+                              className="w-full text-left px-3 py-1.5 hover:bg-[#303030] rounded text-destructive hover:text-red-400 transition-colors flex items-center gap-2" 
+                              onClick={() => deleteColumn(columnId)}
+                            >
+                              <span className="w-4 h-4 flex items-center justify-center text-lg">🗑️</span>
+                              Eliminar columna
+                            </button>
+                          </div>
+                          <div className="border-t border-[#303030] my-1"></div>
+                          <div className="p-1 max-h-[280px] overflow-y-auto">
+                            <div className="px-3 py-1.5 text-xs font-semibold text-muted-foreground/50 tracking-wider mb-1">Colores</div>
+                            {Object.entries(COLUMN_COLORS).map(([colorKey, colorDef]) => (
+                              <button 
+                                type="button"
+                                key={colorKey}
+                                className="w-full text-left px-3 py-1.5 hover:bg-[#303030] rounded text-foreground transition-colors flex items-center gap-2"
+                                onClick={() => changeColumnColor(columnId, colorDef)}
+                              >
+                                <div className={`w-3.5 h-3.5 rounded-sm ${colorDef.badge.split(' ')[0]}`}></div>
+                                {colorDef.name}
+                              </button>
+                            ))}
+                          </div>
                         </div>
-                      </div>
+                      </>
                     )}
                   </div>
                 </div>

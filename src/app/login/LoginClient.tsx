@@ -47,7 +47,7 @@ export default function LoginClient({ clientId }: { clientId: string }) {
         });
         window.google.accounts.id.renderButton(
           document.getElementById("google-button"),
-          { theme: "filled_black", size: "large", text: "continue_with", shape: "pill" }
+          { theme: "filled_black", size: "large", text: "signin_with", shape: "pill" }
         );
       }
     };
@@ -105,7 +105,7 @@ export default function LoginClient({ clientId }: { clientId: string }) {
       
       <div className="glass-card max-w-md w-full p-8 rounded-3xl relative z-10">
         <div className="text-center mb-8 flex flex-col items-center">
-          <img src="/logo.jpg" alt="Hunter Logo" className="w-16 h-16 rounded-xl object-contain shadow-lg shadow-teal-500/20 ring-1 ring-border/50 mb-4" />
+          <img src="/logo.jpg" alt="Jobs Manager Logo" className="w-16 h-16 rounded-xl object-contain shadow-lg shadow-teal-500/20 ring-1 ring-border/50 mb-4" />
           <h1 className="text-4xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-primary via-blue-200 to-purple-400 mb-2">
             Jobs Manager
           </h1>

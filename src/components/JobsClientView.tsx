@@ -33,10 +33,10 @@ export default function JobsClientView({ initialJobs, initialKeywords, userId }:
 
   const handleToggleStatus = async (id: number, currentStatus: string) => {
     const newStatus = currentStatus === "APPLIED" ? "SAVED" : "APPLIED";
-    
+
     // Optimistic update
     setJobs(prev => prev.map(j => j.id === id ? { ...j, status: newStatus as any } : j));
-    
+
     try {
       await toggleJobStatus(id, currentStatus);
     } catch (error) {
@@ -49,13 +49,13 @@ export default function JobsClientView({ initialJobs, initialKeywords, userId }:
   const handleHide = async (id: number, currentStatus: string) => {
     // If it's already rejected, un-hide it back to SAVED
     const newStatus = currentStatus === "REJECTED" ? "SAVED" : "REJECTED";
-    
+
     // Save previous state for reverting
     const prevJobs = [...jobs];
-    
+
     // Optimistic UI
     setJobs(prev => prev.map(j => j.id === id ? { ...j, status: newStatus as any } : j));
-    
+
     try {
       await hideJob(id, newStatus);
     } catch (error) {
@@ -86,14 +86,14 @@ export default function JobsClientView({ initialJobs, initialKeywords, userId }:
     if (initialKeywords && initialKeywords.length > 0) {
       const lowerKeywords = initialKeywords.map(k => k.keyword.toLowerCase());
       result = result.filter(j => {
-        const titleLower = j.titulo.toLowerCase();
+        const titleLower = j.title.toLowerCase();
         return !lowerKeywords.some(kw => titleLower.includes(kw));
       });
     }
 
     // Filter
     if (filterLatam !== "all") {
-      result = result.filter(j => j.acepta_argentina === filterLatam);
+      result = result.filter(j => j.acceptsArgentina === filterLatam);
     }
 
     // Filter by Status
@@ -108,10 +108,10 @@ export default function JobsClientView({ initialJobs, initialKeywords, userId }:
     // Search Query
     if (searchQuery.trim() !== "") {
       const q = searchQuery.toLowerCase();
-      result = result.filter(j => 
-        j.titulo.toLowerCase().includes(q) || 
-        j.empresa.toLowerCase().includes(q) ||
-        (j.ubicaciones && j.ubicaciones.toLowerCase().includes(q))
+      result = result.filter(j =>
+        j.title.toLowerCase().includes(q) ||
+        j.company.toLowerCase().includes(q) ||
+        (j.locations && j.locations.toLowerCase().includes(q))
       );
     }
 
@@ -119,24 +119,24 @@ export default function JobsClientView({ initialJobs, initialKeywords, userId }:
     result.sort((a, b) => {
       let cmp = 0;
       if (sortParam === "salary") {
-        cmp = extractSalary(a.salario) - extractSalary(b.salario);
+        cmp = extractSalary(a.salary) - extractSalary(b.salary);
       } else if (sortParam === "priority") {
-        cmp = getPriorityWeight(a.prioridad) - getPriorityWeight(b.prioridad);
+        cmp = (a.priority || 3) - (b.priority || 3);
       } else if (sortParam === "employees") {
-        const empA = a.empleados ? parseInt(a.empleados.replace(/\D/g, '')) || 0 : 0;
-        const empB = b.empleados ? parseInt(b.empleados.replace(/\D/g, '')) || 0 : 0;
+        const empA = a.companySize || 0;
+        const empB = b.companySize || 0;
         cmp = empA - empB;
       } else if (sortParam === "latam") {
         const getLatamWeight = (val: string | null) => {
-          if (val === "si") return 3;
-          if (val === "posible") return 2;
+          if (val === "yes") return 3;
+          if (val === "maybe") return 2;
           return 1;
         };
-        cmp = getLatamWeight(a.acepta_argentina) - getLatamWeight(b.acepta_argentina);
+        cmp = getLatamWeight(a.acceptsArgentina) - getLatamWeight(b.acceptsArgentina);
       } else {
         // Date sorting (default)
-        const dateA = new Date(a.fecha_detectada || a.createdAt).getTime();
-        const dateB = new Date(b.fecha_detectada || b.createdAt).getTime();
+        const dateA = new Date(a.detectedAt || a.createdAt).getTime();
+        const dateB = new Date(b.detectedAt || b.createdAt).getTime();
         cmp = dateA - dateB;
       }
       return sortOrder === "asc" ? cmp : -cmp;
@@ -158,14 +158,14 @@ export default function JobsClientView({ initialJobs, initialKeywords, userId }:
     <div className="w-full">
       {/* TOOLBAR */}
       <div className="glass-card mb-8 p-4 rounded-b-2xl rounded-t-none border-t-0 flex flex-wrap gap-4 items-center justify-between shadow-md relative z-10 -mt-1">
-        
+
         {/* Left Side: Search & Filters */}
         <div className="flex flex-wrap items-center gap-3 text-sm flex-1">
           {/* Search */}
           <div className="relative w-full sm:max-w-xs shrink-0">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <input 
-              type="text" 
+            <input
+              type="text"
               placeholder="Buscar rol o empresa..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -187,7 +187,7 @@ export default function JobsClientView({ initialJobs, initialKeywords, userId }:
               <option value="hidden">Ocultas</option>
             </select>
           </div>
-          
+
           <div className="flex flex-1 sm:flex-none items-center gap-2 bg-secondary/50 px-3 py-2 rounded-lg border border-border">
             <SlidersHorizontal className="w-4 h-4 text-muted-foreground flex-shrink-0" />
             <select
@@ -195,7 +195,7 @@ export default function JobsClientView({ initialJobs, initialKeywords, userId }:
               value={filterLatam}
               onChange={(e) => setFilterLatam(e.target.value)}
             >
-              <option value="all">Todo LATAM</option>
+              <option value="all">Todos</option>
               <option value="si">LATAM Ok</option>
               <option value="posible">LATAM Posible</option>
             </select>
@@ -223,7 +223,7 @@ export default function JobsClientView({ initialJobs, initialKeywords, userId }:
           </div>
 
           {hasFiltersChanged && (
-            <button 
+            <button
               onClick={handleClearFilters}
               className="flex flex-1 sm:flex-none items-center justify-center gap-1.5 px-4 py-2 rounded-lg border border-red-500/20 bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-colors text-xs font-semibold shadow-sm shrink-0"
               title="Limpiar filtros y búsqueda"
@@ -279,12 +279,12 @@ export default function JobsClientView({ initialJobs, initialKeywords, userId }:
 
               <div className="flex justify-between items-start mb-4">
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className={`inline-flex items-center justify-center rounded-full px-2 py-0.5 text-[11px] font-semibold border ${job.prioridad?.includes("alta") ? "bg-red-500/10 text-red-400 border-red-500/20" : job.prioridad?.includes("media") ? "bg-blue-500/10 text-blue-400 border-blue-500/20" : "bg-gray-500/10 text-gray-400 border-gray-500/20"}`}>
-                    {job.prioridad?.includes("alta") ? "Alta" : job.prioridad?.includes("media") ? "Media" : "Baja"}
+                  <span className={`inline-flex items-center justify-center rounded-full px-2 py-0.5 text-[11px] font-semibold border ${job.priority === 1 ? "bg-red-500/10 text-red-400 border-red-500/20" : job.priority === 2 ? "bg-blue-500/10 text-blue-400 border-blue-500/20" : "bg-gray-500/10 text-gray-400 border-gray-500/20"}`}>
+                    {job.priority === 1 ? "Alta" : job.priority === 2 ? "Media" : "Baja"}
                   </span>
-                  {(job.acepta_argentina === "si" || job.acepta_argentina === "posible") && (
-                    <span className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-semibold border ${job.acepta_argentina === "si" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "bg-yellow-500/10 text-yellow-400 border-yellow-500/20"}`}>
-                      🇦🇷 {job.acepta_argentina === "si" ? "LATAM Ok" : "Posible"}
+                  {(job.acceptsArgentina === "yes" || job.acceptsArgentina === "maybe") && (
+                    <span className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-semibold border ${job.acceptsArgentina === "yes" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "bg-yellow-500/10 text-yellow-400 border-yellow-500/20"}`}>
+                      🇦🇷 {job.acceptsArgentina === "yes" ? "LATAM Ok" : "Posible"}
                     </span>
                   )}
                 </div>
@@ -301,15 +301,14 @@ export default function JobsClientView({ initialJobs, initialKeywords, userId }:
 
               <div className="flex items-start justify-between gap-2 mb-1.5">
                 <h2 className={`text-base font-bold line-clamp-2 leading-tight ${job.status === "REJECTED" ? "text-muted-foreground line-through" : "text-foreground"}`}>
-                  {job.titulo}
+                  {job.title}
                 </h2>
-                <button 
+                <button
                   onClick={() => handleHide(job.id, job.status)}
-                  className={`p-1.5 rounded-md transition-all shrink-0 cursor-pointer ${
-                    job.status === "REJECTED" 
-                      ? "text-primary bg-primary/10 hover:bg-primary/20 opacity-100" 
+                  className={`p-1.5 rounded-md transition-all shrink-0 cursor-pointer ${job.status === "REJECTED"
+                      ? "text-primary bg-primary/10 hover:bg-primary/20 opacity-100"
                       : "text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-red-400 hover:bg-red-500/10"
-                  }`}
+                    }`}
                   title={job.status === "REJECTED" ? "Mostrar oferta" : "Ocultar oferta"}
                 >
                   {job.status === "REJECTED" ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
@@ -318,27 +317,27 @@ export default function JobsClientView({ initialJobs, initialKeywords, userId }:
 
               <div className="flex items-center gap-1.5 text-muted-foreground mb-3 text-xs">
                 <Building2 className="w-3.5 h-3.5 shrink-0" />
-                {job.linkedin_empresa ? (
-                  <a href={job.linkedin_empresa} target="_blank" rel="noopener noreferrer" className="font-semibold text-sky-400 hover:text-sky-300 hover:underline truncate">
-                    {job.empresa}
+                {job.companyLinkedin ? (
+                  <a href={job.companyLinkedin} target="_blank" rel="noopener noreferrer" className="font-semibold text-sky-400 hover:text-sky-300 hover:underline truncate">
+                    {job.company}
                   </a>
                 ) : (
-                  <span className="font-semibold text-sky-400 truncate">{job.empresa}</span>
+                  <span className="font-semibold text-sky-400 truncate">{job.company}</span>
                 )}
-                {job.empleados && (
+                {job.companySize && (
                   <span className="text-[10px] px-1 py-0.5 rounded-sm bg-secondary/50 whitespace-nowrap">
-                    {job.empleados} empleados
+                    {job.companySize} empleados
                   </span>
                 )}
               </div>
 
               <div className="space-y-2 mb-4 flex-grow text-xs">
-                {job.salario && (
+                {job.salary && (
                   <div className="flex items-center gap-2">
                     <div className="p-1 rounded-md bg-green-500/10 text-green-400 shrink-0">
                       <DollarSign className="w-3.5 h-3.5" />
                     </div>
-                    <span className="font-medium text-green-100">{job.salario}</span>
+                    <span className="font-medium text-green-100">{job.salary}</span>
                   </div>
                 )}
 
@@ -346,7 +345,7 @@ export default function JobsClientView({ initialJobs, initialKeywords, userId }:
                   <div className="p-1 rounded-md bg-blue-500/10 text-blue-400 shrink-0">
                     <MapPin className="w-3.5 h-3.5" />
                   </div>
-                  <span className="line-clamp-1 text-muted-foreground">{job.ubicaciones}</span>
+                  <span className="line-clamp-1 text-muted-foreground">{job.locations}</span>
                 </div>
 
 
@@ -355,7 +354,7 @@ export default function JobsClientView({ initialJobs, initialKeywords, userId }:
                   <div className="p-1 rounded-md bg-orange-500/10 text-orange-400 shrink-0">
                     <Calendar className="w-3.5 h-3.5" />
                   </div>
-                  <span className="line-clamp-1 text-muted-foreground">{job.fecha_publicacion || job.fecha_detectada}</span>
+                  <span className="line-clamp-1 text-muted-foreground">{job.publishedAt || job.detectedAt}</span>
                 </div>
               </div>
 
@@ -369,9 +368,9 @@ export default function JobsClientView({ initialJobs, initialKeywords, userId }:
                     {job.status === "APPLIED" ? "Aplicada" : "Marcar como aplicado"}
                   </button>
 
-                  {job.url_aplicar && (
+                  {job.applyUrl && (
                     <Link
-                      href={job.url_aplicar}
+                      href={job.applyUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-xs font-medium transition-all duration-200 hover:bg-primary/90 hover:scale-105 active:scale-95 cursor-pointer shadow-sm"
@@ -450,14 +449,13 @@ export default function JobsClientView({ initialJobs, initialKeywords, userId }:
                 >
                   <td className="px-6 py-4">
                     <div className="flex items-start justify-between gap-2">
-                      <p className={`font-bold text-base mb-1 ${job.status === "REJECTED" ? "text-muted-foreground line-through" : "text-foreground"}`}>{job.titulo}</p>
-                      <button 
+                      <p className={`font-bold text-base mb-1 ${job.status === "REJECTED" ? "text-muted-foreground line-through" : "text-foreground"}`}>{job.title}</p>
+                      <button
                         onClick={() => handleHide(job.id, job.status)}
-                        className={`transition-all p-1.5 rounded-md cursor-pointer ${
-                          job.status === "REJECTED" 
-                            ? "text-primary hover:bg-primary/10 opacity-100" 
+                        className={`transition-all p-1.5 rounded-md cursor-pointer ${job.status === "REJECTED"
+                            ? "text-primary hover:bg-primary/10 opacity-100"
                             : "text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-red-400 hover:bg-red-500/10"
-                        }`}
+                          }`}
                         title={job.status === "REJECTED" ? "Mostrar oferta" : "Ocultar oferta"}
                       >
                         {job.status === "REJECTED" ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
@@ -465,40 +463,40 @@ export default function JobsClientView({ initialJobs, initialKeywords, userId }:
                     </div>
                     <div className="flex items-center gap-1.5 text-muted-foreground text-xs">
                       <Building2 className="w-3 h-3" />
-                      {job.linkedin_empresa ? (
-                        <a href={job.linkedin_empresa} target="_blank" rel="noopener noreferrer" className="text-sky-400 font-semibold hover:text-sky-300 hover:underline">
-                          {job.empresa}
+                      {job.companyLinkedin ? (
+                        <a href={job.companyLinkedin} target="_blank" rel="noopener noreferrer" className="text-sky-400 font-semibold hover:text-sky-300 hover:underline">
+                          {job.company}
                         </a>
                       ) : (
-                        <span className="text-sky-400 font-semibold">{job.empresa}</span>
+                        <span className="text-sky-400 font-semibold">{job.company}</span>
                       )}
                     </div>
                   </td>
                   <td className="px-6 py-4 text-muted-foreground text-xs font-medium">
-                    {job.empleados ? job.empleados : "-"}
+                    {job.companySize ? job.companySize : "-"}
                   </td>
                   <td className="px-6 py-4 font-medium text-green-400">
-                    {job.salario || "-"}
+                    {job.salary || "-"}
                   </td>
-                  <td className="px-6 py-4 max-w-[200px] truncate text-muted-foreground" title={job.ubicaciones || ""}>
-                    {job.ubicaciones}
+                  <td className="px-6 py-4 max-w-[200px] truncate text-muted-foreground" title={job.locations || ""}>
+                    {job.locations}
                   </td>
                   <td className="px-6 py-4">
-                    <span className={`inline-flex items-center justify-center rounded-full px-2.5 py-0.5 text-xs font-semibold border ${job.prioridad?.includes("alta") ? "bg-red-500/10 text-red-400 border-red-500/20" : job.prioridad?.includes("media") ? "bg-blue-500/10 text-blue-400 border-blue-500/20" : "bg-gray-500/10 text-gray-400 border-gray-500/20"}`}>
-                      {job.prioridad?.includes("alta") ? "Alta" : job.prioridad?.includes("media") ? "Media" : "Baja"}
+                    <span className={`inline-flex items-center justify-center rounded-full px-2.5 py-0.5 text-xs font-semibold border ${job.priority === 1 ? "bg-red-500/10 text-red-400 border-red-500/20" : job.priority === 2 ? "bg-blue-500/10 text-blue-400 border-blue-500/20" : "bg-gray-500/10 text-gray-400 border-gray-500/20"}`}>
+                      {job.priority === 1 ? "Alta" : job.priority === 2 ? "Media" : "Baja"}
                     </span>
                   </td>
                   <td className="px-6 py-4">
-                    {(job.acepta_argentina === "si" || job.acepta_argentina === "posible") ? (
-                      <span className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold border ${job.acepta_argentina === "si" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "bg-yellow-500/10 text-yellow-400 border-yellow-500/20"}`}>
-                        🇦🇷 {job.acepta_argentina === "si" ? "Ok" : "Posible"}
+                    {(job.acceptsArgentina === "yes" || job.acceptsArgentina === "maybe") ? (
+                      <span className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold border ${job.acceptsArgentina === "yes" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "bg-yellow-500/10 text-yellow-400 border-yellow-500/20"}`}>
+                        🇦🇷 {job.acceptsArgentina === "yes" ? "Ok" : "Posible"}
                       </span>
                     ) : (
                       <span className="text-muted-foreground text-xs">-</span>
                     )}
                   </td>
                   <td className="px-6 py-4 text-muted-foreground text-xs whitespace-nowrap">
-                    {job.fecha_publicacion || job.fecha_detectada || "-"}
+                    {job.publishedAt || job.detectedAt || "-"}
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-2">
@@ -510,9 +508,9 @@ export default function JobsClientView({ initialJobs, initialKeywords, userId }:
                         <CheckCircle className="w-3.5 h-3.5" />
                       </button>
 
-                      {job.url_aplicar && (
+                      {job.applyUrl && (
                         <Link
-                          href={job.url_aplicar}
+                          href={job.applyUrl}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 text-primary transition-all duration-200 hover:bg-primary hover:text-primary-foreground text-xs font-medium border border-primary/20 hover:scale-105 active:scale-95 cursor-pointer shadow-sm"
@@ -540,14 +538,14 @@ export default function JobsClientView({ initialJobs, initialKeywords, userId }:
                 <Settings className="w-5 h-5 text-primary" />
                 Ajustes de Jobs Manager
               </h2>
-              <button 
+              <button
                 onClick={() => setIsSettingsOpen(false)}
                 className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
+
             <div className="max-h-[80vh] overflow-y-auto p-2">
               <KeywordManager keywords={initialKeywords} userId={userId} />
             </div>

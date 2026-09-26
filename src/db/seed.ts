@@ -1,7 +1,7 @@
 import * as dotenv from "dotenv";
 dotenv.config({ path: ".env.local" });
 import { db } from "./index";
-import { jobs } from "./schema";
+import { jobs, users, jobSource, roleCategory, argentinaFit, jobStatus } from "./schema";
 import fs from "fs";
 
 async function main() {
@@ -11,24 +11,42 @@ async function main() {
   console.log(`Inserting ${parsed.length} jobs...`);
   
   await db.delete(jobs);
+  await db.delete(users);
+
+  // Create a dummy user for the seed
+  const [user] = await db.insert(users).values({
+    email: "test@example.com",
+    name: "Test User"
+  }).returning();
   
   for (const item of parsed) {
     try {
+      // Map priority string "1 alta" to integer
+      let priority = 3;
+      if (item.prioridad?.includes("1")) priority = 1;
+      else if (item.prioridad?.includes("2")) priority = 2;
+
+      // Map accepts_argentina to enum
+      let acceptsAr: "yes" | "maybe" = "maybe";
+      if (item.acepta_argentina === "si") acceptsAr = "yes";
+
       await db.insert(jobs).values({
-        externalId: item.id,
-        titulo: item.titulo || "Untitled",
-        empresa: item.empresa || "Unknown",
-        empleados: item.empleados ? String(item.empleados) : null,
-        salario: item.salario ? String(item.salario) : null,
-        ubicaciones: item.ubicaciones,
-        motivo: item.motivo,
-        visa: item.visa,
-        fecha_publicacion: item.fecha_publicacion,
-        fecha_detectada: item.fecha_detectada,
-        url_aplicar: item.url_aplicar,
-        prioridad: item.prioridad,
-        acepta_argentina: item.acepta_argentina,
-        linkedin_empresa: item.linkedin_empresa,
+        userId: user.id,
+        externalId: item.id || Math.random().toString(36).substring(7),
+        title: item.titulo || "Untitled",
+        company: item.empresa || "Unknown",
+        companySize: item.empleados ? parseInt(item.empleados) : null,
+        salary: item.salario ? String(item.salario) : null,
+        locations: item.ubicaciones,
+        locationMatch: item.motivo,
+        publishedAt: item.fecha_publicacion || null,
+        applyUrl: item.url_aplicar || "https://example.com",
+        priority,
+        roleCategory: "ic",
+        acceptsArgentina: acceptsAr,
+        source: item.id?.startsWith("yc:") ? "yc" : item.id?.startsWith("ashby:") ? "ashby" : "manual",
+        companyLinkedin: item.linkedin_empresa,
+        linkedinPeopleAr: item.linkedin_people_ar,
       });
     } catch (e) {
       console.error("Error inserting job", item.id, e);
@@ -39,3 +57,4 @@ async function main() {
 }
 
 main().catch(console.error);
+

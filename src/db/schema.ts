@@ -1,56 +1,19 @@
 import {
-  pgTable,
-  serial,
-  text,
-  boolean,
-  integer,
-  timestamp,
-  pgEnum,
-  uuid,
-} from "drizzle-orm/pg-core";
+  pgTable, pgEnum, serial, integer, smallint, text, char, date,
+  timestamp, uniqueIndex, index, uuid
+} from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 
-export const applicationStatusEnum = pgEnum("application_status", [
-  "SAVED",
-  "APPLIED",
-  "INTERVIEWING",
-  "OFFER",
-  "REJECTED"
+// ---------- Tipos ----------
+export const jobStatus = pgEnum('job_status', [
+  'SAVED', 'APPLIED', 'INTERVIEWING', 'OFFER', 'REJECTED',
 ]);
-
-export const jobs = pgTable("jobs", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }),
-  
-  externalId: text("external_id"),
-  titulo: text("titulo").notNull(),
-  empresa: text("empresa").notNull(),
-  empleados: text("empleados"),
-  salario: text("salario"),
-  ubicaciones: text("ubicaciones"),
-  motivo: text("motivo"),
-  visa: text("visa"),
-  fecha_publicacion: text("fecha_publicacion"),
-  fecha_detectada: text("fecha_detectada"),
-  url_aplicar: text("url_aplicar"),
-  prioridad: text("prioridad"),
-  acepta_argentina: text("acepta_argentina"),
-  linkedin_empresa: text("linkedin_empresa"),
-  
-  description: text("description"),
-  status: applicationStatusEnum("status").default("SAVED").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
-
-export const ignoredKeywords = pgTable("ignored_keywords", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }),
-  keyword: text("keyword").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+export const roleCategory = pgEnum('role_category', ['manager', 'lead_staff', 'ic']);
+export const argentinaFit = pgEnum('argentina_fit', ['yes', 'maybe']);
+export const jobSource = pgEnum('job_source', ['yc', 'ashby', 'greenhouse', 'lever', 'manual']);
+export const companyStatus = pgEnum('company_status', ['active', 'inactive']);
 
 // --- Auth Tables ---
-
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   publicId: uuid("public_id").defaultRandom().unique().notNull(),
@@ -76,8 +39,97 @@ export const allowlist = pgTable("allowlist", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// ---------- Empresas ----------
+export const companies = pgTable('companies', {
+  id: serial('id').primaryKey(),
+  slug: text('slug').notNull(),
+  ats: jobSource('ats').notNull(),
+  name: text('name').notNull(),
+  hq: text('hq'),
+  sector: text('sector'),
+  size: integer('size'),
+  stage: text('stage'),
+  linkedinUrl: text('linkedin_url'),
+  linkedinSlug: text('linkedin_slug'),
+  employeesAr: integer('employees_ar'),
+  linkedinCheckedAt: date('linkedin_checked_at'),
+  source: text('source'),
+  status: companyStatus('status').notNull().default('active'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+}, (t) => ({
+  atsSlug: uniqueIndex('companies_ats_slug_key').on(t.ats, t.slug),
+  byStatus: index('companies_status_idx').on(t.status),
+}));
+
+// ---------- Ofertas ----------
+export const jobs = pgTable('jobs', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  externalId: text('external_id').notNull(),
+
+  // Puesto
+  title: text('title').notNull(),
+  description: text('description'),
+  applyUrl: text('apply_url').notNull(),
+  locations: text('locations'),
+  publishedAt: date('published_at'),
+  republishedAt: date('republished_at'),
+  detectedAt: date('detected_at').notNull().default(sql`CURRENT_DATE`),
+  lastSeenAt: date('last_seen_at').notNull().default(sql`CURRENT_DATE`),
+
+  // Clasificación
+  priority: smallint('priority').notNull().default(3), // 1 manager, 2 lead/staff, 3 ic
+  roleCategory: roleCategory('role_category').notNull().default('ic'),
+  acceptsArgentina: argentinaFit('accepts_argentina').notNull(),
+  locationMatch: text('location_match'),
+  source: jobSource('source').notNull(),
+
+  // Plata
+  salary: text('salary'),
+  salaryMaxK: integer('salary_max_k'),
+  salaryCurrency: char('salary_currency', { length: 3 }).default('USD'),
+
+  // Empresa
+  companyId: integer('company_id').references(() => companies.id, { onDelete: 'set null' }),
+  company: text('company').notNull(),
+  companySlug: text('company_slug'),
+  companyHq: text('company_hq'),
+  companySize: integer('company_size'),
+  companyStage: text('company_stage'),
+  companyLinkedin: text('company_linkedin'),
+  linkedinPeopleAr: text('linkedin_people_ar'),
+
+  // Estado del usuario
+  status: jobStatus('status').notNull().default('SAVED'),
+  notes: text('notes'),
+  appliedAt: timestamp('applied_at', { withTimezone: true }),
+
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+}, (t) => ({
+  userExternal: uniqueIndex('jobs_user_external_key').on(t.userId, t.externalId),
+  userCompanyTitle: uniqueIndex('jobs_user_company_title_key')
+    .on(t.userId, sql`lower(${t.company})`, sql`lower(${t.title})`),
+  byStatus: index('jobs_user_status_idx').on(t.userId, t.status),
+  byPriority: index('jobs_user_priority_idx').on(t.userId, t.priority, t.salaryMaxK),
+  byDetected: index('jobs_detected_idx').on(t.userId, t.detectedAt),
+  byCompany: index('jobs_company_idx').on(t.companyId),
+}));
+
+// ---------- Palabras clave a ignorar ----------
+export const ignoredKeywords = pgTable('ignored_keywords', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  keyword: text('keyword').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  userKeyword: uniqueIndex('ignored_keywords_user_keyword_key').on(t.userId, t.keyword),
+}));
+
 export type Job = typeof jobs.$inferSelect;
 export type NewJob = typeof jobs.$inferInsert;
+export type Company = typeof companies.$inferSelect;
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type Session = typeof sessions.$inferSelect;

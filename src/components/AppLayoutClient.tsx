@@ -26,12 +26,12 @@ export default function AppLayoutClient({ children, user }: { children: React.Re
         <div>
           <div className={`h-20 flex items-center ${isCollapsed ? 'justify-center' : 'justify-start px-6 gap-3'} border-b border-border/20 transition-all overflow-hidden whitespace-nowrap`}>
             {isCollapsed ? (
-              <img src="/logo.jpg" alt="Hunter Logo" className="w-8 h-8 rounded-md object-contain shadow-lg shadow-teal-500/20 ring-1 ring-border/50" />
+              <img src="/logo.jpg" alt="Jobs Manager Logo" className="w-8 h-8 rounded-md object-contain shadow-lg shadow-purple-500/20 ring-1 ring-border/50" />
             ) : (
               <>
-                <img src="/logo.jpg" alt="Hunter Logo" className="w-8 h-8 rounded-md object-contain shadow-lg shadow-teal-500/20 ring-1 ring-border/50 shrink-0" />
-                <h1 className="text-xl font-extrabold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-teal-400 uppercase">
-                  Hunter
+                <img src="/logo.jpg" alt="Jobs Manager Logo" className="w-8 h-8 rounded-md object-contain shadow-lg shadow-purple-500/20 ring-1 ring-border/50 shrink-0" />
+                <h1 className="text-xl font-extrabold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-500 uppercase">
+                  Jobs Manager
                 </h1>
               </>
             )}

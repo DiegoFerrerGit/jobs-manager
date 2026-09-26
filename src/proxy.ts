@@ -5,8 +5,8 @@ export default function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const token = request.cookies.get('access_token')?.value;
 
-  if (pathname.startsWith('/login')) {
-    if (token) return NextResponse.redirect(new URL('/', request.url));
+  if (pathname.startsWith('/login') || pathname.startsWith('/privacy')) {
+    if (token && pathname.startsWith('/login')) return NextResponse.redirect(new URL('/', request.url));
     return NextResponse.next();
   }
 

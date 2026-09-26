@@ -108,8 +108,12 @@ export default function TrackerClient() {
     setIsMounted(true);
     
     const handleClickOutside = () => setActiveDropdown(null);
-    document.addEventListener("pointerdown", handleClickOutside);
-    return () => document.removeEventListener("pointerdown", handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+    };
   }, []);
 
   const deleteColumn = (id: string) => {
@@ -206,7 +210,7 @@ export default function TrackerClient() {
         <div className="flex justify-between items-center mb-6 shrink-0">
           <div>
             <h1 className="text-3xl font-extrabold tracking-tight text-foreground flex items-center gap-3">
-              <span>🗃️</span> Jobs
+              <span>🗃️</span> Jobs Tracking
             </h1>
           </div>
         </div>
@@ -244,7 +248,11 @@ export default function TrackerClient() {
                     <button 
                       type="button"
                       className="cursor-pointer hover:bg-white/10 p-1.5 rounded-md transition-colors flex items-center justify-center border-0 bg-transparent"
-                      onPointerDown={(e) => { 
+                      onMouseDown={(e) => { 
+                        e.stopPropagation(); 
+                        setActiveDropdown(prev => prev === columnId ? null : columnId); 
+                      }}
+                      onTouchStart={(e) => { 
                         e.stopPropagation(); 
                         setActiveDropdown(prev => prev === columnId ? null : columnId); 
                       }}
@@ -255,13 +263,15 @@ export default function TrackerClient() {
                     {activeDropdown === columnId && (
                       <div 
                         className="absolute right-0 top-8 w-[220px] bg-[#202020] border border-[#303030] rounded-xl shadow-2xl z-50 overflow-hidden text-[13px] text-muted-foreground"
-                        onPointerDown={(e) => e.stopPropagation()}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        onTouchStart={(e) => e.stopPropagation()}
                       >
                         <div className="p-1">
                           <button 
                             type="button"
                             className="w-full text-left px-3 py-1.5 hover:bg-[#303030] rounded text-foreground transition-colors flex items-center gap-2"
-                            onPointerDown={() => deleteColumn(columnId)}
+                            onMouseDown={() => deleteColumn(columnId)}
+                            onTouchStart={() => deleteColumn(columnId)}
                           >
                             <span className="w-4 h-4 flex items-center justify-center text-lg">👁️</span>
                             Ocultar columna
@@ -269,7 +279,8 @@ export default function TrackerClient() {
                           <button 
                             type="button"
                             className="w-full text-left px-3 py-1.5 hover:bg-[#303030] rounded text-destructive hover:text-red-400 transition-colors flex items-center gap-2" 
-                            onPointerDown={() => deleteColumn(columnId)}
+                            onMouseDown={() => deleteColumn(columnId)}
+                            onTouchStart={() => deleteColumn(columnId)}
                           >
                             <span className="w-4 h-4 flex items-center justify-center text-lg">🗑️</span>
                             Eliminar columna
@@ -283,7 +294,8 @@ export default function TrackerClient() {
                               type="button"
                               key={colorKey}
                               className="w-full text-left px-3 py-1.5 hover:bg-[#303030] rounded text-foreground transition-colors flex items-center gap-2"
-                              onPointerDown={() => changeColumnColor(columnId, colorDef)}
+                              onMouseDown={() => changeColumnColor(columnId, colorDef)}
+                              onTouchStart={() => changeColumnColor(columnId, colorDef)}
                             >
                               <div className={`w-3.5 h-3.5 rounded-sm ${colorDef.badge.split(' ')[0]}`}></div>
                               {colorDef.name}

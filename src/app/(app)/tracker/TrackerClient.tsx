@@ -239,7 +239,7 @@ export default function TrackerClient() {
 
   return (
     <DragDropContext onDragEnd={onDragEnd}>
-      <div className="flex-1 p-4 md:p-8 h-screen flex flex-col overflow-hidden bg-[#101014]">
+      <div className="flex-1 p-4 md:p-8 overflow-y-auto bg-[#101014]">
         <div className="flex justify-between items-center mb-6 shrink-0">
           <div>
             <h1 className="text-3xl font-extrabold tracking-tight text-foreground flex items-center gap-3">
@@ -248,7 +248,7 @@ export default function TrackerClient() {
           </div>
         </div>
         
-        <div className="flex-1 overflow-x-auto pb-4 custom-scrollbar">
+        <div className="overflow-x-auto pb-4 custom-scrollbar">
           <Droppable droppableId="board" type="column" direction="horizontal">
             {(provided) => (
               <div 
@@ -262,7 +262,7 @@ export default function TrackerClient() {
                     <Draggable key={columnId} draggableId={columnId} index={index}>
                       {(provided, snapshot) => (
                         <div 
-                          className={`w-[280px] shrink-0 flex flex-col max-h-full rounded-xl p-2 mr-4 ${column.wrapperBg} ${snapshot.isDragging ? 'opacity-80 ring-2 ring-primary shadow-2xl' : ''}`}
+                          className={`w-[280px] shrink-0 flex flex-col rounded-xl p-2 mr-4 max-h-[600px] ${column.wrapperBg} ${snapshot.isDragging ? 'opacity-80 ring-2 ring-primary shadow-2xl' : ''}`}
                           ref={provided.innerRef}
                           {...provided.draggableProps}
                         >
@@ -338,7 +338,7 @@ export default function TrackerClient() {
                     <div
                       {...provided.droppableProps}
                       ref={provided.innerRef}
-                      className={`min-h-[10px] flex flex-col transition-colors ${snapshot.isDraggingOver ? "bg-white/5" : ""
+                      className={`min-h-[10px] flex flex-col transition-colors overflow-y-auto custom-scrollbar-v ${snapshot.isDraggingOver ? "bg-white/5" : ""
                         }`}
                     >
                       {column.jobs.map((job, index) => (
@@ -415,20 +415,43 @@ export default function TrackerClient() {
         <style dangerouslySetInnerHTML={{
           __html: `
           .custom-scrollbar::-webkit-scrollbar {
-            height: 8px;
+            height: 12px;
           }
           .custom-scrollbar::-webkit-scrollbar-track {
             background: rgba(255, 255, 255, 0.02);
-            border-radius: 4px;
+            border-radius: 6px;
           }
           .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.12);
+            border-radius: 6px;
           }
           .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+          }
+          .custom-scrollbar-v::-webkit-scrollbar {
+            width: 5px;
+          }
+          .custom-scrollbar-v::-webkit-scrollbar-track {
+            background: transparent;
+          }
+          .custom-scrollbar-v::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 3px;
+          }
+          .custom-scrollbar-v::-webkit-scrollbar-thumb:hover {
             background: rgba(255, 255, 255, 0.15);
           }
         `}} />
+
+        {/* Metrics Section */}
+        <div className="mt-10 mb-8">
+          <h2 className="text-2xl font-extrabold tracking-tight text-foreground flex items-center gap-3">
+            <span>📊</span> Metrics
+          </h2>
+          <div className="mt-4 rounded-xl border border-white/5 bg-white/[0.02] p-8 text-center text-muted-foreground/50">
+            <p className="text-sm">Próximamente: gráficos y estadísticas de tus procesos</p>
+          </div>
+        </div>
       </div>
     </DragDropContext>
   );

@@ -4,59 +4,75 @@ import { useState, useEffect } from "react";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { Plus } from "lucide-react";
 
-// Initial mock data based on the screenshot
+// Updated mock data with colors perfectly matching Notion's dark mode
 const initialColumns = {
   "people": {
     id: "people",
     title: "People / Screening",
-    color: "bg-orange-900/40 text-orange-200 border-orange-700/50",
+    badge: "bg-[#5c3b21] text-[#e0a475]",
+    button: "border-[#5c3b21] bg-[#5c3b21]/10 text-[#e0a475] hover:bg-[#5c3b21]/30",
+    columnBg: "bg-[#5c3b21]/[0.03]",
     jobs: [
-      { id: "job-1", company: "Alpaca", location: "US", role: "Director of Engineering", salary: "240.000 US$", equity: "20.000 US$" },
-      { id: "job-2", company: "Tapi", location: "Argentina", role: "Technical Manager", salary: "", equity: "" }
+      { id: "job-1", company: "Alpaca", location: "US", locationColor: "bg-[#1e5033] text-[#78d2a0]", role: "Director of Engineering", roleColor: "bg-[#4a2b6b] text-[#c18ee8]", salary: "240.000 US$", equity: "20.000 US$" },
+      { id: "job-2", company: "Tapi", location: "Argentina", locationColor: "bg-[#1a4b6b] text-[#74bde8]", role: "Technical Manager", roleColor: "bg-[#1a4b6b] text-[#74bde8]", salary: "", equity: "" }
     ]
   },
   "hiring": {
     id: "hiring",
     title: "Hiring Manager",
-    color: "bg-pink-900/40 text-pink-200 border-pink-700/50",
+    badge: "bg-[#6b2a4a] text-[#e88eb7]",
+    button: "border-[#6b2a4a] bg-[#6b2a4a]/10 text-[#e88eb7] hover:bg-[#6b2a4a]/30",
+    columnBg: "bg-[#6b2a4a]/[0.03]",
     jobs: []
   },
   "tecnica": {
     id: "tecnica",
     title: "Técnica",
-    color: "bg-purple-900/40 text-purple-200 border-purple-700/50",
+    badge: "bg-[#4a2b6b] text-[#c18ee8]",
+    button: "border-[#4a2b6b] bg-[#4a2b6b]/10 text-[#c18ee8] hover:bg-[#4a2b6b]/30",
+    columnBg: "bg-[#4a2b6b]/[0.03]",
     jobs: []
   },
   "clevel": {
     id: "clevel",
     title: "C-Level / Culture",
-    color: "bg-yellow-900/40 text-yellow-200 border-yellow-700/50",
+    badge: "bg-[#6b5a1a] text-[#e8d274]",
+    button: "border-[#6b5a1a] bg-[#6b5a1a]/10 text-[#e8d274] hover:bg-[#6b5a1a]/30",
+    columnBg: "bg-[#6b5a1a]/[0.03]",
     jobs: []
   },
   "oferta": {
     id: "oferta",
     title: "Oferta",
-    color: "bg-blue-900/40 text-blue-200 border-blue-700/50",
+    badge: "bg-[#1a4b6b] text-[#74bde8]",
+    button: "border-[#1a4b6b] bg-[#1a4b6b]/10 text-[#74bde8] hover:bg-[#1a4b6b]/30",
+    columnBg: "bg-[#1a4b6b]/[0.03]",
     jobs: []
   },
   "hold": {
     id: "hold",
     title: "Hold",
-    color: "bg-slate-800/60 text-slate-200 border-slate-600/50",
+    badge: "bg-[#3f4044] text-[#b4b5b9]",
+    button: "border-[#3f4044] bg-[#3f4044]/10 text-[#b4b5b9] hover:bg-[#3f4044]/30",
+    columnBg: "bg-[#3f4044]/[0.03]",
     jobs: [
-      { id: "job-3", company: "Katapult", location: "Colombia", role: "Head Of Engineering", salary: "96.000 US$", equity: "8000 US$" }
+      { id: "job-3", company: "Katapult", location: "Colombia", locationColor: "bg-[#5c3b21] text-[#e0a475]", role: "Head Of Engineering", roleColor: "bg-[#3f4044] text-[#b4b5b9]", salary: "96.000 US$", equity: "8000 US$" }
     ]
   },
   "aceptada": {
     id: "aceptada",
     title: "Aceptada",
-    color: "bg-emerald-900/40 text-emerald-200 border-emerald-700/50",
+    badge: "bg-[#1e5033] text-[#78d2a0]",
+    button: "border-[#1e5033] bg-[#1e5033]/10 text-[#78d2a0] hover:bg-[#1e5033]/30",
+    columnBg: "bg-[#1e5033]/[0.03]",
     jobs: []
   },
   "nocontinua": {
     id: "nocontinua",
     title: "No continuamos",
-    color: "bg-red-900/40 text-red-200 border-red-700/50",
+    badge: "bg-[#5c2323] text-[#e58282]",
+    button: "border-[#5c2323] bg-[#5c2323]/10 text-[#e58282] hover:bg-[#5c2323]/30",
+    columnBg: "bg-[#5c2323]/[0.03]",
     jobs: []
   }
 };
@@ -133,7 +149,7 @@ export default function TrackerClient() {
               <div key={columnId} className="w-[280px] shrink-0 flex flex-col max-h-full">
                 {/* Column Header */}
                 <div className="flex items-center gap-2 mb-3 px-1">
-                  <div className={`px-2 py-0.5 rounded text-xs font-semibold border ${column.color}`}>
+                  <div className={`px-2 py-0.5 rounded text-xs font-semibold ${column.badge}`}>
                     {column.title}
                   </div>
                   <span className="text-muted-foreground text-xs font-medium">{column.jobs.length}</span>
@@ -145,8 +161,8 @@ export default function TrackerClient() {
                     <div
                       {...provided.droppableProps}
                       ref={provided.innerRef}
-                      className={`flex-1 rounded-xl p-2 min-h-[100px] flex flex-col gap-2 transition-colors ${
-                        snapshot.isDraggingOver ? "bg-secondary/40" : "bg-transparent"
+                      className={`flex-1 rounded-xl p-2 min-h-[100px] flex flex-col gap-2 transition-colors ${column.columnBg} ${
+                        snapshot.isDraggingOver ? "brightness-125" : ""
                       }`}
                     >
                       {column.jobs.map((job, index) => (
@@ -156,28 +172,28 @@ export default function TrackerClient() {
                               ref={provided.innerRef}
                               {...provided.draggableProps}
                               {...provided.dragHandleProps}
-                              className={`bg-[#1c1c21] hover:bg-[#25252a] rounded-lg p-4 border border-border/40 shadow-sm cursor-grab active:cursor-grabbing transition-colors ${
+                              className={`bg-[#1e1e24] hover:bg-[#25252a] rounded-lg p-3 shadow-sm cursor-grab active:cursor-grabbing transition-colors ${
                                 snapshot.isDragging ? "ring-2 ring-primary shadow-lg" : ""
                               }`}
                               style={{ ...provided.draggableProps.style }}
                             >
-                              <h3 className="font-bold text-sm text-foreground mb-3">{job.company}</h3>
+                              <h3 className="font-bold text-sm text-foreground mb-2.5">{job.company}</h3>
                               
-                              <div className="flex flex-col gap-1.5">
+                              <div className="flex flex-col gap-1.5 items-start">
                                 {job.location && (
-                                  <span className="inline-flex w-fit bg-emerald-900/30 text-emerald-400 border border-emerald-800/50 text-[10px] px-1.5 py-0.5 rounded">
+                                  <span className={`inline-flex ${job.locationColor} text-[10px] px-1.5 py-0.5 rounded font-medium`}>
                                     {job.location}
                                   </span>
                                 )}
                                 {job.role && (
-                                  <span className="inline-flex w-fit bg-purple-900/30 text-purple-300 border border-purple-800/50 text-[10px] px-1.5 py-0.5 rounded">
+                                  <span className={`inline-flex ${job.roleColor} text-[10px] px-1.5 py-0.5 rounded font-medium`}>
                                     {job.role}
                                   </span>
                                 )}
                               </div>
                               
                               {(job.salary || job.equity) && (
-                                <div className="mt-3 flex flex-col gap-1 text-xs text-muted-foreground/80">
+                                <div className="mt-3 flex flex-col gap-0.5 text-xs text-muted-foreground/80">
                                   {job.salary && <span>{job.salary}</span>}
                                   {job.equity && <span>{job.equity}</span>}
                                 </div>
@@ -188,8 +204,8 @@ export default function TrackerClient() {
                       ))}
                       {provided.placeholder}
                       
-                      {/* Add new button */}
-                      <button className="flex items-center gap-2 text-xs text-muted-foreground/70 hover:text-foreground p-2 rounded-lg hover:bg-secondary/50 transition-colors w-full mt-1">
+                      {/* Add new button (matches column color) */}
+                      <button className={`flex items-center gap-2 text-xs p-2 rounded-lg transition-colors w-full mt-1 border ${column.button}`}>
                         <Plus className="w-3 h-3" />
                         Nueva página
                       </button>

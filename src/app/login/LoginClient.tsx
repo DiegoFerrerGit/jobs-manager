@@ -104,9 +104,10 @@ export default function LoginClient({ clientId }: { clientId: string }) {
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-purple-900/20 blur-[120px]" />
       
       <div className="glass-card max-w-md w-full p-8 rounded-3xl relative z-10">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-primary via-blue-200 to-purple-400 mb-2">
-            Jobs Manager
+        <div className="text-center mb-8 flex flex-col items-center">
+          <img src="/logo.jpg" alt="Hunter Logo" className="w-16 h-16 rounded-xl object-contain shadow-lg shadow-teal-500/20 ring-1 ring-border/50 mb-4" />
+          <h1 className="text-4xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-teal-400 mb-2">
+            Hunter
           </h1>
           <p className="text-muted-foreground">
             {mode === "login" ? "Inicia sesión para descubrir oportunidades." : "Registro en fase Beta (Requiere invitación)"}

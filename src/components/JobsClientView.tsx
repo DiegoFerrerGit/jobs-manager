@@ -538,7 +538,7 @@ export default function JobsClientView({ initialJobs, initialKeywords, userId }:
             <div className="flex justify-between items-center p-4 border-b border-border bg-secondary/20">
               <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
                 <Settings className="w-5 h-5 text-primary" />
-                Ajustes de Jobs Manager
+                Ajustes de Hunter
               </h2>
               <button 
                 onClick={() => setIsSettingsOpen(false)}

@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Jobs Manager",
+  title: "Hunter",
   description: "Descubre las mejores ofertas para roles de liderazgo en tech",
 };
 

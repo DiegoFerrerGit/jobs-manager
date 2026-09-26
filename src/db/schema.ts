@@ -42,6 +42,13 @@ export const jobs = pgTable("jobs", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+export const ignoredKeywords = pgTable("ignored_keywords", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }),
+  keyword: text("keyword").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // --- Auth Tables ---
 
 export const users = pgTable("users", {
@@ -77,3 +84,5 @@ export type Session = typeof sessions.$inferSelect;
 export type NewSession = typeof sessions.$inferInsert;
 export type Allowlist = typeof allowlist.$inferSelect;
 export type NewAllowlist = typeof allowlist.$inferInsert;
+export type IgnoredKeyword = typeof ignoredKeywords.$inferSelect;
+export type NewIgnoredKeyword = typeof ignoredKeywords.$inferInsert;

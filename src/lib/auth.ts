@@ -36,27 +36,23 @@ export async function getCurrentUser() {
   const payload = await verifyAccessToken(token);
   if (!payload) return null;
 
-  let publicId = payload.publicId as string | undefined;
-
-  // Fallback for old tokens that don't have publicId in the payload
-  if (!publicId && payload.sub) {
-    const { db } = await import("@/db");
-    const { users } = await import("@/db/schema");
-    const { eq } = await import("drizzle-orm");
-    const user = await db
-      .select({ publicId: users.publicId })
-      .from(users)
-      .where(eq(users.id, Number(payload.sub)))
-      .limit(1)
-      .then((res: any[]) => res[0]);
+  const { db } = await import("@/db");
+  const { users } = await import("@/db/schema");
+  const { eq } = await import("drizzle-orm");
+  const user = await db
+    .select({ publicId: users.publicId, picture: users.picture, name: users.name, email: users.email })
+    .from(users)
+    .where(eq(users.id, Number(payload.sub)))
+    .limit(1)
+    .then((res: any[]) => res[0]);
     
-    if (user) {
-      publicId = user.publicId;
-    }
-  }
+  if (!user) return null;
 
   return {
     ...payload,
-    publicId,
-  } as JWTPayload & { sub: number, email: string, name: string, publicId: string };
+    publicId: user.publicId,
+    picture: user.picture,
+    name: user.name || payload.name,
+    email: user.email || payload.email,
+  } as JWTPayload & { sub: number, email: string, name: string, publicId: string, picture?: string };
 }

@@ -106,7 +106,7 @@ export default function LoginClient({ clientId }: { clientId: string }) {
       <div className="glass-card max-w-md w-full p-8 rounded-3xl relative z-10">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-primary via-blue-200 to-purple-400 mb-2">
-            Jobs Hunter
+            Jobs Manager
           </h1>
           <p className="text-muted-foreground">
             {mode === "login" ? "Inicia sesión para descubrir oportunidades." : "Registro en fase Beta (Requiere invitación)"}

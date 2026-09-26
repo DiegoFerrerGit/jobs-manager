@@ -1,25 +1,76 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { Briefcase, Building2, MapPin, DollarSign, Calendar, ExternalLink, Globe2, LayoutGrid, List, SlidersHorizontal, ArrowUpDown, CheckCircle } from "lucide-react";
+import { useState, useMemo, useEffect } from "react";
+import { Briefcase, Building2, MapPin, DollarSign, Calendar, ExternalLink, Globe2, LayoutGrid, List, SlidersHorizontal, ArrowUpDown, CheckCircle, XCircle, Search, EyeOff, Eye, Settings, X } from "lucide-react";
 import Link from "next/link";
-import { Job } from "@/db/schema";
-import { toggleJobStatus } from "@/app/actions";
+import { Job, IgnoredKeyword } from "@/db/schema";
+import { toggleJobStatus, hideJob } from "@/app/actions";
+import KeywordManager from "./KeywordManager";
 
-export default function JobsClientView({ initialJobs }: { initialJobs: Job[] }) {
+export default function JobsClientView({ initialJobs, initialKeywords, userId }: { initialJobs: Job[], initialKeywords: IgnoredKeyword[], userId: number }) {
+  const [jobs, setJobs] = useState<Job[]>(initialJobs);
   const [view, setView] = useState<"grid" | "table">("grid");
-  const [sortParam, setSortParam] = useState<"date" | "salary" | "priority">("priority");
+  const [sortParam, setSortParam] = useState<"date" | "salary" | "priority" | "latam" | "employees">("priority");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [filterLatam, setFilterLatam] = useState<string>("all");
-  const [filterStatus, setFilterStatus] = useState<"unapplied" | "all" | "applied">("unapplied");
-  
+  const [filterStatus, setFilterStatus] = useState<"unapplied" | "all" | "applied" | "hidden">("unapplied");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+  useEffect(() => {
+    setJobs(initialJobs);
+  }, [initialJobs]);
+
+  const hasFiltersChanged = filterLatam !== "all" || filterStatus !== "unapplied" || sortParam !== "priority" || sortOrder !== "asc" || searchQuery !== "";
+
+  const handleClearFilters = () => {
+    setFilterLatam("all");
+    setFilterStatus("unapplied");
+    setSortParam("priority");
+    setSortOrder("asc");
+    setSearchQuery("");
+  };
+
+  const handleToggleStatus = async (id: number, currentStatus: string) => {
+    const newStatus = currentStatus === "APPLIED" ? "SAVED" : "APPLIED";
+    
+    // Optimistic update
+    setJobs(prev => prev.map(j => j.id === id ? { ...j, status: newStatus as any } : j));
+    
+    try {
+      await toggleJobStatus(id, currentStatus);
+    } catch (error) {
+      console.error(error);
+      // Revert on error
+      setJobs(prev => prev.map(j => j.id === id ? { ...j, status: currentStatus as any } : j));
+    }
+  };
+
+  const handleHide = async (id: number, currentStatus: string) => {
+    // If it's already rejected, un-hide it back to SAVED
+    const newStatus = currentStatus === "REJECTED" ? "SAVED" : "REJECTED";
+    
+    // Save previous state for reverting
+    const prevJobs = [...jobs];
+    
+    // Optimistic UI
+    setJobs(prev => prev.map(j => j.id === id ? { ...j, status: newStatus as any } : j));
+    
+    try {
+      await hideJob(id, newStatus);
+    } catch (error) {
+      console.error("Failed to hide", error);
+      setJobs(prevJobs); // Revert
+    }
+  };
+
   // Basic salary parser to extract number for sorting
   const extractSalary = (sal: string | null) => {
     if (!sal) return 0;
     const match = sal.match(/\$?\s?(\d+)[kK]?/);
     return match ? parseInt(match[1]) : 0;
   };
-  
+
   // Priority parser
   const getPriorityWeight = (pri: string | null) => {
     if (!pri) return 99;
@@ -29,20 +80,41 @@ export default function JobsClientView({ initialJobs }: { initialJobs: Job[] }) 
   };
 
   const processedJobs = useMemo(() => {
-    let result = [...initialJobs];
-    
+    let result = [...jobs];
+
+    // Exclude jobs with ignored keywords
+    if (initialKeywords && initialKeywords.length > 0) {
+      const lowerKeywords = initialKeywords.map(k => k.keyword.toLowerCase());
+      result = result.filter(j => {
+        const titleLower = j.titulo.toLowerCase();
+        return !lowerKeywords.some(kw => titleLower.includes(kw));
+      });
+    }
+
     // Filter
     if (filterLatam !== "all") {
       result = result.filter(j => j.acepta_argentina === filterLatam);
     }
-    
-    // Status Filter
+
+    // Filter by Status
     if (filterStatus === "unapplied") {
-      result = result.filter(j => j.status !== "APPLIED");
+      result = result.filter(j => j.status !== "APPLIED" && j.status !== "REJECTED");
     } else if (filterStatus === "applied") {
       result = result.filter(j => j.status === "APPLIED");
+    } else if (filterStatus === "hidden") {
+      result = result.filter(j => j.status === "REJECTED");
     }
-    
+
+    // Search Query
+    if (searchQuery.trim() !== "") {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(j => 
+        j.titulo.toLowerCase().includes(q) || 
+        j.empresa.toLowerCase().includes(q) ||
+        (j.ubicaciones && j.ubicaciones.toLowerCase().includes(q))
+      );
+    }
+
     // Sort
     result.sort((a, b) => {
       let cmp = 0;
@@ -50,6 +122,17 @@ export default function JobsClientView({ initialJobs }: { initialJobs: Job[] }) 
         cmp = extractSalary(a.salario) - extractSalary(b.salario);
       } else if (sortParam === "priority") {
         cmp = getPriorityWeight(a.prioridad) - getPriorityWeight(b.prioridad);
+      } else if (sortParam === "employees") {
+        const empA = a.empleados ? parseInt(a.empleados.replace(/\D/g, '')) || 0 : 0;
+        const empB = b.empleados ? parseInt(b.empleados.replace(/\D/g, '')) || 0 : 0;
+        cmp = empA - empB;
+      } else if (sortParam === "latam") {
+        const getLatamWeight = (val: string | null) => {
+          if (val === "si") return 3;
+          if (val === "posible") return 2;
+          return 1;
+        };
+        cmp = getLatamWeight(a.acepta_argentina) - getLatamWeight(b.acepta_argentina);
       } else {
         // Date sorting (default)
         const dateA = new Date(a.fecha_detectada || a.createdAt).getTime();
@@ -58,20 +141,56 @@ export default function JobsClientView({ initialJobs }: { initialJobs: Job[] }) 
       }
       return sortOrder === "asc" ? cmp : -cmp;
     });
-    
+
     return result;
-  }, [initialJobs, sortParam, sortOrder, filterLatam, filterStatus]);
+  }, [jobs, sortParam, sortOrder, filterLatam, filterStatus, searchQuery, initialKeywords]);
+
+  const handleHeaderSort = (param: "date" | "salary" | "priority" | "latam" | "employees") => {
+    if (sortParam === param) {
+      setSortOrder(prev => prev === "asc" ? "desc" : "asc");
+    } else {
+      setSortParam(param);
+      setSortOrder("asc");
+    }
+  };
 
   return (
     <div className="w-full">
       {/* TOOLBAR */}
-      <div className="glass-card mb-8 p-4 rounded-xl flex flex-col sm:flex-row gap-4 justify-between items-center">
+      <div className="glass-card mb-8 p-4 rounded-b-2xl rounded-t-none border-t-0 flex flex-wrap gap-4 items-center justify-between shadow-md relative z-10 -mt-1">
         
-        {/* Filters & Sort */}
-        <div className="flex flex-wrap items-center gap-3 text-sm w-full sm:w-auto">
+        {/* Left Side: Search & Filters */}
+        <div className="flex flex-wrap items-center gap-3 text-sm flex-1">
+          {/* Search */}
+          <div className="relative w-full sm:max-w-xs shrink-0">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <input 
+              type="text" 
+              placeholder="Buscar rol o empresa..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 bg-secondary/50 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder:text-muted-foreground/70 text-foreground"
+            />
+          </div>
+
+          {/* Filters & Sort */}
+          <div className="flex flex-1 sm:flex-none items-center gap-2 bg-secondary/50 px-3 py-2 rounded-lg border border-border">
+            <CheckCircle className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+            <select
+              className="bg-transparent text-foreground outline-none border-none cursor-pointer w-full"
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value as any)}
+            >
+              <option value="unapplied">Por aplicar</option>
+              <option value="all">Mostrar todas</option>
+              <option value="applied">Aplicadas</option>
+              <option value="hidden">Ocultas</option>
+            </select>
+          </div>
+          
           <div className="flex flex-1 sm:flex-none items-center gap-2 bg-secondary/50 px-3 py-2 rounded-lg border border-border">
             <SlidersHorizontal className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-            <select 
+            <select
               className="bg-transparent text-foreground outline-none border-none cursor-pointer w-full"
               value={filterLatam}
               onChange={(e) => setFilterLatam(e.target.value)}
@@ -81,23 +200,10 @@ export default function JobsClientView({ initialJobs }: { initialJobs: Job[] }) 
               <option value="posible">LATAM Posible</option>
             </select>
           </div>
-          
-          <div className="flex flex-1 sm:flex-none items-center gap-2 bg-secondary/50 px-3 py-2 rounded-lg border border-border">
-            <CheckCircle className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-            <select 
-              className="bg-transparent text-foreground outline-none border-none cursor-pointer w-full"
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value as any)}
-            >
-              <option value="unapplied">Por aplicar</option>
-              <option value="all">Mostrar todas</option>
-              <option value="applied">Aplicadas</option>
-            </select>
-          </div>
-          
+
           <div className="flex flex-1 sm:flex-none items-center gap-2 bg-secondary/50 px-3 py-2 rounded-lg border border-border">
             <ArrowUpDown className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-            <select 
+            <select
               className="bg-transparent text-foreground outline-none border-none cursor-pointer w-full"
               value={sortParam}
               onChange={(e) => setSortParam(e.target.value as any)}
@@ -105,31 +211,52 @@ export default function JobsClientView({ initialJobs }: { initialJobs: Job[] }) 
               <option value="date">Fecha</option>
               <option value="salary">Salario</option>
               <option value="priority">Prioridad</option>
+              <option value="latam">LATAM</option>
+              <option value="employees">Empleados</option>
             </select>
-            <button 
+            <button
               onClick={() => setSortOrder(prev => prev === "asc" ? "desc" : "asc")}
-              className="ml-2 hover:text-primary text-muted-foreground transition-colors font-bold px-2 py-0.5 bg-background rounded border border-border"
+              className="ml-2 hover:text-primary text-muted-foreground transition-colors font-bold px-2 py-0.5 bg-background rounded border border-border cursor-pointer"
             >
               {sortOrder === "asc" ? "Asc" : "Desc"}
             </button>
           </div>
+
+          {hasFiltersChanged && (
+            <button 
+              onClick={handleClearFilters}
+              className="flex flex-1 sm:flex-none items-center justify-center gap-1.5 px-4 py-2 rounded-lg border border-red-500/20 bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-colors text-xs font-semibold shadow-sm shrink-0"
+              title="Limpiar filtros y búsqueda"
+            >
+              <XCircle className="w-3.5 h-3.5" />
+              Limpiar
+            </button>
+          )}
         </div>
 
-        {/* View Toggles */}
-        <div className="flex items-center p-1 bg-secondary/50 rounded-lg border border-border self-end sm:self-auto">
-          <button 
+        {/* Right Side: View Toggles */}
+        <div className="flex items-center p-1 bg-secondary/50 rounded-lg border border-border shrink-0 self-start sm:self-auto">
+          <button
             onClick={() => setView("grid")}
             className={`p-2 rounded-md transition-all ${view === "grid" ? "bg-primary text-primary-foreground shadow" : "text-muted-foreground hover:text-foreground"}`}
             aria-label="Grid view"
           >
             <LayoutGrid className="w-4 h-4" />
           </button>
-          <button 
+          <button
             onClick={() => setView("table")}
             className={`p-2 rounded-md transition-all ${view === "table" ? "bg-primary text-primary-foreground shadow" : "text-muted-foreground hover:text-foreground"}`}
             aria-label="Table view"
           >
             <List className="w-4 h-4" />
+          </button>
+          <div className="w-px h-5 bg-border mx-1" />
+          <button
+            onClick={() => setIsSettingsOpen(true)}
+            className="p-2 rounded-md transition-all text-muted-foreground hover:text-foreground hover:bg-secondary"
+            title="Ajustes y Filtros N8N"
+          >
+            <Settings className="w-4 h-4" />
           </button>
         </div>
       </div>
@@ -143,41 +270,60 @@ export default function JobsClientView({ initialJobs }: { initialJobs: Job[] }) 
         // GRID VIEW
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
           {processedJobs.map((job, idx) => (
-            <div 
-              key={job.id} 
+            <div
+              key={job.id}
               className="glass-card rounded-xl p-4 hover-lift flex flex-col h-full relative group overflow-hidden animate-fade-in-up"
               style={{ animationDelay: `${idx * 40}ms` }}
             >
               <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-blue-500 to-purple-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              
+
               <div className="flex justify-between items-start mb-4">
-                <div className="flex items-center gap-1.5 flex-nowrap shrink-0 overflow-x-auto no-scrollbar max-w-[70%]">
-                  <span className={`inline-flex shrink-0 items-center justify-center rounded-full px-2.5 py-0.5 text-xs font-semibold border ${job.prioridad?.includes("alta") ? "bg-red-500/10 text-red-400 border-red-500/20" : job.prioridad?.includes("media") ? "bg-blue-500/10 text-blue-400 border-blue-500/20" : "bg-gray-500/10 text-gray-400 border-gray-500/20"}`}>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className={`inline-flex items-center justify-center rounded-full px-2 py-0.5 text-[11px] font-semibold border ${job.prioridad?.includes("alta") ? "bg-red-500/10 text-red-400 border-red-500/20" : job.prioridad?.includes("media") ? "bg-blue-500/10 text-blue-400 border-blue-500/20" : "bg-gray-500/10 text-gray-400 border-gray-500/20"}`}>
                     {job.prioridad?.includes("alta") ? "Alta" : job.prioridad?.includes("media") ? "Media" : "Baja"}
                   </span>
                   {(job.acepta_argentina === "si" || job.acepta_argentina === "posible") && (
-                    <span className={`inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold border ${job.acepta_argentina === "si" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "bg-yellow-500/10 text-yellow-400 border-yellow-500/20"}`}>
+                    <span className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-semibold border ${job.acepta_argentina === "si" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "bg-yellow-500/10 text-yellow-400 border-yellow-500/20"}`}>
                       🇦🇷 {job.acepta_argentina === "si" ? "LATAM Ok" : "Posible"}
                     </span>
                   )}
                 </div>
-                <span className="text-xs text-muted-foreground bg-secondary px-2 py-1 rounded-md font-mono shrink-0 ml-2">
-                  {job.externalId?.split(':')[0]?.toUpperCase()}
-                </span>
+                {job.externalId?.startsWith('yc:') ? (
+                  <span className="text-[11px] text-orange-500 bg-orange-500/10 border border-orange-500/20 px-2 py-0.5 rounded-md font-bold shrink-0 ml-2 shadow-sm">
+                    YCombinator
+                  </span>
+                ) : (
+                  <span className="text-[11px] text-muted-foreground bg-secondary px-2 py-1 rounded-md font-mono shrink-0 ml-2">
+                    {job.externalId?.split(':')[0]?.toUpperCase()}
+                  </span>
+                )}
               </div>
 
-              <h2 className="text-base font-bold text-foreground mb-1.5 line-clamp-2 leading-tight">
-                {job.titulo}
-              </h2>
-              
+              <div className="flex items-start justify-between gap-2 mb-1.5">
+                <h2 className={`text-base font-bold line-clamp-2 leading-tight ${job.status === "REJECTED" ? "text-muted-foreground line-through" : "text-foreground"}`}>
+                  {job.titulo}
+                </h2>
+                <button 
+                  onClick={() => handleHide(job.id, job.status)}
+                  className={`p-1.5 rounded-md transition-all shrink-0 cursor-pointer ${
+                    job.status === "REJECTED" 
+                      ? "text-primary bg-primary/10 hover:bg-primary/20 opacity-100" 
+                      : "text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-red-400 hover:bg-red-500/10"
+                  }`}
+                  title={job.status === "REJECTED" ? "Mostrar oferta" : "Ocultar oferta"}
+                >
+                  {job.status === "REJECTED" ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                </button>
+              </div>
+
               <div className="flex items-center gap-1.5 text-muted-foreground mb-3 text-xs">
                 <Building2 className="w-3.5 h-3.5 shrink-0" />
                 {job.linkedin_empresa ? (
-                  <a href={job.linkedin_empresa} target="_blank" rel="noopener noreferrer" className="font-medium text-primary/80 hover:text-primary hover:underline truncate">
+                  <a href={job.linkedin_empresa} target="_blank" rel="noopener noreferrer" className="font-semibold text-sky-400 hover:text-sky-300 hover:underline truncate">
                     {job.empresa}
                   </a>
                 ) : (
-                  <span className="font-medium text-primary/80 truncate">{job.empresa}</span>
+                  <span className="font-semibold text-sky-400 truncate">{job.empresa}</span>
                 )}
                 {job.empleados && (
                   <span className="text-[10px] px-1 py-0.5 rounded-sm bg-secondary/50 whitespace-nowrap">
@@ -195,7 +341,7 @@ export default function JobsClientView({ initialJobs }: { initialJobs: Job[] }) 
                     <span className="font-medium text-green-100">{job.salario}</span>
                   </div>
                 )}
-                
+
                 <div className="flex items-center gap-2">
                   <div className="p-1 rounded-md bg-blue-500/10 text-blue-400 shrink-0">
                     <MapPin className="w-3.5 h-3.5" />
@@ -203,13 +349,8 @@ export default function JobsClientView({ initialJobs }: { initialJobs: Job[] }) 
                   <span className="line-clamp-1 text-muted-foreground">{job.ubicaciones}</span>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <div className="p-1 rounded-md bg-purple-500/10 text-purple-400 shrink-0">
-                    <Globe2 className="w-3.5 h-3.5" />
-                  </div>
-                  <span className="line-clamp-1 text-muted-foreground">{job.motivo || job.visa || "Global"}</span>
-                </div>
-                
+
+
                 <div className="flex items-center gap-2">
                   <div className="p-1 rounded-md bg-orange-500/10 text-orange-400 shrink-0">
                     <Calendar className="w-3.5 h-3.5" />
@@ -220,18 +361,18 @@ export default function JobsClientView({ initialJobs }: { initialJobs: Job[] }) 
 
               <div className="mt-auto pt-3 border-t border-border flex justify-end items-center">
                 <div className="flex items-center gap-2">
-                  <button 
-                    onClick={() => toggleJobStatus(job.id, job.status)}
+                  <button
+                    onClick={() => handleToggleStatus(job.id, job.status)}
                     className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all duration-200 hover:scale-105 active:scale-95 border cursor-pointer shadow-sm ${job.status === "APPLIED" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20" : "bg-secondary text-muted-foreground border-transparent hover:text-foreground hover:border-border hover:bg-secondary/80"}`}
                   >
                     <CheckCircle className="w-3 h-3" />
-                    {job.status === "APPLIED" ? "Aplicada" : "Marcar"}
+                    {job.status === "APPLIED" ? "Aplicada" : "Marcar como aplicado"}
                   </button>
-                  
+
                   {job.url_aplicar && (
-                    <Link 
-                      href={job.url_aplicar} 
-                      target="_blank" 
+                    <Link
+                      href={job.url_aplicar}
+                      target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-xs font-medium transition-all duration-200 hover:bg-primary/90 hover:scale-105 active:scale-95 cursor-pointer shadow-sm"
                     >
@@ -248,35 +389,88 @@ export default function JobsClientView({ initialJobs }: { initialJobs: Job[] }) 
         // TABLE VIEW
         <div className="glass-card rounded-xl overflow-x-auto">
           <table className="w-full text-sm text-left border-collapse">
-            <thead className="text-xs text-muted-foreground uppercase bg-secondary/30 border-b border-border">
+            <thead className="text-[11px] text-muted-foreground uppercase bg-secondary/30 border-b border-border">
               <tr>
                 <th className="px-6 py-4 whitespace-nowrap">Rol / Empresa</th>
-                <th className="px-6 py-4 whitespace-nowrap">Empleados</th>
-                <th className="px-6 py-4 whitespace-nowrap">Salario</th>
+                <th
+                  className="px-6 py-4 whitespace-nowrap cursor-pointer hover:bg-secondary/50 transition-colors select-none group"
+                  onClick={() => handleHeaderSort("employees")}
+                >
+                  <div className="flex items-center gap-1">
+                    Empleados
+                    <ArrowUpDown className={`w-3 h-3 ${sortParam === 'employees' ? 'text-primary' : 'opacity-0 group-hover:opacity-50'}`} />
+                  </div>
+                </th>
+                <th
+                  className="px-6 py-4 whitespace-nowrap cursor-pointer hover:bg-secondary/50 transition-colors select-none group"
+                  onClick={() => handleHeaderSort("salary")}
+                >
+                  <div className="flex items-center gap-1">
+                    Salario
+                    <ArrowUpDown className={`w-3 h-3 ${sortParam === 'salary' ? 'text-primary' : 'opacity-0 group-hover:opacity-50'}`} />
+                  </div>
+                </th>
                 <th className="px-6 py-4 whitespace-nowrap">Ubicación</th>
-                <th className="px-6 py-4 whitespace-nowrap">Prioridad</th>
-                <th className="px-6 py-4 whitespace-nowrap">LATAM</th>
-                <th className="px-6 py-4 whitespace-nowrap">Fecha</th>
+                <th
+                  className="px-6 py-4 whitespace-nowrap cursor-pointer hover:bg-secondary/50 transition-colors select-none group"
+                  onClick={() => handleHeaderSort("priority")}
+                >
+                  <div className="flex items-center gap-1">
+                    Prioridad
+                    <ArrowUpDown className={`w-3 h-3 ${sortParam === 'priority' ? 'text-primary' : 'opacity-0 group-hover:opacity-50'}`} />
+                  </div>
+                </th>
+                <th
+                  className="px-6 py-4 whitespace-nowrap cursor-pointer hover:bg-secondary/50 transition-colors select-none group"
+                  onClick={() => handleHeaderSort("latam")}
+                >
+                  <div className="flex items-center gap-1">
+                    LATAM
+                    <ArrowUpDown className={`w-3 h-3 ${sortParam === 'latam' ? 'text-primary' : 'opacity-0 group-hover:opacity-50'}`} />
+                  </div>
+                </th>
+                <th
+                  className="px-6 py-4 whitespace-nowrap cursor-pointer hover:bg-secondary/50 transition-colors select-none group"
+                  onClick={() => handleHeaderSort("date")}
+                >
+                  <div className="flex items-center gap-1">
+                    Fecha
+                    <ArrowUpDown className={`w-3 h-3 ${sortParam === 'date' ? 'text-primary' : 'opacity-0 group-hover:opacity-50'}`} />
+                  </div>
+                </th>
                 <th className="px-6 py-4 whitespace-nowrap text-right">Acción</th>
               </tr>
             </thead>
             <tbody>
               {processedJobs.map((job, idx) => (
-                <tr 
-                  key={job.id} 
+                <tr
+                  key={job.id}
                   className="border-b border-border/50 hover:bg-secondary/20 transition-colors group animate-fade-in-up"
                   style={{ animationDelay: `${idx * 20}ms` }}
                 >
                   <td className="px-6 py-4">
-                    <p className="font-bold text-foreground text-base mb-1">{job.titulo}</p>
+                    <div className="flex items-start justify-between gap-2">
+                      <p className={`font-bold text-base mb-1 ${job.status === "REJECTED" ? "text-muted-foreground line-through" : "text-foreground"}`}>{job.titulo}</p>
+                      <button 
+                        onClick={() => handleHide(job.id, job.status)}
+                        className={`transition-all p-1.5 rounded-md cursor-pointer ${
+                          job.status === "REJECTED" 
+                            ? "text-primary hover:bg-primary/10 opacity-100" 
+                            : "text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-red-400 hover:bg-red-500/10"
+                        }`}
+                        title={job.status === "REJECTED" ? "Mostrar oferta" : "Ocultar oferta"}
+                      >
+                        {job.status === "REJECTED" ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                      </button>
+                    </div>
                     <div className="flex items-center gap-1.5 text-muted-foreground text-xs">
                       <Building2 className="w-3 h-3" />
                       {job.linkedin_empresa ? (
-                        <a href={job.linkedin_empresa} target="_blank" rel="noopener noreferrer" className="hover:text-primary hover:underline">
+                        <a href={job.linkedin_empresa} target="_blank" rel="noopener noreferrer" className="text-sky-400 font-semibold hover:text-sky-300 hover:underline">
                           {job.empresa}
                         </a>
                       ) : (
-                        <span>{job.empresa}</span>
+                        <span className="text-sky-400 font-semibold">{job.empresa}</span>
                       )}
                     </div>
                   </td>
@@ -308,18 +502,18 @@ export default function JobsClientView({ initialJobs }: { initialJobs: Job[] }) 
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-2">
-                      <button 
-                        onClick={() => toggleJobStatus(job.id, job.status)}
+                      <button
+                        onClick={() => handleToggleStatus(job.id, job.status)}
                         className={`inline-flex items-center gap-1 px-2 py-1.5 rounded-md text-xs font-medium transition-all duration-200 hover:scale-110 active:scale-95 border cursor-pointer shadow-sm ${job.status === "APPLIED" ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/20" : "text-muted-foreground border-transparent hover:text-foreground hover:bg-secondary/80"}`}
                         title={job.status === "APPLIED" ? "Deshacer" : "Marcar como aplicada"}
                       >
                         <CheckCircle className="w-3.5 h-3.5" />
                       </button>
-                      
+
                       {job.url_aplicar && (
-                        <Link 
-                          href={job.url_aplicar} 
-                          target="_blank" 
+                        <Link
+                          href={job.url_aplicar}
+                          target="_blank"
                           rel="noopener noreferrer"
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 text-primary transition-all duration-200 hover:bg-primary hover:text-primary-foreground text-xs font-medium border border-primary/20 hover:scale-105 active:scale-95 cursor-pointer shadow-sm"
                         >
@@ -333,6 +527,31 @@ export default function JobsClientView({ initialJobs }: { initialJobs: Job[] }) 
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* SETTINGS MODAL */}
+      {isSettingsOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsSettingsOpen(false)} />
+          <div className="relative w-full max-w-2xl bg-background rounded-2xl shadow-2xl border border-border overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center p-4 border-b border-border bg-secondary/20">
+              <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
+                <Settings className="w-5 h-5 text-primary" />
+                Ajustes de Jobs Manager
+              </h2>
+              <button 
+                onClick={() => setIsSettingsOpen(false)}
+                className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="max-h-[80vh] overflow-y-auto p-2">
+              <KeywordManager keywords={initialKeywords} userId={userId} />
+            </div>
+          </div>
         </div>
       )}
     </div>

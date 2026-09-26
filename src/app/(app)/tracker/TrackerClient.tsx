@@ -96,7 +96,7 @@ export default function TrackerClient() {
 
   const onDragEnd = (result: DropResult) => {
     if (!result.destination) return;
-    
+
     const { source, destination } = result;
 
     if (source.droppableId === destination.droppableId) {
@@ -104,7 +104,7 @@ export default function TrackerClient() {
       const copiedItems = [...column.jobs];
       const [removed] = copiedItems.splice(source.index, 1);
       copiedItems.splice(destination.index, 0, removed);
-      
+
       setColumns({
         ...columns,
         [source.droppableId]: {
@@ -115,13 +115,13 @@ export default function TrackerClient() {
     } else {
       const sourceCol = columns[source.droppableId as keyof typeof columns];
       const destCol = columns[destination.droppableId as keyof typeof columns];
-      
+
       const sourceItems = [...sourceCol.jobs];
       const destItems = [...destCol.jobs];
-      
+
       const [removed] = sourceItems.splice(source.index, 1);
       destItems.splice(destination.index, 0, removed);
-      
+
       setColumns({
         ...columns,
         [source.droppableId]: {
@@ -147,13 +147,13 @@ export default function TrackerClient() {
           </h1>
         </div>
       </div>
-      
+
       <DragDropContext onDragEnd={onDragEnd}>
         <div className="flex-1 overflow-x-auto pb-4 custom-scrollbar">
           <div className="flex gap-4 h-full min-w-max items-start">
             {Object.entries(columns).map(([columnId, column]) => (
               <div key={columnId} className={`w-[280px] shrink-0 flex flex-col max-h-full rounded-xl p-2 ${column.wrapperBg}`}>
-                
+
                 {/* Column Header */}
                 <div className="flex items-center justify-between mb-3 px-1 pt-1">
                   <div className="flex items-center gap-2">
@@ -167,15 +167,14 @@ export default function TrackerClient() {
                     <Plus className="w-4 h-4 cursor-pointer hover:text-muted-foreground" />
                   </div>
                 </div>
-                
+
                 <Droppable droppableId={columnId}>
                   {(provided, snapshot) => (
                     <div
                       {...provided.droppableProps}
                       ref={provided.innerRef}
-                      className={`min-h-[10px] flex flex-col transition-colors ${
-                        snapshot.isDraggingOver ? "brightness-110" : ""
-                      }`}
+                      className={`min-h-[10px] flex flex-col transition-colors ${snapshot.isDraggingOver ? "bg-white/5" : ""
+                        }`}
                     >
                       {column.jobs.map((job, index) => (
                         <Draggable key={job.id} draggableId={job.id} index={index}>
@@ -184,13 +183,12 @@ export default function TrackerClient() {
                               ref={provided.innerRef}
                               {...provided.draggableProps}
                               {...provided.dragHandleProps}
-                              className={`mb-2 rounded-xl p-3 shadow-sm cursor-grab active:cursor-grabbing transition-colors ${column.cardBg} ${column.cardHover} border border-white/5 ${
-                                snapshot.isDragging ? "ring-2 ring-primary shadow-lg" : ""
-                              }`}
+                              className={`mb-3 rounded-xl p-3 shadow-sm cursor-grab active:cursor-grabbing transition-colors ${column.cardBg} ${column.cardHover} border border-white/5 ${snapshot.isDragging ? "ring-2 ring-primary shadow-lg" : ""
+                                }`}
                               style={{ ...provided.draggableProps.style }}
                             >
                               <h3 className="font-bold text-[15px] text-foreground mb-2.5">{job.company}</h3>
-                              
+
                               <div className="flex flex-col gap-1.5 items-start">
                                 {job.location && (
                                   <span className={`inline-flex ${job.locationColor} text-[11px] px-1.5 py-0.5 rounded font-medium`}>
@@ -203,7 +201,7 @@ export default function TrackerClient() {
                                   </span>
                                 )}
                               </div>
-                              
+
                               {(job.salary || job.equity) && (
                                 <div className="mt-4 flex flex-col gap-1 text-[13px] text-foreground/80 font-medium">
                                   {job.salary && <span>{job.salary}</span>}
@@ -215,7 +213,7 @@ export default function TrackerClient() {
                         </Draggable>
                       ))}
                       {provided.placeholder}
-                      
+
                       {/* Add new button (only for the first column) */}
                       {columnId === 'people' && (
                         <button className="flex items-center gap-2 text-sm p-2 rounded-lg transition-colors w-full mt-1 text-muted-foreground/60 hover:bg-white/5 hover:text-muted-foreground">
@@ -231,8 +229,9 @@ export default function TrackerClient() {
           </div>
         </div>
       </DragDropContext>
-      
-      <style dangerouslySetInnerHTML={{__html: `
+
+      <style dangerouslySetInnerHTML={{
+        __html: `
         .custom-scrollbar::-webkit-scrollbar {
           height: 8px;
         }

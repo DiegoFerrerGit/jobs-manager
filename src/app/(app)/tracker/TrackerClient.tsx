@@ -88,6 +88,7 @@ const initialColumns = {
 
 export default function TrackerClient() {
   const [columns, setColumns] = useState(initialColumns);
+  const [columnOrder, setColumnOrder] = useState(Object.keys(initialColumns));
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
@@ -97,7 +98,15 @@ export default function TrackerClient() {
   const onDragEnd = (result: DropResult) => {
     if (!result.destination) return;
 
-    const { source, destination } = result;
+    const { source, destination, type } = result;
+
+    if (type === 'column') {
+      const newColumnOrder = Array.from(columnOrder);
+      newColumnOrder.splice(source.index, 1);
+      newColumnOrder.splice(destination.index, 0, result.draggableId);
+      setColumnOrder(newColumnOrder);
+      return;
+    }
 
     if (source.droppableId === destination.droppableId) {
       const column = columns[source.droppableId as keyof typeof columns];
@@ -150,13 +159,29 @@ export default function TrackerClient() {
         </div>
         
         <div className="flex-1 overflow-x-auto pb-4 custom-scrollbar">
-          <div className="flex gap-4 h-full min-w-max items-start">
-            {Object.entries(columns).map(([columnId, column]) => (
-              <div key={columnId} className={`w-[280px] shrink-0 flex flex-col max-h-full rounded-xl p-2 ${column.wrapperBg}`}>
-
-                {/* Column Header */}
-                <div className="flex items-center justify-between mb-3 px-1 pt-1">
-                  <div className="flex items-center gap-2">
+          <Droppable droppableId="board" type="column" direction="horizontal">
+            {(provided) => (
+              <div 
+                className="flex h-full min-w-max items-start"
+                {...provided.droppableProps}
+                ref={provided.innerRef}
+              >
+                {columnOrder.map((columnId, index) => {
+                  const column = columns[columnId as keyof typeof columns];
+                  return (
+                    <Draggable key={columnId} draggableId={columnId} index={index}>
+                      {(provided, snapshot) => (
+                        <div 
+                          className={`w-[280px] shrink-0 flex flex-col max-h-full rounded-xl p-2 mr-4 ${column.wrapperBg} ${snapshot.isDragging ? 'opacity-80 ring-2 ring-primary shadow-2xl' : ''}`}
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                        >
+                          {/* Column Header */}
+                          <div 
+                            className="flex items-center justify-between mb-3 px-1 pt-1 cursor-grab active:cursor-grabbing"
+                            {...provided.dragHandleProps}
+                          >
+                            <div className="flex items-center gap-2">
                     <div className={`px-2 py-0.5 rounded text-sm font-medium ${column.badge}`}>
                       {column.title}
                     </div>
@@ -225,8 +250,14 @@ export default function TrackerClient() {
                   )}
                 </Droppable>
               </div>
-            ))}
-          </div>
+                      )}
+                    </Draggable>
+                  );
+                })}
+                {provided.placeholder}
+              </div>
+            )}
+          </Droppable>
         </div>
         
         <style dangerouslySetInnerHTML={{

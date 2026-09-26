@@ -108,8 +108,8 @@ export default function TrackerClient() {
     setIsMounted(true);
     
     const handleClickOutside = () => setActiveDropdown(null);
-    document.addEventListener("click", handleClickOutside);
-    return () => document.removeEventListener("click", handleClickOutside);
+    document.addEventListener("pointerdown", handleClickOutside);
+    return () => document.removeEventListener("pointerdown", handleClickOutside);
   }, []);
 
   const deleteColumn = (id: string) => {
@@ -244,16 +244,10 @@ export default function TrackerClient() {
                     <button 
                       type="button"
                       className="cursor-pointer hover:bg-white/10 p-1.5 rounded-md transition-colors flex items-center justify-center border-0 bg-transparent"
-                      onMouseDown={(e) => { 
+                      onPointerDown={(e) => { 
                         e.stopPropagation(); 
-                        setActiveDropdown(activeDropdown === columnId ? null : columnId); 
+                        setActiveDropdown(prev => prev === columnId ? null : columnId); 
                       }}
-                      onTouchStart={(e) => { 
-                        e.stopPropagation(); 
-                        setActiveDropdown(activeDropdown === columnId ? null : columnId); 
-                      }}
-                      onClick={(e) => e.stopPropagation()}
-                      onPointerDown={(e) => e.stopPropagation()}
                     >
                       <span className="text-xl leading-none pb-2">...</span>
                     </button>
@@ -261,15 +255,13 @@ export default function TrackerClient() {
                     {activeDropdown === columnId && (
                       <div 
                         className="absolute right-0 top-8 w-[220px] bg-[#202020] border border-[#303030] rounded-xl shadow-2xl z-50 overflow-hidden text-[13px] text-muted-foreground"
-                        onMouseDown={(e) => e.stopPropagation()}
-                        onTouchStart={(e) => e.stopPropagation()}
-                        onClick={(e) => e.stopPropagation()}
+                        onPointerDown={(e) => e.stopPropagation()}
                       >
                         <div className="p-1">
                           <button 
                             type="button"
                             className="w-full text-left px-3 py-1.5 hover:bg-[#303030] rounded text-foreground transition-colors flex items-center gap-2"
-                            onClick={() => deleteColumn(columnId)}
+                            onPointerDown={() => deleteColumn(columnId)}
                           >
                             <span className="w-4 h-4 flex items-center justify-center text-lg">👁️</span>
                             Ocultar columna
@@ -277,7 +269,7 @@ export default function TrackerClient() {
                           <button 
                             type="button"
                             className="w-full text-left px-3 py-1.5 hover:bg-[#303030] rounded text-destructive hover:text-red-400 transition-colors flex items-center gap-2" 
-                            onClick={() => deleteColumn(columnId)}
+                            onPointerDown={() => deleteColumn(columnId)}
                           >
                             <span className="w-4 h-4 flex items-center justify-center text-lg">🗑️</span>
                             Eliminar columna
@@ -291,7 +283,7 @@ export default function TrackerClient() {
                               type="button"
                               key={colorKey}
                               className="w-full text-left px-3 py-1.5 hover:bg-[#303030] rounded text-foreground transition-colors flex items-center gap-2"
-                              onClick={() => changeColumnColor(columnId, colorDef)}
+                              onPointerDown={() => changeColumnColor(columnId, colorDef)}
                             >
                               <div className={`w-3.5 h-3.5 rounded-sm ${colorDef.badge.split(' ')[0]}`}></div>
                               {colorDef.name}

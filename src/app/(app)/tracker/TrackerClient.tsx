@@ -16,7 +16,8 @@ const initialColumns = {
     jobs: [
       { id: "job-1", company: "Alpaca", location: "US 🗽", locationColor: "bg-[#2c4a35] text-[#b4deb8]", role: "Director of Engineering", roleColor: "bg-[#443560] text-[#c9b7e3]", salary: "240.000 US$", equity: "20.000 US$" },
       { id: "job-2", company: "Tapi", location: "Argentina", locationColor: "bg-[#2b4b66] text-[#b3d3ed]", role: "Technical Manager", roleColor: "bg-[#2b4b66] text-[#b3d3ed]", salary: "120.000 US$", equity: "10.000 US$" },
-      { id: "job-3", company: "AssureSoft", location: "", locationColor: "", role: "Engineering Manager", roleColor: "bg-[#2b4b66] text-[#b3d3ed]", salary: "102.000 US$", equity: "8500 US$" }
+      { id: "job-3", company: "AssureSoft", location: "", locationColor: "", role: "Engineering Manager", roleColor: "bg-[#2b4b66] text-[#b3d3ed]", salary: "102.000 US$", equity: "8500 US$" },
+      { id: "job-5", company: "Globant", location: "Remote 🌎", locationColor: "bg-[#2c4a35] text-[#b4deb8]", role: "VP of Engineering", roleColor: "bg-[#672b49] text-[#e6c1d3]", salary: "180.000 US$", equity: "15.000 US$" }
     ]
   },
   "hiring": {

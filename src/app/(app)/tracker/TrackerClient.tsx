@@ -148,8 +148,8 @@ export default function TrackerClient() {
         </div>
       </div>
       
-      <div className="flex-1 overflow-x-auto pb-4 custom-scrollbar">
-        <DragDropContext onDragEnd={onDragEnd}>
+      <DragDropContext onDragEnd={onDragEnd}>
+        <div className="flex-1 overflow-x-auto pb-4 custom-scrollbar">
           <div className="flex gap-4 h-full min-w-max items-start">
             {Object.entries(columns).map(([columnId, column]) => (
               <div key={columnId} className={`w-[280px] shrink-0 flex flex-col max-h-full rounded-xl p-2 ${column.wrapperBg}`}>
@@ -173,7 +173,7 @@ export default function TrackerClient() {
                     <div
                       {...provided.droppableProps}
                       ref={provided.innerRef}
-                      className={`min-h-[10px] flex flex-col gap-2 transition-colors ${
+                      className={`min-h-[10px] flex flex-col transition-colors ${
                         snapshot.isDraggingOver ? "brightness-110" : ""
                       }`}
                     >
@@ -184,7 +184,7 @@ export default function TrackerClient() {
                               ref={provided.innerRef}
                               {...provided.draggableProps}
                               {...provided.dragHandleProps}
-                              className={`rounded-xl p-3 shadow-sm cursor-grab active:cursor-grabbing transition-colors ${column.cardBg} ${column.cardHover} border border-white/5 ${
+                              className={`mb-2 rounded-xl p-3 shadow-sm cursor-grab active:cursor-grabbing transition-colors ${column.cardBg} ${column.cardHover} border border-white/5 ${
                                 snapshot.isDragging ? "ring-2 ring-primary shadow-lg" : ""
                               }`}
                               style={{ ...provided.draggableProps.style }}
@@ -229,8 +229,8 @@ export default function TrackerClient() {
               </div>
             ))}
           </div>
-        </DragDropContext>
-      </div>
+        </div>
+      </DragDropContext>
       
       <style dangerouslySetInnerHTML={{__html: `
         .custom-scrollbar::-webkit-scrollbar {

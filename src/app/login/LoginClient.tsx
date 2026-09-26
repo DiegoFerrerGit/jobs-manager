@@ -131,10 +131,13 @@ export default function LoginClient({ clientId }: { clientId: string }) {
             <div id="google-button" className="h-[44px] mb-6 min-w-[200px] flex justify-center"></div>
             <button 
               onClick={() => { setMode("beta"); setError(""); setSuccess(""); }}
-              className="text-xs text-muted-foreground hover:text-primary transition-colors underline"
+              className="text-xs text-muted-foreground hover:text-primary transition-colors underline mb-4"
             >
               ¿Tienes un código beta? Habilita tu acceso.
             </button>
+            <a href="/privacy" className="text-xs text-muted-foreground/60 hover:text-primary/80 transition-colors">
+              Política de Privacidad
+            </a>
           </div>
         ) : (
           <form onSubmit={handleBetaSignup} className="flex flex-col gap-4">

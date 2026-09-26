@@ -1,0 +1,22 @@
+# Exporta los workflows de n8n y los suma al commit si cambiaron.
+# Si Docker está apagado, avisa y deja seguir.
+
+if ! docker ps >/dev/null 2>&1; then
+  echo "n8n: Docker no está corriendo, se omite el export de workflows."
+  exit 0
+fi
+
+./n8n/export.sh || { echo "n8n: falló el export, se omite."; exit 0; }
+
+CHANGED="$(git diff --name-only -- n8n/*.json)"
+
+if [ -n "$CHANGED" ]; then
+  git add n8n/*.json
+  echo ""
+  echo "n8n: se actualizaron workflows en este commit:"
+  echo "$CHANGED" | sed 's/^/  /'
+  echo ""
+  echo "  ¿El cambio afecta lo documentado? Revisá n8n/README.md:"
+  echo "  nodos nuevos o borrados · horarios · reglas de filtrado · fuentes de datos"
+  echo ""
+fi

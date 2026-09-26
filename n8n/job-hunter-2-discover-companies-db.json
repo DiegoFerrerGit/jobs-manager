@@ -1,5 +1,11 @@
 {
+  "updatedAt": "2026-09-26T21:23:08.210Z",
+  "createdAt": "2026-09-26T19:33:20.586Z",
+  "id": "u5pM2gHjqodQyg4k",
   "name": "Job Hunter 2 - Discover companies (DB)",
+  "description": null,
+  "active": true,
+  "isArchived": false,
   "nodes": [
     {
       "parameters": {},
@@ -132,6 +138,12 @@
         576
       ],
       "id": "ec366c63-13a3-4e47-91ee-930b74da59ed",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "sfAoxXg6MHwXULkj",
+          "name": "Serper"
+        }
+      },
       "disabled": true,
       "onError": "continueRegularOutput"
     },
@@ -197,7 +209,6 @@
       }
     }
   ],
-  "pinData": {},
   "connections": {
     "Run manually": {
       "main": [
@@ -320,7 +331,6 @@
       ]
     }
   },
-  "active": false,
   "settings": {
     "executionOrder": "v1",
     "binaryMode": "separate",
@@ -329,12 +339,49 @@
     "callerPolicy": "workflowsFromSameOwner",
     "availableInMCP": false
   },
-  "versionId": "ff6d6398-c22f-41c6-8043-88434ae6f936",
+  "staticData": {
+    "node:Every Monday 8am": {
+      "recurrenceRules": [
+        null
+      ],
+      "recurrenceRuleSignatures": [
+        null
+      ]
+    }
+  },
   "meta": {
-    "templateCredsSetupCompleted": true,
-    "instanceId": "c8e03284fedae7c7bb5912c0b9affd9cd6710895eb85eb9dee489290028313d5"
+    "templateCredsSetupCompleted": true
   },
   "nodeGroups": [],
-  "id": "u5pM2gHjqodQyg4k",
-  "tags": []
+  "pinData": {},
+  "versionId": "0be50c2f-e8aa-43f6-aa6a-3ed5863193d2",
+  "activeVersionId": "ff6d6398-c22f-41c6-8043-88434ae6f936",
+  "versionCounter": 24,
+  "triggerCount": 1,
+  "sourceWorkflowId": null,
+  "tags": [],
+  "shared": [
+    {
+      "updatedAt": "2026-09-26T19:33:20.587Z",
+      "createdAt": "2026-09-26T19:33:20.587Z",
+      "role": "workflow:owner",
+      "workflowId": "u5pM2gHjqodQyg4k",
+      "projectId": "iNXI5R7gWjOyxfvE",
+      "project": {
+        "updatedAt": "2026-08-30T21:59:52.951Z",
+        "createdAt": "2026-08-30T21:59:22.385Z",
+        "id": "iNXI5R7gWjOyxfvE",
+        "name": "Diego diegoferrer.educacion.local@gmail.com <diegoferrer.educacion@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "customTelemetryTags": [],
+        "creatorId": "2d8c2ad2-7b9d-46e1-a3fe-e800e3bc9896"
+      }
+    }
+  ],
+  "versionMetadata": {
+    "name": null,
+    "description": null
+  }
 }

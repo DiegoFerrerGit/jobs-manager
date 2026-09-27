@@ -13,6 +13,8 @@ export default function ManualCompanyManager({ initialCompanies }: { initialComp
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editUrl, setEditUrl] = useState("");
 
+  const [companyToDelete, setCompanyToDelete] = useState<Company | null>(null);
+
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isSubmitting) return;
@@ -47,16 +49,16 @@ export default function ManualCompanyManager({ initialCompanies }: { initialComp
     }
   };
 
-  const handleDelete = async (id: number) => {
-    if (!window.confirm("¿Seguro que quieres borrar esta empresa manual?")) {
-      return;
-    }
+  const confirmDelete = async () => {
+    if (!companyToDelete) return;
     try {
-      await deleteManualCompany(id);
-      setCompanies(companies.filter(c => c.id !== id));
+      await deleteManualCompany(companyToDelete.id);
+      setCompanies(companies.filter(c => c.id !== companyToDelete.id));
       setError(null);
     } catch (e: any) {
       setError(e.message || "Error al borrar la empresa");
+    } finally {
+      setCompanyToDelete(null);
     }
   };
 
@@ -169,7 +171,7 @@ export default function ManualCompanyManager({ initialCompanies }: { initialComp
                         <Pencil className="w-4 h-4" />
                       </button>
                       <button 
-                        onClick={() => handleDelete(company.id)}
+                        onClick={() => setCompanyToDelete(company)}
                         className="p-2 rounded-full text-muted-foreground hover:bg-red-500/10 hover:text-red-500 transition-colors"
                         title="Borrar"
                       >
@@ -190,6 +192,37 @@ export default function ManualCompanyManager({ initialCompanies }: { initialComp
           )}
         </div>
       </div>
+
+      {companyToDelete && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={() => setCompanyToDelete(null)} />
+          <div className="relative w-full max-w-sm bg-background rounded-2xl shadow-xl border border-border p-6 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-3 bg-red-500/10 text-red-500 rounded-full">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <h3 className="text-lg font-bold text-foreground">¿Borrar empresa?</h3>
+            </div>
+            <p className="text-sm text-muted-foreground mb-6">
+              Estás a punto de eliminar <strong>{companyToDelete.name}</strong>. Esta acción no se puede deshacer y dejará de buscarse.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button 
+                onClick={() => setCompanyToDelete(null)}
+                className="px-4 py-2 text-sm font-medium text-foreground bg-secondary hover:bg-secondary/80 rounded-lg transition-colors border border-border"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={confirmDelete}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors shadow-sm"
+              >
+                Borrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

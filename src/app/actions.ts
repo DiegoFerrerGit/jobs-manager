@@ -105,12 +105,14 @@ export async function addManualCompany(url: string) {
     careersUrl,
   }).returning();
 
+  revalidatePath("/ajustes");
   revalidatePath("/");
   return newCompany;
 }
 
 export async function toggleCompanyStatus(id: number, newStatus: "active" | "inactive") {
   await db.update(companies).set({ status: newStatus }).where(eq(companies.id, id));
+  revalidatePath("/ajustes");
   revalidatePath("/");
 }
 
@@ -130,7 +132,11 @@ export async function toggleFavoriteCompany(userId: number, companyName: string,
 }
 
 export async function deleteManualCompany(id: number) {
-  await db.delete(companies).where(eq(companies.id, id));
+  const result = await db.delete(companies).where(eq(companies.id, id)).returning();
+  if (result.length === 0) {
+    throw new Error("No se pudo borrar. Es posible que ya no exista.");
+  }
+  revalidatePath("/ajustes");
   revalidatePath("/");
 }
 
@@ -152,6 +158,7 @@ export async function updateManualCompany(id: number, url: string) {
     careersUrl,
   }).where(eq(companies.id, id)).returning();
 
+  revalidatePath("/ajustes");
   revalidatePath("/");
   return updatedCompany;
 }

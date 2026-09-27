@@ -48,9 +48,13 @@ export default function ManualCompanyManager({ initialCompanies }: { initialComp
   };
 
   const handleDelete = async (id: number) => {
+    if (!window.confirm("¿Seguro que quieres borrar esta empresa manual?")) {
+      return;
+    }
     try {
       await deleteManualCompany(id);
       setCompanies(companies.filter(c => c.id !== id));
+      setError(null);
     } catch (e: any) {
       setError(e.message || "Error al borrar la empresa");
     }

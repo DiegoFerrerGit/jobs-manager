@@ -2,7 +2,7 @@
 
 import { db } from "@/db";
 import { jobs, ignoredKeywords, companies } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 export async function toggleJobStatus(id: number, currentStatus: string) {
@@ -83,7 +83,7 @@ export async function addManualCompany(url: string) {
 
   // Check if exists
   const existing = await db.query.companies.findFirst({
-    where: (companies, { eq, and }) => and(eq(companies.ats, ats), eq(companies.slug, slug))
+    where: and(eq(companies.ats, ats), eq(companies.slug, slug))
   });
 
   if (existing) {

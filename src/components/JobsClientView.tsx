@@ -5,6 +5,7 @@ import { Briefcase, Building2, MapPin, DollarSign, Calendar, ExternalLink, Globe
 import Link from "next/link";
 import { Job, IgnoredKeyword, Company } from "@/db/schema";
 import { toggleJobStatus, hideJob, toggleFavoriteCompany } from "@/app/actions";
+import { filterJobsBySearch } from "@/utils/search";
 import KeywordManager from "./KeywordManager";
 import ManualCompanyManager from "./ManualCompanyManager";
 
@@ -194,12 +195,7 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialCo
 
     // Search Query
     if (searchQuery.trim() !== "") {
-      const q = searchQuery.toLowerCase();
-      result = result.filter(j =>
-        j.title.toLowerCase().includes(q) ||
-        j.company.toLowerCase().includes(q) ||
-        (j.locations && j.locations.toLowerCase().includes(q))
-      );
+      result = filterJobsBySearch(result, searchQuery);
     }
 
     // Sort

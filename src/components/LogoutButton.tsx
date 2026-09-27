@@ -26,7 +26,7 @@ export default function LogoutButton({ className, isCollapsed }: { className?: s
       title="Cerrar Sesión"
       className={`inline-flex items-center justify-center gap-2 rounded-lg text-sm font-medium transition-colors cursor-pointer disabled:opacity-50 hover:bg-red-500/10 text-red-400 ${className || 'w-full py-2 px-3 border border-transparent'}`}
     >
-      <LogOut className="w-4 h-4 shrink-0" />
+      <LogOut className="w-5 h-5 shrink-0" />
       {!isCollapsed && <span>{isLoading ? "Saliendo..." : "Cerrar Sesión"}</span>}
     </button>
   );

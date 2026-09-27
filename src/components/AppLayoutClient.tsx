@@ -64,30 +64,30 @@ export default function AppLayoutClient({ children, user }: { children: React.Re
           </nav>
         </div>
 
-        <div className={`p-4 border-t border-border/20 mt-auto transition-all ${isCollapsed ? 'items-center flex flex-col gap-4' : ''}`}>
+        <div className={`py-6 border-t border-border/20 mt-auto transition-all ${isCollapsed ? 'items-center flex flex-col gap-4' : ''}`}>
           {user && (
-            <div className={`flex items-center justify-center gap-3 mb-6 ${isCollapsed ? 'px-0' : 'px-2'}`}>
+            <div className={`flex items-center gap-3 mb-6 ${isCollapsed ? 'px-0 justify-center' : 'px-6'}`}>
               {user.picture ? (
                 /* eslint-disable-next-line @next/next/no-img-element */
-                <img src={user.picture} alt={user.name || "Avatar"} className="w-9 h-9 rounded-full object-cover shrink-0 shadow-lg shadow-green-500/10 ring-1 ring-border/50" />
+                <img src={user.picture} alt={user.name || "Avatar"} className="w-10 h-10 rounded-full object-cover shrink-0 shadow-lg shadow-green-500/10 ring-1 ring-border/50" />
               ) : (
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center shrink-0 shadow-lg shadow-green-500/20">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center shrink-0 shadow-lg shadow-green-500/20">
                   <span className="text-sm font-bold text-white">{user.name?.charAt(0) || user.email?.charAt(0)}</span>
                 </div>
               )}
               {!isCollapsed && (
                 <div className="overflow-hidden">
-                  <p className="text-sm font-bold text-foreground truncate">{user.name}</p>
+                  <p className="text-base font-bold text-foreground truncate">{user.name}</p>
                 </div>
               )}
             </div>
           )}
-          <div className={isCollapsed ? "flex justify-center" : ""}>
+          <div className={isCollapsed ? "flex justify-center" : "px-4"}>
             <LogoutButton 
               isCollapsed={isCollapsed} 
               className={isCollapsed 
                 ? 'p-2 w-10 h-10 rounded-lg flex items-center justify-center hover:bg-red-500/10 text-red-400 transition-colors' 
-                : 'w-full py-2 px-2 flex items-center gap-3 rounded-lg hover:bg-red-500/10 text-red-400 font-bold transition-colors text-sm'} 
+                : 'w-full py-2.5 px-2 flex items-center justify-start gap-3 rounded-lg hover:bg-red-500/10 text-red-400 font-bold transition-colors text-base'} 
             />
           </div>
         </div>

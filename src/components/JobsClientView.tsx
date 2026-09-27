@@ -150,8 +150,33 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialCo
   // Basic salary parser to extract number for sorting
   const extractSalary = (sal: string | null) => {
     if (!sal) return 0;
-    const match = sal.match(/\$?\s?(\d+)[kK]?/);
-    return match ? parseInt(match[1]) : 0;
+    const match = sal.match(/\$?\s?(\d+)([kK])?/);
+    let num = match ? parseInt(match[1]) : 0;
+    if (match && match[2]) {
+      num = num * 1000; // It's in K format (e.g. 230K -> 230000)
+    }
+    if (sal.includes('USD/mes')) {
+       return num * 12; // Convert monthly to annual absolute (e.g. 4000 -> 48000)
+    }
+    return num;
+  };
+
+  const formatDisplaySalary = (sal: string | null) => {
+    if (!sal) return sal;
+    if (sal.includes('USD/mes')) {
+      const regex = /\$?(\d+)(?:\s*-\s*\$?(\d+))?\s*USD\/mes/;
+      const match = sal.match(regex);
+      if (match) {
+        const min = parseInt(match[1]) * 12;
+        const max = match[2] ? parseInt(match[2]) * 12 : null;
+        if (max) {
+          return `$${Math.round(min / 1000)}K - $${Math.round(max / 1000)}K`;
+        } else {
+          return `$${Math.round(min / 1000)}K`;
+        }
+      }
+    }
+    return sal;
   };
 
   // Priority parser
@@ -469,7 +494,7 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialCo
                     <div className="p-1 rounded-md bg-green-500/10 text-green-400 shrink-0">
                       <DollarSign className="w-3.5 h-3.5" />
                     </div>
-                    <span className="font-medium text-green-100">{job.salary}</span>
+                    <span className="font-medium text-green-100">{formatDisplaySalary(job.salary)}</span>
                   </div>
                 )}
 
@@ -629,7 +654,7 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialCo
                     {job.companySize ? job.companySize : "-"}
                   </td>
                   <td className="px-6 py-4 font-medium text-green-400">
-                    {job.salary || "-"}
+                    {formatDisplaySalary(job.salary) || "-"}
                   </td>
                   <td className="px-6 py-4 max-w-[200px] truncate text-muted-foreground" title={job.locations || ""}>
                     {job.locations}

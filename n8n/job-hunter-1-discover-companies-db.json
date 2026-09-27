@@ -1,0 +1,387 @@
+{
+  "updatedAt": "2026-09-27T19:14:13.310Z",
+  "createdAt": "2026-09-26T19:33:20.586Z",
+  "id": "u5pM2gHjqodQyg4k",
+  "name": "Job Hunter 1 - Discover companies (DB)",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {},
+      "name": "Run manually",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        576,
+        336
+      ],
+      "id": "34ebd329-142f-4aa0-bd10-fba7f0f9624c"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtDay": [
+                1
+              ],
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "name": "Every Monday 8am",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        576,
+        576
+      ],
+      "id": "de14301a-7840-48cd-b6b7-160c9c90e78f"
+    },
+    {
+      "parameters": {
+        "url": "https://raw.githubusercontent.com/Feashliaa/job-board-data/main/data/chunks/jobs_manifest.json",
+        "options": {}
+      },
+      "name": "Read aggregator index",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        816,
+        336
+      ],
+      "id": "69099f7a-5e06-412f-80d0-ba0025764b3e"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Arma la lista de bloques a procesar a partir del índice del agregador\nconst base = 'https://raw.githubusercontent.com/Feashliaa/job-board-data/main/data/chunks/';\n\nlet d = $input.first().json;\nif (typeof d.data === 'string') d = JSON.parse(d.data);   // viene como texto\nelse if (d.data) d = d.data;\n\nreturn (d.chunks || []).map(nombre => ({ json: { url: base + nombre } }));"
+      },
+      "name": "Chunk list",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1056,
+        336
+      ],
+      "id": "5f0c64b0-7126-4a15-9c23-75624a305616"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "ZQRyPt1sQAAvBGBn",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/ZQRyPt1sQAAvBGBn",
+          "cachedResultName": "Job Hunter 1 - Process chunk (sub)"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "each",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "name": "Process each chunk",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1296,
+        336
+      ],
+      "alwaysOutputData": true,
+      "id": "85ff09b1-ec33-49c3-863b-a6f67f2a9f44"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Búsquedas de Google para encontrar empresas que el agregador no tenga\nconst sitios = ['jobs.ashbyhq.com', 'job-boards.greenhouse.io', 'boards.greenhouse.io', 'jobs.lever.co'];\nconst terminos = ['\"Buenos Aires\"', '\"Argentina\"', '\"LATAM\"', '\"Latin America\"'];\nconst out = [];\nfor (const s of sitios) for (const t of terminos) out.push({ json: { q: `site:${s} ${t} engineer` } });\nreturn out;\n"
+      },
+      "name": "Google queries",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        816,
+        576
+      ],
+      "id": "1fa4c534-ec08-48d3-af20-a24971df4c98"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://google.serper.dev/search",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ q: $json.q, num: 100 }) }}",
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 2
+            }
+          }
+        }
+      },
+      "name": "Search Google (Serper)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1056,
+        576
+      ],
+      "id": "ec366c63-13a3-4e47-91ee-930b74da59ed",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "sfAoxXg6MHwXULkj",
+          "name": "Serper"
+        }
+      },
+      "disabled": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Saca empresas (slug + plataforma) de los links que devolvió Google\nconst SLUG = {\n  ashby: /jobs\\.ashbyhq\\.com\\/([^\\/?#]+)/i,\n  greenhouse: /greenhouse\\.io\\/([^\\/?#&]+)/i,\n  lever: /jobs\\.lever\\.co\\/([^\\/?#]+)/i,\n};\nconst found = {};\nfor (const item of $input.all()) {\n  for (const r of item.json?.organic || []) {\n    for (const [ats, re] of Object.entries(SLUG)) {\n      const m = re.exec(r.link || '');\n      if (!m || m[1] === 'embed') continue;\n      const k = `${ats}|${m[1].toLowerCase()}`;\n      found[k] ||= { ats, slug: m[1], company: m[1], hq: '', latam_jobs: 1, is_recruiter: false, source: 'google' };\n    }\n  }\n}\nreturn Object.values(found).map(c => ({ json: c }));\n"
+      },
+      "name": "Companies from Google",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1296,
+        576
+      ],
+      "alwaysOutputData": true,
+      "id": "bfa4203c-98cf-4f8a-bfcf-788461c4dc41"
+    },
+    {
+      "parameters": {},
+      "name": "Merge discoveries",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        1536,
+        464
+      ],
+      "id": "da0daff1-1730-4077-8e7f-7f1a0fe16151"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Arma una sola consulta con las empresas descubiertas.\n// Los datos viajan como parámetro JSON ($1). La base ignora las repetidas.\nconst AGENCIES = new Set(['truelogic','olsson','caylent','arionkoder','encora','encora10','nttdatausa','redbee','solvd','jobgether','launchpadtechnologiesinc','nimblegravity','dept','resilientco','santex','factored','devsavant','particle41llc','appnovation','eleks','lokainc','lokajobs','atmosera','bluecoding','telus-digital','toptal','valtech','admios','neoris','techstars57','exadelinc','externaljobboards','onhires','space44','zartis','massive-rocket','applydigital','go-nimbly','rehire','g2i','fluxon','robotsandpencils','webstacks','doitintl','inflect','interviewengineering','muttdata','silver','latamcent','empirical','precisionmedicinegroup','pfm','powerdigitalmarketing','extenteamcareers','applytoaktos','correlationone','squad','emilabs','globant','bairesdev','endava','epam','softtek','turing','andela','agent']);\nconst LOOKS_LIKE_AGENCY = /consult|staffing|talent|recruit|outsourc|nearshore|jobboard|careers$|jobs$/i;\nconst nice = s => String(s).replace(/[-_]+/g, ' ').replace(/\\b\\w/g, ch => ch.toUpperCase());\n\nconst acc = {};\nfor (const it of $input.all()) {\n  const c = it.json;\n  if (!c.slug || !c.ats) continue;\n  const k = `${c.ats.toLowerCase()}|${c.slug.toLowerCase()}`;\n  const a = acc[k] ||= { ...c, latam_jobs: 0, is_recruiter: false };\n  a.latam_jobs += c.latam_jobs || 0;\n  a.is_recruiter = a.is_recruiter || c.is_recruiter;\n  if (!a.hq && c.hq) a.hq = c.hq;\n}\n\nconst rows = Object.values(acc).map(c => {\n  // en Workday el slug es \"empresa/sitio\": solo importa la empresa\n  const slug = c.slug.toLowerCase().split('/')[0];\n  const agency = AGENCIES.has(slug) || c.is_recruiter || LOOKS_LIKE_AGENCY.test(slug);\n  return {\n    slug: c.slug,\n    ats: c.ats,\n    name: nice(c.company || c.slug),\n    hq: c.hq || null,\n    careers_url: c.careers_url || null,\n    source: c.source || null,\n    status: agency ? 'inactive' : 'active',\n  };\n});\n\nconst sql = `\nINSERT INTO companies (slug, ats, name, hq, careers_url, source, status)\nSELECT v.slug, v.ats::job_source, v.name, v.hq, v.careers_url, v.source, v.status::company_status\nFROM jsonb_to_recordset($1::jsonb) AS v(\n  slug text, ats text, name text, hq text, careers_url text, source text, status text\n)\nON CONFLICT (ats, slug) DO UPDATE SET\n  hq = COALESCE(companies.hq, EXCLUDED.hq),\n  careers_url = COALESCE(companies.careers_url, EXCLUDED.careers_url)\nRETURNING (xmax = 0) AS inserted, slug, ats`;\n\nreturn [{ json: { sql, params: JSON.stringify(rows), rows: rows.length } }];"
+      },
+      "name": "Build companies SQL",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1776,
+        464
+      ],
+      "id": "81990e8b-c2df-4e7b-8235-a1450bd41717"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "{{ $json.sql }}",
+        "options": {
+          "queryReplacement": "={{ $json.params }}"
+        }
+      },
+      "name": "Save companies",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        2016,
+        464
+      ],
+      "id": "2e67a25f-d86b-43c1-a596-20bb03f57146",
+      "credentials": {
+        "postgres": {
+          "id": "5Ggn116ONj0zb4KN",
+          "name": "Jobs Manager Account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Run manually": {
+      "main": [
+        [
+          {
+            "node": "Read aggregator index",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Google queries",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every Monday 8am": {
+      "main": [
+        [
+          {
+            "node": "Read aggregator index",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Google queries",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read aggregator index": {
+      "main": [
+        [
+          {
+            "node": "Chunk list",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chunk list": {
+      "main": [
+        [
+          {
+            "node": "Process each chunk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process each chunk": {
+      "main": [
+        [
+          {
+            "node": "Merge discoveries",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google queries": {
+      "main": [
+        [
+          {
+            "node": "Search Google (Serper)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Google (Serper)": {
+      "main": [
+        [
+          {
+            "node": "Companies from Google",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Companies from Google": {
+      "main": [
+        [
+          {
+            "node": "Merge discoveries",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge discoveries": {
+      "main": [
+        [
+          {
+            "node": "Build companies SQL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build companies SQL": {
+      "main": [
+        [
+          {
+            "node": "Save companies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "timezone": "America/Argentina/Buenos_Aires",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "staticData": {
+    "node:Every Monday 8am": {
+      "recurrenceRules": [
+        null
+      ],
+      "recurrenceRuleSignatures": [
+        null
+      ]
+    }
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "nodeGroups": [],
+  "pinData": {},
+  "versionId": "52e04d61-4534-437e-ae8d-9c6943068ef1",
+  "activeVersionId": "52e04d61-4534-437e-ae8d-9c6943068ef1",
+  "versionCounter": 26,
+  "triggerCount": 1,
+  "sourceWorkflowId": null,
+  "tags": [],
+  "shared": [
+    {
+      "updatedAt": "2026-09-26T19:33:20.587Z",
+      "createdAt": "2026-09-26T19:33:20.587Z",
+      "role": "workflow:owner",
+      "workflowId": "u5pM2gHjqodQyg4k",
+      "projectId": "iNXI5R7gWjOyxfvE",
+      "project": {
+        "updatedAt": "2026-08-30T21:59:52.951Z",
+        "createdAt": "2026-08-30T21:59:22.385Z",
+        "id": "iNXI5R7gWjOyxfvE",
+        "name": "Diego diegoferrer.educacion.local@gmail.com <diegoferrer.educacion@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "customTelemetryTags": [],
+        "creatorId": "2d8c2ad2-7b9d-46e1-a3fe-e800e3bc9896"
+      }
+    }
+  ],
+  "versionMetadata": {
+    "name": "version 2.0",
+    "description": ""
+  }
+}

@@ -138,6 +138,13 @@ export const favoriteCompanies = pgTable('favorite_companies', {
   userCompany: uniqueIndex('favorite_companies_user_company_key').on(t.userId, sql`lower(${t.companyName})`),
 }));
 
+export const userCvs = pgTable("user_cvs", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }).unique(),
+  content: text("content").notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+});
+
 export type Job = typeof jobs.$inferSelect;
 export type NewJob = typeof jobs.$inferInsert;
 export type Company = typeof companies.$inferSelect;
@@ -151,3 +158,5 @@ export type IgnoredKeyword = typeof ignoredKeywords.$inferSelect;
 export type NewIgnoredKeyword = typeof ignoredKeywords.$inferInsert;
 export type FavoriteCompany = typeof favoriteCompanies.$inferSelect;
 export type NewFavoriteCompany = typeof favoriteCompanies.$inferInsert;
+export type UserCv = typeof userCvs.$inferSelect;
+export type NewUserCv = typeof userCvs.$inferInsert;

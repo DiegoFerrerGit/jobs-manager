@@ -12,8 +12,18 @@ export async function getCvCode() {
     throw new Error("Unauthorized");
   }
 
-  const cv = await db.select().from(userCvs).where(eq(userCvs.userId, user.id)).limit(1);
-  return cv.length > 0 ? cv[0].content : null;
+  try {
+    const result = await db.execute(
+      sql`SELECT content FROM user_cvs WHERE user_id = ${user.id} LIMIT 1`
+    );
+    if (result.rows && result.rows.length > 0) {
+      return (result.rows[0] as any).content as string;
+    }
+    return null;
+  } catch (err) {
+    console.error("Error reading CV from DB:", err);
+    return null; // Fallback to default code if error
+  }
 }
 
 export async function saveCvCode(content: string) {

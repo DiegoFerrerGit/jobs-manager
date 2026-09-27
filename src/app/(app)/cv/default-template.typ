@@ -17,7 +17,7 @@
 #v(-35pt)
 #align(center)[
   #set text(
-    font: "Liberation Sans",
+    font: "PT Serif",
     fill: dark,
     top-edge: "bounds",
     bottom-edge: "bounds",
@@ -35,7 +35,7 @@
   ]
   #text(size: 10pt, fill: dark)[ | ]
   #link("mailto:diegoferrer.jobs@gmail.com")[
-    #text(size: 10pt, fill: dark)[diegoferrer.jobs\\@gmail.com]
+    #text(size: 10pt, fill: dark)[diegoferrer.jobs\@gmail.com]
   ]
   #text(size: 10pt, fill: dark)[ | Argentina]
 ]

@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
 
     // Compile the typst file
     // We use the node_modules/.bin/typst wrapper
-    return new Promise((resolve) => {
+    return new Promise<NextResponse>((resolve) => {
       exec(
         `npx typst compile "${typstFile}" "${pdfFile}"`,
         async (error, stdout, stderr) => {

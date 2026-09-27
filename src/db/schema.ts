@@ -78,6 +78,7 @@ export const jobs = pgTable('jobs', {
   republishedAt: date('republished_at'),
   detectedAt: date('detected_at').notNull().default(sql`CURRENT_DATE`),
   lastSeenAt: date('last_seen_at').notNull().default(sql`CURRENT_DATE`),
+  closedAt: date('closed_at'),
 
   // Clasificación
   priority: smallint('priority').notNull().default(3), // 1 manager, 2 lead/staff, 3 ic

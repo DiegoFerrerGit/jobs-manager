@@ -12,7 +12,7 @@ export async function getCvCode() {
     throw new Error("Unauthorized");
   }
 
-  const cv = await db.select().from(userCvs).where(eq(userCvs.userId, Number(user.id))).limit(1);
+  const cv = await db.select().from(userCvs).where(eq(userCvs.userId, Number(user.sub))).limit(1);
   return cv.length > 0 ? cv[0].content : null;
 }
 
@@ -23,7 +23,7 @@ export async function saveCvCode(content: string) {
   }
 
   await db.insert(userCvs)
-    .values({ userId: Number(user.id), content })
+    .values({ userId: Number(user.sub), content })
     .onConflictDoUpdate({
       target: userCvs.userId,
       set: { content, updatedAt: new Date() }

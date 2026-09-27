@@ -10,7 +10,7 @@ export const jobStatus = pgEnum('job_status', [
 ]);
 export const roleCategory = pgEnum('role_category', ['manager', 'lead_staff', 'ic']);
 export const argentinaFit = pgEnum('argentina_fit', ['yes', 'maybe']);
-export const jobSource = pgEnum('job_source', ['yc', 'ashby', 'greenhouse', 'lever', 'manual', 'teamtailor', 'workday', 'oracle', 'custom']);
+export const jobSource = pgEnum('job_source', ['yc', 'ashby', 'greenhouse', 'lever', 'manual', 'teamtailor', 'workday', 'oracle', 'workable', 'custom']);
 export const companyStatus = pgEnum('company_status', ['active', 'inactive']);
 
 // --- Auth Tables ---

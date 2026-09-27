@@ -69,6 +69,12 @@ function parseCareersUrl(url: string) {
     const match = cleanUrl.match(/\/sites\/([^\/]+)/);
     const site = match ? match[1] : '';
     slug = site ? `${company}/${site}` : company;
+  } else if (cleanUrl.startsWith('apply.workable.com/')) {
+    ats = 'workable';
+    slug = cleanUrl.replace('apply.workable.com/', '').split('/')[0];
+  } else if (cleanUrl.includes('.workable.com') && cleanUrl.split('.workable.com')[0].replace(/^www\./, '') !== 'apply') {
+    ats = 'workable';
+    slug = cleanUrl.split('.workable.com')[0].replace(/^www\./, '');
   } else {
     ats = 'custom';
     const host = cleanUrl.split('/')[0];

@@ -398,7 +398,7 @@
   "nodeGroups": [],
   "pinData": {},
   "versionId": "c5826295-b068-4822-8d0a-31892e74d191",
-  "activeVersionId": "9c20ecf7-9e1d-4126-bde7-bc045a369a99",
+  "activeVersionId": "c5826295-b068-4822-8d0a-31892e74d191",
   "versionCounter": 89,
   "triggerCount": 1,
   "sourceWorkflowId": null,
@@ -424,7 +424,7 @@
     }
   ],
   "versionMetadata": {
-    "name": null,
-    "description": null
+    "name": "3.5",
+    "description": ""
   }
 }

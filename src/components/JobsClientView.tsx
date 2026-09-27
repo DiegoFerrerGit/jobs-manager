@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { Briefcase, Building2, MapPin, DollarSign, Calendar, ExternalLink, Globe2, LayoutGrid, List, SlidersHorizontal, ArrowUpDown, CheckCircle, XCircle, Search, EyeOff, Eye, Settings, X, Star } from "lucide-react";
+import { Briefcase, Building2, MapPin, DollarSign, Calendar, ExternalLink, Globe2, LayoutGrid, List, SlidersHorizontal, ArrowUpDown, CheckCircle, XCircle, Search, EyeOff, Eye, Settings, X, Star, Info } from "lucide-react";
 import Link from "next/link";
 import { Job, IgnoredKeyword, Company } from "@/db/schema";
 import { toggleJobStatus, hideJob, toggleFavoriteCompany } from "@/app/actions";
@@ -68,6 +68,7 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialCo
   const [filterCompany, setFilterCompany] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isPriorityInfoOpen, setIsPriorityInfoOpen] = useState(false);
 
   useEffect(() => {
     setJobs(initialJobs);
@@ -421,6 +422,14 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialCo
           >
             <Settings className="w-4 h-4" />
           </button>
+          <div className="w-px h-5 bg-border mx-1" />
+          <button
+            onClick={() => setIsPriorityInfoOpen(true)}
+            className="p-2 rounded-md transition-all text-muted-foreground hover:text-foreground hover:bg-secondary"
+            title="Info de Prioridades"
+          >
+            <Info className="w-4 h-4" />
+          </button>
         </div>
       </div>
 
@@ -742,6 +751,57 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialCo
             <div className="max-h-[80vh] overflow-y-auto p-2">
               <KeywordManager keywords={initialKeywords} userId={userId} />
               <ManualCompanyManager initialCompanies={initialCompanies} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* PRIORITY INFO MODAL */}
+      {isPriorityInfoOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsPriorityInfoOpen(false)} />
+          <div className="relative w-full max-w-lg bg-background rounded-2xl shadow-2xl border border-border overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center p-4 border-b border-border bg-secondary/20">
+              <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
+                <Info className="w-5 h-5 text-primary" />
+                Niveles de Prioridad
+              </h2>
+              <button
+                onClick={() => setIsPriorityInfoOpen(false)}
+                className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 text-sm text-muted-foreground space-y-4">
+              <p>Es la <strong>categoría de seniority del puesto</strong>, deducida del título. No tiene nada que ver con qué tan buena es la oferta.</p>
+              
+              <div className="space-y-3 mt-4">
+                <div className="flex flex-col gap-1 p-3 rounded-lg bg-secondary/30 border border-border/50">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center justify-center rounded-full px-2 py-0.5 text-[11px] font-semibold border bg-red-500/10 text-red-400 border-red-500/20">Alta</span>
+                    <span className="font-mono text-xs text-muted-foreground bg-black/20 px-1 rounded">manager</span>
+                  </div>
+                  <p className="text-foreground text-sm">manager, head of, director, VP, CTO</p>
+                </div>
+                
+                <div className="flex flex-col gap-1 p-3 rounded-lg bg-secondary/30 border border-border/50">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center justify-center rounded-full px-2 py-0.5 text-[11px] font-semibold border bg-blue-500/10 text-blue-400 border-blue-500/20">Media</span>
+                    <span className="font-mono text-xs text-muted-foreground bg-black/20 px-1 rounded">lead_staff</span>
+                  </div>
+                  <p className="text-foreground text-sm">lead, staff, principal, founding, forward deployed, product engineer</p>
+                </div>
+                
+                <div className="flex flex-col gap-1 p-3 rounded-lg bg-secondary/30 border border-border/50">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center justify-center rounded-full px-2 py-0.5 text-[11px] font-semibold border bg-gray-500/10 text-gray-400 border-gray-500/20">Baja</span>
+                    <span className="font-mono text-xs text-muted-foreground bg-black/20 px-1 rounded">ic</span>
+                  </div>
+                  <p className="text-foreground text-sm">todo lo demás</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>

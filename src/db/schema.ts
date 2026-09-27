@@ -128,6 +128,15 @@ export const ignoredKeywords = pgTable('ignored_keywords', {
   userKeyword: uniqueIndex('ignored_keywords_user_keyword_key').on(t.userId, t.keyword),
 }));
 
+export const favoriteCompanies = pgTable('favorite_companies', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  companyName: text('company_name').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  userCompany: uniqueIndex('favorite_companies_user_company_key').on(t.userId, sql`lower(${t.companyName})`),
+}));
+
 export type Job = typeof jobs.$inferSelect;
 export type NewJob = typeof jobs.$inferInsert;
 export type Company = typeof companies.$inferSelect;
@@ -139,3 +148,5 @@ export type Allowlist = typeof allowlist.$inferSelect;
 export type NewAllowlist = typeof allowlist.$inferInsert;
 export type IgnoredKeyword = typeof ignoredKeywords.$inferSelect;
 export type NewIgnoredKeyword = typeof ignoredKeywords.$inferInsert;
+export type FavoriteCompany = typeof favoriteCompanies.$inferSelect;
+export type NewFavoriteCompany = typeof favoriteCompanies.$inferInsert;

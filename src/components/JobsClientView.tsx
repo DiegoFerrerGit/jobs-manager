@@ -1,13 +1,12 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { Briefcase, Building2, MapPin, DollarSign, Calendar, ExternalLink, Globe2, LayoutGrid, List, SlidersHorizontal, ArrowUpDown, CheckCircle, XCircle, Search, EyeOff, Eye, Settings, X } from "lucide-react";
+import { Briefcase, Building2, MapPin, DollarSign, Calendar, ExternalLink, Globe2, LayoutGrid, List, SlidersHorizontal, ArrowUpDown, CheckCircle, XCircle, Search, EyeOff, Eye, Settings, X, Star } from "lucide-react";
 import Link from "next/link";
-import { Job, IgnoredKeyword } from "@/db/schema";
-import { toggleJobStatus, hideJob } from "@/app/actions";
+import { Job, IgnoredKeyword, Company } from "@/db/schema";
+import { toggleJobStatus, hideJob, toggleFavoriteCompany } from "@/app/actions";
 import KeywordManager from "./KeywordManager";
 import ManualCompanyManager from "./ManualCompanyManager";
-import { Company } from "@/db/schema";
 
 const getSourceBadge = (source: string | null | undefined, externalId: string | null | undefined) => {
   const src = source || (externalId ? externalId.split(':')[0] : null);
@@ -50,13 +49,16 @@ const getSourceBadge = (source: string | null | undefined, externalId: string | 
   );
 };
 
-export default function JobsClientView({ initialJobs, initialKeywords, initialCompanies, userId }: { initialJobs: Job[], initialKeywords: IgnoredKeyword[], initialCompanies: Company[], userId: number }) {
+export default function JobsClientView({ initialJobs, initialKeywords, initialCompanies, initialFavoriteCompanies, userId }: { initialJobs: Job[], initialKeywords: IgnoredKeyword[], initialCompanies: Company[], initialFavoriteCompanies: string[], userId: number }) {
   const [jobs, setJobs] = useState<Job[]>(initialJobs);
+  const [favoriteCompanies, setFavoriteCompanies] = useState<Set<string>>(new Set(initialFavoriteCompanies || []));
   const [view, setView] = useState<"grid" | "table">("grid");
   const [sortParam, setSortParam] = useState<"date" | "salary" | "priority" | "latam" | "employees">("priority");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [filterLatam, setFilterLatam] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<"unapplied" | "all" | "applied" | "hidden">("unapplied");
+  const [filterCompany, setFilterCompany] = useState<string>("all");
+  const [filterFavoritesOnly, setFilterFavoritesOnly] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
@@ -64,7 +66,7 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialCo
     setJobs(initialJobs);
   }, [initialJobs]);
 
-  const hasFiltersChanged = filterLatam !== "all" || filterStatus !== "unapplied" || sortParam !== "priority" || sortOrder !== "asc" || searchQuery !== "";
+  const hasFiltersChanged = filterLatam !== "all" || filterStatus !== "unapplied" || sortParam !== "priority" || sortOrder !== "asc" || searchQuery !== "" || filterCompany !== "all" || filterFavoritesOnly;
 
   const handleClearFilters = () => {
     setFilterLatam("all");
@@ -72,7 +74,39 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialCo
     setSortParam("priority");
     setSortOrder("asc");
     setSearchQuery("");
+    setFilterCompany("all");
+    setFilterFavoritesOnly(false);
   };
+
+  const handleToggleFavoriteCompany = async (companyName: string) => {
+    if (!userId) return;
+    const isCurrentlyFav = favoriteCompanies.has(companyName);
+    const newFavs = new Set(favoriteCompanies);
+    if (isCurrentlyFav) {
+      newFavs.delete(companyName);
+    } else {
+      newFavs.add(companyName);
+    }
+    setFavoriteCompanies(newFavs);
+    try {
+      await toggleFavoriteCompany(userId, companyName, !isCurrentlyFav);
+    } catch (e) {
+      console.error("Failed to toggle favorite company", e);
+      // Revert on error
+      setFavoriteCompanies(favoriteCompanies);
+    }
+  };
+
+  const companyOptions = useMemo(() => {
+    const uniqueCompanies = Array.from(new Set(jobs.map(j => j.company))).filter(Boolean);
+    return uniqueCompanies.sort((a, b) => {
+      const aFav = favoriteCompanies.has(a);
+      const bFav = favoriteCompanies.has(b);
+      if (aFav && !bFav) return -1;
+      if (!aFav && bFav) return 1;
+      return a.localeCompare(b);
+    });
+  }, [jobs, favoriteCompanies]);
 
   const handleToggleStatus = async (id: number, currentStatus: string) => {
     const newStatus = currentStatus === "APPLIED" ? "SAVED" : "APPLIED";
@@ -148,6 +182,16 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialCo
       result = result.filter(j => j.status === "REJECTED");
     }
 
+    // Filter by Company
+    if (filterCompany !== "all") {
+      result = result.filter(j => j.company === filterCompany);
+    }
+
+    // Filter Favorites Only
+    if (filterFavoritesOnly) {
+      result = result.filter(j => favoriteCompanies.has(j.company));
+    }
+
     // Search Query
     if (searchQuery.trim() !== "") {
       const q = searchQuery.toLowerCase();
@@ -186,7 +230,7 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialCo
     });
 
     return result;
-  }, [jobs, sortParam, sortOrder, filterLatam, filterStatus, searchQuery, initialKeywords]);
+  }, [jobs, sortParam, sortOrder, filterLatam, filterStatus, filterCompany, filterFavoritesOnly, searchQuery, initialKeywords, favoriteCompanies]);
 
   const handleHeaderSort = (param: "date" | "salary" | "priority" | "latam" | "employees") => {
     if (sortParam === param) {
@@ -264,6 +308,30 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialCo
               {sortOrder === "asc" ? "Asc" : "Desc"}
             </button>
           </div>
+
+          <div className="flex flex-1 sm:flex-none items-center gap-2 bg-secondary/50 px-3 py-2 rounded-lg border border-border">
+            <Building2 className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+            <select
+              className="bg-transparent text-foreground outline-none border-none cursor-pointer w-full max-w-[150px] truncate"
+              value={filterCompany}
+              onChange={(e) => setFilterCompany(e.target.value)}
+            >
+              <option value="all">Todas las empresas</option>
+              {companyOptions.map(c => (
+                <option key={c} value={c}>{favoriteCompanies.has(c) ? "⭐ " : ""}{c}</option>
+              ))}
+            </select>
+          </div>
+
+          <button
+            onClick={() => setFilterFavoritesOnly(!filterFavoritesOnly)}
+            className={`flex flex-1 sm:flex-none items-center justify-center gap-2 px-3 py-2 rounded-lg border transition-colors text-sm font-medium cursor-pointer ${filterFavoritesOnly ? 'bg-yellow-500/10 border-yellow-500/50 text-yellow-500' : 'bg-secondary/50 border-border text-muted-foreground hover:bg-secondary'}`}
+            title="Mostrar solo ofertas de empresas favoritas"
+          >
+            <Star className={`w-4 h-4 ${filterFavoritesOnly ? 'fill-yellow-500' : ''}`} />
+            {filterFavoritesOnly ? "Favoritos" : "Favoritos"}
+          </button>
+
 
           {hasFiltersChanged && (
             <button
@@ -359,7 +427,13 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialCo
               </div>
 
               <div className="flex flex-wrap items-center gap-1.5 text-muted-foreground mb-3 text-xs">
-                <Building2 className="w-3.5 h-3.5 shrink-0" />
+                <button
+                  onClick={() => handleToggleFavoriteCompany(job.company)}
+                  className="p-0.5 rounded-sm hover:bg-secondary transition-colors"
+                  title="Marcar empresa como favorita"
+                >
+                  <Star className={`w-3.5 h-3.5 ${favoriteCompanies.has(job.company) ? "fill-yellow-500 text-yellow-500" : "text-muted-foreground/70 hover:text-yellow-500"}`} />
+                </button>
                 {job.companyLinkedin ? (
                   <a href={job.companyLinkedin} target="_blank" rel="noopener noreferrer" className="font-semibold text-sky-400 hover:text-sky-300 hover:underline">
                     {job.company}
@@ -511,7 +585,13 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialCo
                       </button>
                     </div>
                     <div className="flex flex-wrap items-center gap-1.5 text-muted-foreground text-xs">
-                      <Building2 className="w-3 h-3 shrink-0" />
+                      <button
+                        onClick={() => handleToggleFavoriteCompany(job.company)}
+                        className="p-0.5 rounded-sm hover:bg-secondary transition-colors"
+                        title="Marcar empresa como favorita"
+                      >
+                        <Star className={`w-3.5 h-3.5 ${favoriteCompanies.has(job.company) ? "fill-yellow-500 text-yellow-500" : "text-muted-foreground/70 hover:text-yellow-500"}`} />
+                      </button>
                       {job.companyLinkedin ? (
                         <a href={job.companyLinkedin} target="_blank" rel="noopener noreferrer" className="text-sky-400 font-semibold hover:text-sky-300 hover:underline">
                           {job.company}

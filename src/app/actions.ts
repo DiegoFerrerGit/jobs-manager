@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/db";
-import { jobs, ignoredKeywords, companies } from "@/db/schema";
+import { jobs, ignoredKeywords, companies, favoriteCompanies } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
@@ -105,5 +105,20 @@ export async function addManualCompany(url: string) {
 
 export async function toggleCompanyStatus(id: number, newStatus: "active" | "inactive") {
   await db.update(companies).set({ status: newStatus }).where(eq(companies.id, id));
+  revalidatePath("/");
+}
+
+export async function toggleFavoriteCompany(userId: number, companyName: string, isFavorite: boolean) {
+  if (isFavorite) {
+    // Add to favorites
+    await db.insert(favoriteCompanies).values({
+      userId,
+      companyName,
+    }).onConflictDoNothing(); // Because of unique index
+  } else {
+    // Remove from favorites
+    await db.delete(favoriteCompanies)
+      .where(and(eq(favoriteCompanies.userId, userId), eq(favoriteCompanies.companyName, companyName)));
+  }
   revalidatePath("/");
 }

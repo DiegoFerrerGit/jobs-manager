@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
     // Nuevo Access Token
     const accessToken = await signAccessToken({ sub: user.id, email: user.email, name: user.name });
 
-    const response = NextResponse.json({ success: true, user: { email: user.email, name: user.name } });
+    const response = NextResponse.json({ success: true, user: { email: user.email, name: user.name }, accessToken });
     
     // --- Set Cookies ---
     const isSecure = process.env.COOKIE_SECURE === "true";

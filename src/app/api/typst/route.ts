@@ -24,10 +24,10 @@ export async function POST(req: NextRequest) {
     await fs.writeFile(typstFile, code, "utf8");
 
     // Compile the typst file
-    // We use the node_modules/.bin/typst wrapper
+    // In Vercel, the default npm cache dir is read-only, so we point it to /tmp
     return new Promise<NextResponse>((resolve) => {
       exec(
-        `npx typst compile "${typstFile}" "${pdfFile}"`,
+        `npm_config_cache=/tmp/.npm npx --yes typst compile "${typstFile}" "${pdfFile}"`,
         async (error, stdout, stderr) => {
           if (error) {
             // Read any compilation errors

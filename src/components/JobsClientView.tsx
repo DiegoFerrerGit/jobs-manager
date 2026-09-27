@@ -163,19 +163,27 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialCo
 
   const formatDisplaySalary = (sal: string | null) => {
     if (!sal) return sal;
-    if (sal.includes('USD/mes')) {
-      const regex = /\$?(\d+)(?:\s*-\s*\$?(\d+))?\s*USD\/mes/;
-      const match = sal.match(regex);
-      if (match) {
-        const min = parseInt(match[1]) * 12;
-        const max = match[2] ? parseInt(match[2]) * 12 : null;
-        if (max) {
+    
+    // Check if it's a monthly salary (common in LATAM boards like GetOnBoard)
+    if (sal.toLowerCase().includes('mes') || sal.toLowerCase().includes('monthly')) {
+      // Extract all numbers
+      const numbers = sal.match(/\d+(?:[.,]\d+)?/g);
+      
+      if (numbers && numbers.length > 0) {
+        // Clean and parse numbers (handling possible commas like 4,000)
+        const parsedNums = numbers.map(n => parseInt(n.replace(/[,.]/g, '')));
+        
+        if (parsedNums.length >= 2) {
+          const min = parsedNums[0] * 12;
+          const max = parsedNums[1] * 12;
           return `$${Math.round(min / 1000)}K - $${Math.round(max / 1000)}K`;
-        } else {
+        } else if (parsedNums.length === 1) {
+          const min = parsedNums[0] * 12;
           return `$${Math.round(min / 1000)}K`;
         }
       }
     }
+    
     return sal;
   };
 

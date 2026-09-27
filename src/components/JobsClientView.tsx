@@ -164,6 +164,8 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialCo
   const formatDisplaySalary = (sal: string | null) => {
     if (!sal) return sal;
     
+    let formatted = sal;
+    
     // Check if it's a monthly salary (common in LATAM boards like GetOnBoard)
     if (sal.toLowerCase().includes('mes') || sal.toLowerCase().includes('monthly')) {
       // Extract all numbers
@@ -176,15 +178,20 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialCo
         if (parsedNums.length >= 2) {
           const min = parsedNums[0] * 12;
           const max = parsedNums[1] * 12;
-          return `$${Math.round(min / 1000)}K - $${Math.round(max / 1000)}K`;
+          formatted = `$${Math.round(min / 1000)}K - $${Math.round(max / 1000)}K`;
         } else if (parsedNums.length === 1) {
           const min = parsedNums[0] * 12;
-          return `$${Math.round(min / 1000)}K`;
+          formatted = `$${Math.round(min / 1000)}K`;
         }
       }
     }
     
-    return sal;
+    // Add " - Annual" suffix to explicitly clarify all amounts
+    if (!formatted.toLowerCase().includes('annual') && !formatted.toLowerCase().includes('anual')) {
+      return `${formatted} - Annual`;
+    }
+    
+    return formatted;
   };
 
   // Priority parser

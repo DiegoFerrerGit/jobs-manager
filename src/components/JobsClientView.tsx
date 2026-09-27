@@ -6,7 +6,8 @@ import Link from "next/link";
 import { Job, IgnoredKeyword } from "@/db/schema";
 import { toggleJobStatus, hideJob } from "@/app/actions";
 import KeywordManager from "./KeywordManager";
-
+import ManualCompanyManager from "./ManualCompanyManager";
+import { Company } from "@/db/schema";
 
 const getSourceBadge = (source: string | null | undefined, externalId: string | null | undefined) => {
   const src = source || (externalId ? externalId.split(':')[0] : null);
@@ -49,7 +50,7 @@ const getSourceBadge = (source: string | null | undefined, externalId: string | 
   );
 };
 
-export default function JobsClientView({ initialJobs, initialKeywords, userId }: { initialJobs: Job[], initialKeywords: IgnoredKeyword[], userId: number }) {
+export default function JobsClientView({ initialJobs, initialKeywords, initialCompanies, userId }: { initialJobs: Job[], initialKeywords: IgnoredKeyword[], initialCompanies: Company[], userId: number }) {
   const [jobs, setJobs] = useState<Job[]>(initialJobs);
   const [view, setView] = useState<"grid" | "table">("grid");
   const [sortParam, setSortParam] = useState<"date" | "salary" | "priority" | "latam" | "employees">("priority");
@@ -602,6 +603,7 @@ export default function JobsClientView({ initialJobs, initialKeywords, userId }:
 
             <div className="max-h-[80vh] overflow-y-auto p-2">
               <KeywordManager keywords={initialKeywords} userId={userId} />
+              <ManualCompanyManager initialCompanies={initialCompanies} />
             </div>
           </div>
         </div>

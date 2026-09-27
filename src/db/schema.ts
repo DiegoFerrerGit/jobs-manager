@@ -10,7 +10,7 @@ export const jobStatus = pgEnum('job_status', [
 ]);
 export const roleCategory = pgEnum('role_category', ['manager', 'lead_staff', 'ic']);
 export const argentinaFit = pgEnum('argentina_fit', ['yes', 'maybe']);
-export const jobSource = pgEnum('job_source', ['yc', 'ashby', 'greenhouse', 'lever', 'manual']);
+export const jobSource = pgEnum('job_source', ['yc', 'ashby', 'greenhouse', 'lever', 'manual', 'teamtailor', 'workday', 'oracle', 'custom']);
 export const companyStatus = pgEnum('company_status', ['active', 'inactive']);
 
 // --- Auth Tables ---
@@ -55,6 +55,7 @@ export const companies = pgTable('companies', {
   linkedinCheckedAt: date('linkedin_checked_at'),
   source: text('source'),
   status: companyStatus('status').notNull().default('active'),
+  careersUrl: text('careers_url'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 }, (t) => ({

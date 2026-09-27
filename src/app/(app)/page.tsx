@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { jobs, ignoredKeywords } from "@/db/schema";
+import { jobs, ignoredKeywords, companies } from "@/db/schema";
 import { desc, eq } from "drizzle-orm";
 import JobsClientView from "@/components/JobsClientView";
 import { getCurrentUser } from "@/lib/auth";
@@ -17,6 +17,11 @@ export default async function Home() {
     .from(ignoredKeywords)
     .where(eq(ignoredKeywords.userId, user.sub))
     .orderBy(desc(ignoredKeywords.createdAt)) : [];
+
+  const manualCompanies = await db.select()
+    .from(companies)
+    .where(eq(companies.source, 'manual'))
+    .orderBy(desc(companies.createdAt));
 
   return (
     <div className="min-h-screen relative selection:bg-primary/30 p-4 sm:p-6 lg:p-8">
@@ -51,7 +56,7 @@ export default async function Home() {
           </div>
         </div>
 
-        <JobsClientView initialJobs={jobsList} initialKeywords={keywords} userId={user?.sub || 0} />
+        <JobsClientView initialJobs={jobsList} initialKeywords={keywords} initialCompanies={manualCompanies} userId={user?.sub || 0} />
       </div>
     </div>
   )

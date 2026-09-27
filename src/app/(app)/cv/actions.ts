@@ -3,7 +3,7 @@
 import { db } from "@/db";
 import { userCvs } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth";
-import { eq, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 export async function getCvCode() {
@@ -12,18 +12,8 @@ export async function getCvCode() {
     throw new Error("Unauthorized");
   }
 
-  try {
-    const result = await db.execute(
-      sql`SELECT content FROM user_cvs WHERE user_id = ${user.id} LIMIT 1`
-    );
-    if (result.rows && result.rows.length > 0) {
-      return (result.rows[0] as any).content as string;
-    }
-    return null;
-  } catch (err) {
-    console.error("Error reading CV from DB:", err);
-    return null; // Fallback to default code if error
-  }
+  const cv = await db.select().from(userCvs).where(eq(userCvs.userId, user.id)).limit(1);
+  return cv.length > 0 ? cv[0].content : null;
 }
 
 export async function saveCvCode(content: string) {
@@ -32,20 +22,12 @@ export async function saveCvCode(content: string) {
     throw new Error("Unauthorized");
   }
 
-  try {
-    // We use raw SQL execution to bypass any Drizzle schema mapping issues that might be failing silently
-    await db.execute(
-      sql`
-        INSERT INTO user_cvs (user_id, content) 
-        VALUES (${user.id}, ${content})
-        ON CONFLICT (user_id) 
-        DO UPDATE SET content = ${content}, updated_at = NOW()
-      `
-    );
-  } catch (err: any) {
-    console.error("DB UPSERT FAILED:", err);
-    throw err;
-  }
+  await db.insert(userCvs)
+    .values({ userId: user.id, content })
+    .onConflictDoUpdate({
+      target: userCvs.userId,
+      set: { content, updatedAt: new Date() }
+    });
 
   revalidatePath("/cv");
   return { success: true };

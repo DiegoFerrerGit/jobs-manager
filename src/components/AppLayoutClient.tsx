@@ -66,7 +66,7 @@ export default function AppLayoutClient({ children, user }: { children: React.Re
 
         <div className={`p-4 border-t border-border/20 mt-auto transition-all ${isCollapsed ? 'items-center flex flex-col gap-4' : ''}`}>
           {user && (
-            <div className={`flex items-center gap-3 mb-6 ${isCollapsed ? 'px-0 justify-center' : 'px-2'}`}>
+            <div className={`flex items-center justify-center gap-3 mb-6 ${isCollapsed ? 'px-0' : 'px-2'}`}>
               {user.picture ? (
                 /* eslint-disable-next-line @next/next/no-img-element */
                 <img src={user.picture} alt={user.name || "Avatar"} className="w-9 h-9 rounded-full object-cover shrink-0 shadow-lg shadow-green-500/10 ring-1 ring-border/50" />

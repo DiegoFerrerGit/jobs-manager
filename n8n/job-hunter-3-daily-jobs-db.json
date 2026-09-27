@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-09-27T18:56:41.051Z",
+  "updatedAt": "2026-09-27T18:58:32.370Z",
   "createdAt": "2026-09-26T19:42:16.898Z",
   "id": "fy5nReKHsAB0hPiF",
   "name": "Job Hunter 3 - Daily jobs (DB)",
@@ -226,6 +226,28 @@
           "name": "Jobs Manager Account"
         }
       }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE jobs\nSET closed_at = CURRENT_DATE\nWHERE closed_at IS NULL\n  AND last_seen_at < CURRENT_DATE - INTERVAL '7 days'",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        2096,
+        -96
+      ],
+      "id": "799dfef6-e958-4fe9-874e-551f9558788e",
+      "name": "Mark Closed",
+      "executeOnce": true,
+      "credentials": {
+        "postgres": {
+          "id": "5Ggn116ONj0zb4KN",
+          "name": "Jobs Manager Account"
+        }
+      }
     }
   ],
   "connections": {
@@ -370,6 +392,17 @@
           }
         ]
       ]
+    },
+    "Save jobs": {
+      "main": [
+        [
+          {
+            "node": "Mark Closed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "settings": {
@@ -397,9 +430,9 @@
   },
   "nodeGroups": [],
   "pinData": {},
-  "versionId": "d92c30af-ee0b-4fc2-baa6-9486ef19ed6f",
+  "versionId": "f45affba-7265-4164-98fe-1e55fc650d2b",
   "activeVersionId": "c5826295-b068-4822-8d0a-31892e74d191",
-  "versionCounter": 102,
+  "versionCounter": 106,
   "triggerCount": 1,
   "sourceWorkflowId": null,
   "tags": [],

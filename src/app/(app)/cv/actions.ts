@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { userCvs } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth";
 import { eq } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
 
 export async function getCvCode() {
   const user = await getCurrentUser();
@@ -32,14 +33,18 @@ export async function saveCvCode(content: string) {
     try {
       await db.insert(userCvs).values({ userId: user.id, content });
     } catch (err: any) {
-      // In case of a race condition where another request just inserted it, 
-      // the insert might fail with a unique constraint error. We can safely ignore it 
-      // or run update again, but usually ignoring is fine for a CV code debounce.
-      await db.update(userCvs)
-        .set({ content, updatedAt: new Date() })
-        .where(eq(userCvs.userId, user.id));
+      console.error("DB INSERT FAILED:", err);
+      try {
+        await db.update(userCvs)
+          .set({ content, updatedAt: new Date() })
+          .where(eq(userCvs.userId, user.id));
+      } catch (updateErr: any) {
+        console.error("DB FALLBACK UPDATE FAILED:", updateErr);
+        throw err; // Actually throw to client so the button doesn't hide
+      }
     }
   }
 
+  revalidatePath("/cv");
   return { success: true };
 }

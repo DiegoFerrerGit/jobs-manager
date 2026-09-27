@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-09-27T00:51:16.558Z",
+  "updatedAt": "2026-09-27T01:57:19.888Z",
   "createdAt": "2026-09-26T19:42:16.898Z",
   "id": "fy5nReKHsAB0hPiF",
   "name": "Job Hunter 3 - Daily jobs (DB)",
@@ -7,17 +7,6 @@
   "active": true,
   "isArchived": false,
   "nodes": [
-    {
-      "parameters": {},
-      "name": "Run manually",
-      "type": "n8n-nodes-base.manualTrigger",
-      "typeVersion": 1,
-      "position": [
-        80,
-        -64
-      ],
-      "id": "c57b2922-8ee6-40b7-ad36-7be75b7f1905"
-    },
     {
       "parameters": {
         "rule": {
@@ -36,30 +25,9 @@
       "typeVersion": 1.2,
       "position": [
         80,
-        128
+        -96
       ],
       "id": "15ae2f3a-8e4d-400e-91fe-be6ce5aa074c"
-    },
-    {
-      "parameters": {
-        "operation": "executeQuery",
-        "query": "SELECT id FROM users ORDER BY id LIMIT 1",
-        "options": {}
-      },
-      "name": "Get user",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.6,
-      "position": [
-        304,
-        32
-      ],
-      "id": "6c04b95a-da7c-44f4-bf60-11cdcff21d70",
-      "credentials": {
-        "postgres": {
-          "id": "5Ggn116ONj0zb4KN",
-          "name": "Jobs Manager Account"
-        }
-      }
     },
     {
       "parameters": {
@@ -71,8 +39,8 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        752,
-        -64
+        528,
+        -192
       ],
       "alwaysOutputData": true,
       "id": "51f8632f-9ed6-496e-aae8-06644dbe21ee",
@@ -103,8 +71,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        976,
-        -64
+        752,
+        -96
       ],
       "id": "abb81915-9fae-4879-a61c-b5db057b4b1b"
     },
@@ -116,8 +84,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1200,
-        -64
+        976,
+        -96
       ],
       "alwaysOutputData": true,
       "id": "147e1a93-9aac-4971-92c2-c0ba6b903156"
@@ -131,8 +99,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        976,
-        128
+        752,
+        96
       ],
       "id": "28a3cd50-bc87-4f0e-93c2-d1ccb9f4ff3e"
     },
@@ -144,20 +112,22 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1200,
-        128
+        976,
+        96
       ],
       "alwaysOutputData": true,
       "id": "42a4f95c-ec59-4fc1-aae5-ccc2934eee5f"
     },
     {
-      "parameters": {},
+      "parameters": {
+        "numberInputs": 3
+      },
       "name": "Merge sources",
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3,
       "position": [
-        1424,
-        32
+        1200,
+        -112
       ],
       "id": "9c7534a5-a700-4b7a-8978-e8a94495a248"
     },
@@ -169,8 +139,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1872,
-        32
+        1648,
+        -96
       ],
       "id": "edbe92da-43fc-431b-bf69-6be9e0b4650d"
     },
@@ -186,8 +156,8 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        2096,
-        32
+        1872,
+        -96
       ],
       "id": "3495d189-a5b4-4568-b4c3-3e6f1d7d7f99",
       "credentials": {
@@ -199,52 +169,66 @@
     },
     {
       "parameters": {
+        "jsCode": "// Descarta las ofertas cuyo título contenga alguna palabra de ignored_keywords\nlet raw = $('Get user').first().json.ignored_keywords || [];\n// Postgres puede devolver el array como texto: \"{qa,junior}\"\nif (typeof raw === 'string') raw = raw.replace(/^\\{|\\}$/g, '').split(',');\n\nconst words = raw.map(w => String(w).replace(/^\"|\"$/g, '').trim().toLowerCase()).filter(Boolean);\n\nif (!words.length) return $input.all();\n\nconst esc = w => w.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&');\nconst re = new RegExp(`(^|[^a-z0-9])(${words.map(esc).join('|')})([^a-z0-9]|$)`, 'i');\n\nreturn $input.all().filter(item => !re.test(String(item.json.title || '')));"
+      },
+      "name": "Filter ignored",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1424,
+        -96
+      ],
+      "id": "13f76506-d74e-4813-ad68-c9e5f94110ae"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Trae las ofertas crudas de las empresas que publican en Workday.\n// Su API es POST y pagina de a 20, por eso no entra en el nodo HTTP común.\n// Las empresas se consultan en paralelo, de a tandas, para que no tarde tanto.\nconst SEARCH_TERMS = ['engineer', 'developer', 'architect'];\nconst PAGE_SIZE = 20;      // Workday devuelve vacío si se pide más de 20\nconst MAX_PAGES = 3;       // tope por término: 60 ofertas\nconst CONCURRENCY = 6;     // empresas en paralelo\n\nconst http = (opts) => this.helpers.httpRequest(opts);\n\n// teladoc.wd503.myworkdayjobs.com/teladochealth_is_hiring\n//   → https://teladoc.wd503.myworkdayjobs.com/wday/cxs/teladoc/teladochealth_is_hiring/jobs\nfunction wdEndpoint(careersUrl) {\n  const clean = String(careersUrl || '').replace(/^https?:\\/\\//, '').replace(/\\/+$/, '');\n  const parts = clean.split('/');\n  const host = parts.shift();\n  if (!host || !parts.length) return null;\n  const tenant = host.split('.')[0];\n  const site = parts[parts.length - 1];\n  if (!tenant || !site) return null;\n  return {\n    api: `https://${host}/wday/cxs/${tenant}/${site}/jobs`,\n    jobBase: `https://${host}/${parts.join('/')}`,\n  };\n}\n\nasync function pagesFor(api, term) {\n  const found = [];\n  for (let page = 0; page < MAX_PAGES; page++) {\n    let res;\n    try {\n      res = await http({\n        method: 'POST',\n        url: api,\n        json: true,\n        headers: { Accept: 'application/json', 'Content-Type': 'application/json' },\n        body: { appliedFacets: {}, limit: PAGE_SIZE, offset: page * PAGE_SIZE, searchText: term },\n      });\n    } catch (e) {\n      break; // empresa que no responde: se saltea\n    }\n    const list = res?.jobPostings || [];\n    found.push(...list);\n    if (list.length < PAGE_SIZE) break;\n  }\n  return found;\n}\n\nasync function fetchCompany(c) {\n  const ep = wdEndpoint(c.careers_url);\n  if (!ep) return [];\n  const porTermino = await Promise.all(SEARCH_TERMS.map(t => pagesFor(ep.api, t)));\n  const vistos = new Map();\n  for (const lista of porTermino) {\n    for (const j of lista) if (j.externalPath) vistos.set(j.externalPath, j);\n  }\n  return [...vistos.values()].map(j => ({ json: { company: c, jobBase: ep.jobBase, job: j } }));\n}\n\nconst empresas = $('Read Companies').all()\n  .map(i => i.json)\n  .filter(c => (c.ats || '').toLowerCase() === 'workday' && c.careers_url);\n\nconst out = [];\nfor (let i = 0; i < empresas.length; i += CONCURRENCY) {\n  const tanda = await Promise.all(empresas.slice(i, i + CONCURRENCY).map(fetchCompany));\n  for (const r of tanda) out.push(...r);\n}\n\nreturn out;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        752,
+        -288
+      ],
+      "id": "1fc921dd-de34-42cb-826b-f00904a20171",
+      "name": "Fetch Workday"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ---- Reglas compartidas (iguales a Filter ATS) ----\nconst IS_ENGINEERING = /engineer|engineering|developer|\\bsre\\b|devops|architect|tech lead|forward deployed|machine learning|\\bml\\b|\\bcto\\b|head of eng|vp.*eng/i;\nconst EXCLUDE = /recruit|talent|sales(?! engineer)|account exec|marketing|designer|legal|finance|intern/i;\nconst ARGENTINA = /argentin|buenos aires/i;\nconst LATAM = /latam|latin america|south america|\\bamericas\\b/i;\nconst GLOBAL = /\\b(anywhere|worldwide|global)\\b/i;\nconst REMOTE_ONLY = /^(remote|remoto|fully remote)$/i;\nconst US_ONLY = /(must|need to|required to)\\s+(be\\s+)?(based|located|live|reside)[^.]{0,40}(united states|u\\.s\\.|\\busa\\b)|(authorized|authorization|eligible)\\s+to\\s+work\\s+in\\s+the\\s+(united states|u\\.s\\.)|u\\.s\\.\\s+(citizen|work authorization)|citizen\\/visa only/i;\nconst MANAGER = /manager|head of|director|\\bvp\\b|vice president|\\bcto\\b/i;\nconst LEAD = /lead|staff|principal|forward deployed|product engineer|founding/i;\nconst LATAM_COUNTRY = /\\b(argentin|brazil|brasil|colombia|chile|uruguay|peru|paraguay|bolivia|ecuador|(?<!new )mexico|costa rica|panama|guatemala)\\b|\\b(ARG|BRA|COL|CHL|URY|PER|MEX|CRI)\\b/i;\n// \"AR\" también es Arkansas: solo cuenta como Argentina si hay otro país de la región\nconst OTHER_LATAM_CODE = /\\b(BR|CO|CL|UY|PE|MX|EC|BO|PY|VE|CR)\\b/;\n// \"Avenue of the Americas\" es una calle de Nueva York, no la región\nconst NY_STREET = /ave(nue)?\\.?\\s+of\\s+(the\\s+)?americas/ig;\n\nfunction classify(rawLoc, extra, title) {\n  const t = title || '';\n  const loc = String(rawLoc || '').replace(NY_STREET, '');\n  if (ARGENTINA.test(loc) || /\\bARG\\b/.test(loc)) return ['yes', 'argentina_in_location'];\n  if (/\\bAR\\b/.test(loc) && OTHER_LATAM_CODE.test(loc)) return ['yes', 'argentina_in_location'];\n  if (LATAM.test(loc)) return ['yes', 'latam_in_location'];\n  if (ARGENTINA.test(t)) return ['yes', 'argentina_in_title'];\n  if (LATAM.test(t)) return ['yes', 'latam_in_title'];\n  const restricted = US_ONLY.test(extra);\n  const parts = loc.split(/\\s*[|\\/;]\\s*/).map(p => p.trim()).filter(Boolean);\n  const remoteOnly = parts.length > 0 && parts.every(p => REMOTE_ONLY.test(p) || GLOBAL.test(p));\n  if (remoteOnly && !restricted) {\n    return /not required/i.test(extra) ? ['maybe', 'remote_visa_not_required'] : ['maybe', 'remote_no_country'];\n  }\n  if (LATAM_COUNTRY.test(loc) && /remote|remoto|híbrido|hybrid/i.test(loc) && !restricted) {\n    return ['maybe', 'latam_country_remote'];\n  }\n  if ((ARGENTINA.test(extra) || LATAM.test(extra)) && !restricted) return ['maybe', 'latam_in_description'];\n  return ['no', ''];\n}\n\nfunction roleCategory(title) {\n  if (MANAGER.test(title)) return 'manager';\n  if (LEAD.test(title)) return 'lead_staff';\n  return 'ic';\n}\nconst PRIORITY = { manager: 1, lead_staff: 2, ic: 3 };\n\n// \"Posted 24 Days Ago\" → fecha. Workday no publica la fecha real.\nfunction wdPosted(s) {\n  const t = String(s || '');\n  let days = null;\n  if (/today/i.test(t)) days = 0;\n  else if (/yesterday/i.test(t)) days = 1;\n  else {\n    const m = t.match(/(\\d+)\\+?\\s*days?/i);\n    if (m) days = parseInt(m[1], 10);\n  }\n  if (days === null) return '';\n  return new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);\n}\n\nconst out = [];\nconst seen = new Set();\n\nfor (const item of $input.all()) {\n  const { company: c, jobBase, job: j } = item.json;\n  if (!c || !j) continue;\n\n  const title = j.title || '';\n  if (!IS_ENGINEERING.test(title) || EXCLUDE.test(title)) continue;\n\n  const locations = j.locationsText || '';\n  const [accepts, match] = classify(locations, '', title);\n  if (accepts === 'no') continue;\n\n  const id = (String(j.externalPath).match(/_([A-Z0-9]+)$/) || [])[1] || j.externalPath;\n  const job_id = `wd:${c.slug}:${id}`;\n  if (seen.has(job_id)) continue;\n  seen.add(job_id);\n\n  const role = roleCategory(title);\n  const li = c.linkedin_slug ? `https://www.linkedin.com/company/${c.linkedin_slug}` : '';\n\n  out.push({ json: {\n    job_id,\n    company_id: c.company_id || '',\n    priority: PRIORITY[role],\n    role_category: role,\n    accepts_argentina: accepts,\n    location_match: match,\n    company: c.company,\n    company_slug: c.slug,\n    company_hq: c.hq || '',\n    company_size: c.size || '',\n    company_stage: c.stage || '',\n    title: title.trim(),\n    salary: '',\n    salary_max_k: '',\n    locations,\n    published_at: wdPosted(j.postedOn),\n    apply_url: jobBase + j.externalPath,\n    company_linkedin: li,\n    linkedin_people_ar: li ? `${li}/people/?facetGeoRegion=100446943` : '',\n    source: 'workday',\n  }});\n}\n\nreturn out;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        976,
+        -288
+      ],
+      "id": "d0a4eb52-f822-439b-9e8f-526086007eee",
+      "name": "Filter Workday"
+    },
+    {
+      "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT lower(keyword) AS keyword FROM ignored_keywords",
+        "query": "SELECT (SELECT id FROM users ORDER BY id LIMIT 1) AS id,\n       COALESCE(array_agg(lower(keyword)), '{}') AS ignored_keywords\nFROM ignored_keywords",
         "options": {}
       },
-      "name": "Read ignored keywords",
+      "name": "Get user",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        528,
-        -64
+        304,
+        -96
       ],
-      "alwaysOutputData": true,
-      "id": "97fa2e54-f09f-4d4c-818f-d855ad25c996",
+      "id": "6c04b95a-da7c-44f4-bf60-11cdcff21d70",
       "credentials": {
         "postgres": {
           "id": "5Ggn116ONj0zb4KN",
           "name": "Jobs Manager Account"
         }
       }
-    },
-    {
-      "parameters": {
-        "jsCode": "// Descarta las ofertas cuyo título contenga alguna palabra de ignored_keywords\nconst words = $('Read ignored keywords').all()\n  .map(i => String(i.json.keyword || '').trim().toLowerCase())\n  .filter(Boolean);\n\nif (!words.length) return $input.all();\n\nconst esc = w => w.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&');\nconst re = new RegExp(`(^|[^a-z0-9])(${words.map(esc).join('|')})([^a-z0-9]|$)`, 'i');\n\nreturn $input.all().filter(item => !re.test(String(item.json.title || '')));"
-      },
-      "name": "Filter ignored",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        1648,
-        32
-      ],
-      "id": "13f76506-d74e-4813-ad68-c9e5f94110ae"
     }
   ],
   "connections": {
-    "Run manually": {
-      "main": [
-        [
-          {
-            "node": "Get user",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "Daily 9am and 6pm": {
       "main": [
         [
@@ -256,27 +240,16 @@
         ]
       ]
     },
-    "Get user": {
-      "main": [
-        [
-          {
-            "node": "Fetch YC",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Read ignored keywords",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "Read Companies": {
       "main": [
         [
           {
             "node": "Fetch ATS jobs",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch Workday",
             "type": "main",
             "index": 0
           }
@@ -300,7 +273,7 @@
           {
             "node": "Merge sources",
             "type": "main",
-            "index": 0
+            "index": 1
           }
         ]
       ]
@@ -322,7 +295,7 @@
           {
             "node": "Merge sources",
             "type": "main",
-            "index": 1
+            "index": 2
           }
         ]
       ]
@@ -349,22 +322,49 @@
         ]
       ]
     },
-    "Read ignored keywords": {
+    "Filter ignored": {
       "main": [
         [
           {
-            "node": "Read Companies",
+            "node": "Build jobs SQL",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Filter ignored": {
+    "Fetch Workday": {
       "main": [
         [
           {
-            "node": "Build jobs SQL",
+            "node": "Filter Workday",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Workday": {
+      "main": [
+        [
+          {
+            "node": "Merge sources",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get user": {
+      "main": [
+        [
+          {
+            "node": "Fetch YC",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Read Companies",
             "type": "main",
             "index": 0
           }
@@ -397,9 +397,9 @@
   },
   "nodeGroups": [],
   "pinData": {},
-  "versionId": "d8ff6b18-0cd1-4bd6-bc10-c6f3f944892d",
-  "activeVersionId": "6fac684b-2cb3-476d-9222-a75ce78e0532",
-  "versionCounter": 48,
+  "versionId": "c5826295-b068-4822-8d0a-31892e74d191",
+  "activeVersionId": "9c20ecf7-9e1d-4126-bde7-bc045a369a99",
+  "versionCounter": 89,
   "triggerCount": 1,
   "sourceWorkflowId": null,
   "tags": [],

@@ -65,7 +65,6 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialCo
   const [filterLatam, setFilterLatam] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<"unapplied" | "all" | "applied" | "hidden">("unapplied");
   const [filterCompany, setFilterCompany] = useState<string>("all");
-  const [filterFavoritesOnly, setFilterFavoritesOnly] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
@@ -73,7 +72,7 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialCo
     setJobs(initialJobs);
   }, [initialJobs]);
 
-  const hasFiltersChanged = filterLatam !== "all" || filterStatus !== "unapplied" || sortParam !== "priority" || sortOrder !== "asc" || searchQuery !== "" || filterCompany !== "all" || filterFavoritesOnly;
+  const hasFiltersChanged = filterLatam !== "all" || filterStatus !== "unapplied" || sortParam !== "priority" || sortOrder !== "asc" || searchQuery !== "" || filterCompany !== "all";
 
   const handleClearFilters = () => {
     setFilterLatam("all");
@@ -82,7 +81,6 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialCo
     setSortOrder("asc");
     setSearchQuery("");
     setFilterCompany("all");
-    setFilterFavoritesOnly(false);
   };
 
   const handleToggleFavoriteCompany = async (companyName: string) => {
@@ -105,14 +103,14 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialCo
   };
 
   const companyOptions = useMemo(() => {
-    const uniqueCompanies = Array.from(new Set(jobs.map(j => j.company))).filter(Boolean);
-    return uniqueCompanies.sort((a, b) => {
-      const aFav = favoriteCompanies.has(a);
-      const bFav = favoriteCompanies.has(b);
-      if (aFav && !bFav) return -1;
-      if (!aFav && bFav) return 1;
-      return a.localeCompare(b);
+    const uniqueCompanies = Array.from(new Set(jobs.map(j => j.company))).filter(Boolean).sort((a, b) => a.localeCompare(b));
+    const favs: string[] = [];
+    const nonFavs: string[] = [];
+    uniqueCompanies.forEach(c => {
+      if (favoriteCompanies.has(c)) favs.push(c);
+      else nonFavs.push(c);
     });
+    return { favs, nonFavs };
   }, [jobs, favoriteCompanies]);
 
   const handleToggleStatus = async (id: number, currentStatus: string) => {
@@ -194,11 +192,6 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialCo
       result = result.filter(j => j.company === filterCompany);
     }
 
-    // Filter Favorites Only
-    if (filterFavoritesOnly) {
-      result = result.filter(j => favoriteCompanies.has(j.company));
-    }
-
     // Search Query
     if (searchQuery.trim() !== "") {
       const q = searchQuery.toLowerCase();
@@ -237,7 +230,7 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialCo
     });
 
     return result;
-  }, [jobs, sortParam, sortOrder, filterLatam, filterStatus, filterCompany, filterFavoritesOnly, searchQuery, initialKeywords, favoriteCompanies]);
+  }, [jobs, sortParam, sortOrder, filterLatam, filterStatus, filterCompany, searchQuery, initialKeywords, favoriteCompanies]);
 
   const handleHeaderSort = (param: "date" | "salary" | "priority" | "latam" | "employees") => {
     if (sortParam === param) {
@@ -324,21 +317,22 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialCo
               onChange={(e) => setFilterCompany(e.target.value)}
             >
               <option value="all">Todas las empresas</option>
-              {companyOptions.map(c => (
-                <option key={c} value={c}>{favoriteCompanies.has(c) ? "⭐ " : ""}{c}</option>
-              ))}
+              {companyOptions.favs.length > 0 && (
+                <optgroup label="⭐ Favoritas">
+                  {companyOptions.favs.map(c => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </optgroup>
+              )}
+              {companyOptions.nonFavs.length > 0 && (
+                <optgroup label="Otras">
+                  {companyOptions.nonFavs.map(c => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </optgroup>
+              )}
             </select>
           </div>
-
-          <button
-            onClick={() => setFilterFavoritesOnly(!filterFavoritesOnly)}
-            className={`flex flex-1 sm:flex-none items-center justify-center gap-2 px-3 py-2 rounded-lg border transition-colors text-sm font-medium cursor-pointer ${filterFavoritesOnly ? 'bg-yellow-500/10 border-yellow-500/50 text-yellow-500' : 'bg-secondary/50 border-border text-muted-foreground hover:bg-secondary'}`}
-            title="Mostrar solo ofertas de empresas favoritas"
-          >
-            <Star className={`w-4 h-4 ${filterFavoritesOnly ? 'fill-yellow-500' : ''}`} />
-            {filterFavoritesOnly ? "Favoritos" : "Favoritos"}
-          </button>
-
 
           {hasFiltersChanged && (
             <button

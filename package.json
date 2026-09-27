@@ -15,8 +15,12 @@
   },
   "dependencies": {
     "@flukxr/typst-cli": "^0.15.1-npm.0",
+    "@fontsource/pt-serif": "^5.3.0",
     "@hello-pangea/dnd": "^18.0.1",
     "@monaco-editor/react": "^4.7.0",
+    "@myriaddreamin/typst-ts-renderer": "^0.7.0",
+    "@myriaddreamin/typst-ts-web-compiler": "^0.7.0",
+    "@myriaddreamin/typst.ts": "^0.7.0",
     "@neondatabase/serverless": "^1.1.0",
     "clsx": "^2.1.1",
     "date-fns": "^4.4.0",

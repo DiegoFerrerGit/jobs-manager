@@ -2,8 +2,13 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import Editor from "@monaco-editor/react";
-import { Download, Loader2, Play, Search, Maximize, Minimize, Info, X, Save } from "lucide-react";
+import { Download, Loader2, Maximize, Minimize, Info, X, Save } from "lucide-react";
 import { saveCvCode } from "./actions";
+import { createTypstCompiler, loadFonts, MemoryAccessModel, FetchPackageRegistry } from "@myriaddreamin/typst.ts";
+import { withAccessModel, withPackageRegistry } from "@myriaddreamin/typst.ts/options.init";
+
+let compilerInitPromise: Promise<any> | null = null;
+let globalCompiler: any = null;
 
 export function CvClient({ initialCode }: { initialCode: string }) {
   const [code, setCode] = useState(initialCode);
@@ -14,76 +19,147 @@ export function CvClient({ initialCode }: { initialCode: string }) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
+  const [isCompilerReady, setIsCompilerReady] = useState(false);
 
-  // Debounce refs
+  // Refs for compiler and state
+  const compilerRef = useRef<any>(null);
   const compileTimeout = useRef<NodeJS.Timeout | null>(null);
+  const saveTimeout = useRef<NodeJS.Timeout | null>(null);
+
+  // Initialize compiler
+  useEffect(() => {
+    async function initCompiler() {
+      try {
+        if (globalCompiler) {
+          compilerRef.current = globalCompiler;
+          setIsCompilerReady(true);
+          return;
+        }
+
+        if (!compilerInitPromise) {
+          compilerInitPromise = (async () => {
+            const origin = window.location.origin;
+            const compiler = createTypstCompiler();
+            const accessModel = new MemoryAccessModel();
+            const packageRegistry = new FetchPackageRegistry(accessModel);
+
+            await compiler.init({
+              getModule: () => `${origin}/typst_ts_web_compiler_bg.wasm`,
+              beforeBuild: [
+                loadFonts([
+                  `${origin}/fonts/PTSerif-Regular.ttf`,
+                  `${origin}/fonts/PTSerif-Bold.ttf`,
+                  `${origin}/fonts/PTSerif-Italic.ttf`,
+                  `${origin}/fonts/PTSerif-BoldItalic.ttf`,
+                ], { assets: false }),
+                withAccessModel(accessModel),
+                withPackageRegistry(packageRegistry),
+              ],
+            });
+
+            // Preload template files into VFS
+            const libRes = await fetch("/silver-dev-cv/lib.typ");
+            const libText = await libRes.text();
+            compiler.addSource("/silver-dev-cv/lib.typ", libText);
+
+            const cvRes = await fetch("/silver-dev-cv/template/cv.typ");
+            const cvText = await cvRes.text();
+            compiler.addSource("/silver-dev-cv/template/cv.typ", cvText);
+
+            globalCompiler = compiler;
+            return compiler;
+          })();
+        }
+
+        const compiler = await compilerInitPromise;
+        compilerRef.current = compiler;
+        setIsCompilerReady(true);
+      } catch (err) {
+        console.error("Failed to initialize compiler:", err);
+        setError("Error al cargar el compilador Typst (WASM)");
+      }
+    }
+    initCompiler();
+  }, []);
 
   const compilePdf = useCallback(async (currentCode: string) => {
+    if (!compilerRef.current) return;
+    
     setIsCompiling(true);
     setError(null);
     try {
-      const response = await fetch("/api/typst", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ code: currentCode }),
+      const compiler = compilerRef.current;
+      compiler.addSource("/main.typ", currentCode);
+
+      const result = await compiler.compile({
+        mainFilePath: "/main.typ",
+        format: 1, // PDF
+        diagnostics: "unix"
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to compile PDF");
+      if (!result.result) {
+        const diagnostics = result.diagnostics || [];
+        throw new Error(diagnostics.length > 0 ? diagnostics.join("\\n") : "Error de compilación de Typst.");
       }
 
-      const blob = await response.blob();
+      const blob = new Blob([result.result], { type: "application/pdf" });
       const url = URL.createObjectURL(blob);
       
       setPdfUrl((prevUrl) => {
-        if (prevUrl) {
-          URL.revokeObjectURL(prevUrl); // Clean up previous URL
-        }
+        if (prevUrl) URL.revokeObjectURL(prevUrl);
         return url;
       });
+      
+      // Warn about diagnostics even on success
+      if (result.diagnostics && result.diagnostics.length > 0) {
+        console.warn("Typst Compilation warnings:", result.diagnostics.join("\\n"));
+      }
+
     } catch (err: any) {
-      setError(err.message || "An error ocurrió durante la compilación.");
+      setError(err.message || "Un error ocurrió durante la compilación.");
     } finally {
       setIsCompiling(false);
     }
   }, []);
 
-  // Initial compilation
+  // Initial compile when ready
   useEffect(() => {
-    compilePdf(code);
+    if (isCompilerReady) {
+      compilePdf(code);
+    }
     return () => {
       if (pdfUrl) URL.revokeObjectURL(pdfUrl);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isCompilerReady]);
 
-  const handleEditorChange = (value: string | undefined) => {
-    const newCode = value || "";
-    setCode(newCode);
-
-    if (compileTimeout.current) {
-      clearTimeout(compileTimeout.current);
-    }
-    compileTimeout.current = setTimeout(() => {
-      compilePdf(newCode);
-    }, 1000); // 1 second debounce for compiling
-  };
-
-  const handleSave = async () => {
+  const handleSave = async (codeToSave: string) => {
     setIsSaving(true);
     try {
-      // Small artificial delay so the user actually sees the loading effect
-      await new Promise(resolve => setTimeout(resolve, 800));
-      await saveCvCode(code);
-      setSavedCode(code);
+      await saveCvCode(codeToSave);
+      setSavedCode(codeToSave);
     } catch (err) {
       console.error(err);
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleEditorChange = (value: string | undefined) => {
+    const newCode = value || "";
+    setCode(newCode);
+
+    // Debounce Compilation
+    if (compileTimeout.current) clearTimeout(compileTimeout.current);
+    compileTimeout.current = setTimeout(() => {
+      if (isCompilerReady) compilePdf(newCode);
+    }, 500);
+
+    // Debounce Autosave
+    if (saveTimeout.current) clearTimeout(saveTimeout.current);
+    saveTimeout.current = setTimeout(() => {
+      handleSave(newCode);
+    }, 2000);
   };
 
   const handleDownload = () => {
@@ -98,6 +174,15 @@ export function CvClient({ initialCode }: { initialCode: string }) {
   };
 
   const hasUnsavedChanges = code !== savedCode;
+
+  if (!isCompilerReady) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-[#1e1e1e] text-slate-400">
+        <Loader2 className="h-6 w-6 animate-spin mr-2" />
+        <span>Cargando compilador de Typst (WASM)...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen w-full flex-col bg-[#1e1e1e] text-white font-sans relative">
@@ -120,26 +205,15 @@ export function CvClient({ initialCode }: { initialCode: string }) {
             </div>
             <div className="p-6 space-y-4 text-slate-300 text-sm leading-relaxed">
               <p>
-                Este es un editor de currículums basado en <strong className="text-white">Typst</strong>, un lenguaje de marcado moderno diseñado para crear documentos profesionales con calidad de impresión (mucho más fácil y rápido que LaTeX).
+                Este es un editor de currículums basado en <strong className="text-white">Typst</strong>, corriendo íntegramente en el navegador usando WASM.
               </p>
               <div className="bg-[#1e1e1e] p-3 rounded-lg border border-white/5 space-y-3">
-                <div>
-                  <p><span className="text-blue-400 font-mono">#import</span>: Carga una plantilla desde la nube. En este caso, usas un diseño ATS-friendly.</p>
-                  <a 
-                    href="https://typst.app/universe/search/?kind=template" 
-                    target="_blank" 
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1 mt-2 text-xs font-medium text-blue-400 hover:text-blue-300 transition-colors bg-blue-500/10 px-2 py-1 rounded border border-blue-500/20"
-                  >
-                    <Search className="w-3 h-3" />
-                    Explorar más templates en Typst Universe
-                  </a>
-                </div>
+                <p><span className="text-blue-400 font-mono">#import</span>: Usa una plantilla de diseño local (silver-dev-cv).</p>
                 <p><span className="text-blue-400 font-mono">#section</span>: Crea un título de sección (ej: Experiencia, Educación).</p>
                 <p><span className="text-emerald-400 font-mono">[Texto entre corchetes]</span>: Es el contenido visual que se imprimirá en el PDF.</p>
               </div>
               <p>
-                <strong className="text-white">¿Cómo funciona?</strong> Solo edita tu información en el código de la izquierda. El sistema compilará y actualizará tu PDF a la derecha automáticamente y se guardará en la nube. ¡Si cometes un error de sintaxis, verás el mensaje de error en la pantalla de la derecha!
+                <strong className="text-white">¿Cómo funciona?</strong> Solo edita tu información en el código de la izquierda. El sistema compilará y actualizará tu PDF a la derecha automáticamente y se guardará en tu cuenta (Autosave cada 2 segundos).
               </p>
             </div>
             <div className="p-4 bg-[#1e1e1e] border-t border-white/10 flex justify-end">
@@ -161,17 +235,22 @@ export function CvClient({ initialCode }: { initialCode: string }) {
             CV
           </div>
           <h1 className="text-sm font-semibold tracking-wide text-slate-200 hidden sm:block">
-            Editor de CV - Typst
+            Editor de CV - Typst (Client)
           </h1>
         </div>
 
         <div className="flex items-center gap-3">
-          {isCompiling && (
-            <div className="flex items-center gap-2 text-xs text-blue-400 mr-2">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span>Compilando...</span>
-            </div>
-          )}
+          <div className="flex items-center gap-2 text-xs mr-2 transition-colors">
+            {isCompiling ? (
+              <span className="text-blue-400 flex items-center gap-1"><Loader2 className="h-3 w-3 animate-spin" /> Compilando...</span>
+            ) : isSaving ? (
+              <span className="text-amber-400 flex items-center gap-1"><Loader2 className="h-3 w-3 animate-spin" /> Guardando...</span>
+            ) : hasUnsavedChanges ? (
+              <span className="text-amber-500">Sin guardar</span>
+            ) : (
+              <span className="text-emerald-500">Guardado</span>
+            )}
+          </div>
           
           <button
             onClick={() => setShowInfo(true)}
@@ -198,17 +277,6 @@ export function CvClient({ initialCode }: { initialCode: string }) {
             )}
           </button>
           
-          {!isFullscreen && hasUnsavedChanges && (
-            <button
-              onClick={handleSave}
-              disabled={isSaving}
-              className="flex items-center gap-2 rounded-md bg-amber-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-amber-700 disabled:opacity-50 shadow-lg shadow-amber-500/20 animate-in fade-in zoom-in duration-200"
-            >
-              {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-              <span className="hidden lg:inline">{isSaving ? "Guardando..." : "Guardar cambios"}</span>
-            </button>
-          )}
-          
           <button
             onClick={handleDownload}
             disabled={!pdfUrl || isCompiling}
@@ -228,14 +296,13 @@ export function CvClient({ initialCode }: { initialCode: string }) {
             <div className="flex h-10 items-center justify-between bg-[#252526] px-4 text-xs font-medium uppercase tracking-wider text-slate-400 shrink-0">
               <div className="flex items-center gap-2">
                 <span>main.typ</span>
-                {hasUnsavedChanges && <span className="w-2 h-2 rounded-full bg-amber-500" title="Cambios sin guardar"></span>}
               </div>
               {error && <span className="text-red-400 normal-case bg-red-400/10 px-2 py-0.5 rounded border border-red-400/20">Error de compilación</span>}
             </div>
             <div className="flex-1 min-h-0">
               <Editor
                 height="100%"
-                defaultLanguage="markdown" // Use markdown since typst isn't natively supported, provides okayish fallback
+                defaultLanguage="markdown"
                 theme="vs-dark"
                 value={code}
                 onChange={handleEditorChange}

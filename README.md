@@ -8,6 +8,7 @@ Jobs Manager is a specialized tool that automates the discovery, filtering, and 
 - **Smart Filtering:** Automatically filters out non-engineering roles, incompatible locations, low salaries, and user-defined ignored keywords.
 - **Rich Kanban Board:** Drag-and-drop Kanban interface designed to replicate the Notion experience.
 - **Advanced Sorting & Filtering:** Sort by priority, salary, date, and filter by LATAM compatibility.
+- **Built-in CV Editor (`/cv`):** In-browser Typst IDE to code, render (PDF), and save your ATS-optimized resume directly within the platform.
 - **Optimized Data Flow:** n8n safely upserts data into PostgreSQL without touching user-managed columns (like application status or notes).
 - **Modern Tech Stack:** Built with Next.js 14, Drizzle ORM, TailwindCSS, and PostgreSQL.
 
@@ -56,6 +57,7 @@ The system consists of three main decoupled components:
    - `jobs` — job postings with their classification (priority, Argentina fit, salary) and application status
    - `companies` — job boards to poll, written by n8n
    - `ignored_keywords` — title keywords to filter out, managed from the app
+   - `user_cvs` — Stores Typst source code of user CVs
    - `users`, `sessions`, `allowlist` — Auth layer
 3. **n8n automation** (Self-hosted)
    - Discovers companies hiring from Argentina / LATAM (weekly)

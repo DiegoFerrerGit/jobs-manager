@@ -53,6 +53,7 @@ Full detail of the sources, filtering rules and schedules is in [`n8n/README.md`
 | `jobs` | n8n (+ user status) | Job postings and their classification |
 | `companies` | n8n (+ manual edits) | Job boards to poll |
 | `ignored_keywords` | App | Title keywords to filter out |
+| `user_cvs` | App | Stores Typst source code of user CVs |
 | `users`, `sessions`, `allowlist` | App | Authentication |
 
 ### Ownership of `jobs` columns

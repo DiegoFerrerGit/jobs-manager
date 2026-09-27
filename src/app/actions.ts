@@ -128,3 +128,30 @@ export async function toggleFavoriteCompany(userId: number, companyName: string,
   }
   revalidatePath("/");
 }
+
+export async function deleteManualCompany(id: number) {
+  await db.delete(companies).where(eq(companies.id, id));
+  revalidatePath("/");
+}
+
+export async function updateManualCompany(id: number, url: string) {
+  const { ats, slug, careersUrl } = parseCareersUrl(url);
+
+  const existing = await db.query.companies.findFirst({
+    where: and(eq(companies.ats, ats), eq(companies.slug, slug))
+  });
+
+  if (existing && existing.id !== id) {
+    throw new Error("Esta empresa ya está cargada con otra entrada.");
+  }
+
+  const [updatedCompany] = await db.update(companies).set({
+    name: slug,
+    slug,
+    ats,
+    careersUrl,
+  }).where(eq(companies.id, id)).returning();
+
+  revalidatePath("/");
+  return updatedCompany;
+}

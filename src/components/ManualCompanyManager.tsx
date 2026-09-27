@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { addManualCompany, toggleCompanyStatus } from "@/app/actions";
-import { Plus, Check, X, Building2 } from "lucide-react";
+import { addManualCompany, toggleCompanyStatus, deleteManualCompany, updateManualCompany } from "@/app/actions";
+import { Plus, Check, X, Building2, Pencil, Trash2 } from "lucide-react";
 import { Company } from "@/db/schema";
 
 export default function ManualCompanyManager({ initialCompanies }: { initialCompanies: Company[] }) {
@@ -10,6 +10,8 @@ export default function ManualCompanyManager({ initialCompanies }: { initialComp
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [companies, setCompanies] = useState(initialCompanies);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editUrl, setEditUrl] = useState("");
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,6 +44,30 @@ export default function ManualCompanyManager({ initialCompanies }: { initialComp
       console.error(e);
       // Revert
       setCompanies(companies);
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    try {
+      await deleteManualCompany(id);
+      setCompanies(companies.filter(c => c.id !== id));
+    } catch (e: any) {
+      setError(e.message || "Error al borrar la empresa");
+    }
+  };
+
+  const handleUpdate = async (id: number) => {
+    if (!editUrl.trim()) return;
+    try {
+      const updated = await updateManualCompany(id, editUrl);
+      if (updated) {
+        setCompanies(companies.map(c => c.id === id ? updated : c));
+      }
+      setEditingId(null);
+      setEditUrl("");
+      setError(null);
+    } catch (e: any) {
+      setError(e.message || "Error al actualizar la empresa");
     }
   };
 
@@ -87,28 +113,74 @@ export default function ManualCompanyManager({ initialCompanies }: { initialComp
           ) : (
             companies.map((company) => (
               <div key={company.id} className={`flex items-center justify-between px-4 py-3 rounded-xl border transition-colors ${company.status === 'active' ? 'bg-secondary/20 border-border' : 'bg-secondary/10 border-border/50 opacity-60'}`}>
-                <div className="flex flex-col">
-                  <span className="font-medium text-sm flex items-center gap-2">
-                    <Building2 className="w-4 h-4 text-muted-foreground" />
-                    {company.name}
-                  </span>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-xs text-muted-foreground px-2 py-0.5 rounded-full bg-secondary">
-                      {company.ats}
-                    </span>
-                    {company.status === 'inactive' && (
-                      <span className="text-xs text-amber-500/80 font-medium">Inactiva</span>
-                    )}
+                {editingId === company.id ? (
+                  <div className="flex-1 flex gap-2 mr-2">
+                    <input 
+                      type="url" 
+                      value={editUrl}
+                      onChange={(e) => setEditUrl(e.target.value)}
+                      className="flex-1 bg-secondary border border-border rounded-lg px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+                      autoFocus
+                    />
+                    <button 
+                      onClick={() => handleUpdate(company.id)}
+                      className="text-xs font-medium bg-primary text-primary-foreground px-3 py-1.5 rounded-lg hover:bg-primary/90 transition-colors"
+                    >
+                      Guardar
+                    </button>
+                    <button 
+                      onClick={() => { setEditingId(null); setEditUrl(""); }}
+                      className="text-xs font-medium bg-secondary text-foreground px-3 py-1.5 rounded-lg hover:bg-secondary/80 transition-colors border border-border"
+                    >
+                      Cancelar
+                    </button>
                   </div>
-                </div>
-                
-                <button 
-                  onClick={() => handleToggleStatus(company.id, company.status)}
-                  className={`p-2 rounded-full transition-colors cursor-pointer ${company.status === 'active' ? 'text-green-500 hover:bg-green-500/10' : 'text-muted-foreground hover:bg-secondary'}`}
-                  title={company.status === 'active' ? "Desactivar" : "Activar"}
-                >
-                  {company.status === 'active' ? <Check className="w-4 h-4" /> : <X className="w-4 h-4" />}
-                </button>
+                ) : (
+                  <>
+                    <div className="flex flex-col">
+                      <span className="font-medium text-sm flex items-center gap-2">
+                        <Building2 className="w-4 h-4 text-muted-foreground" />
+                        {company.name}
+                      </span>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-xs text-muted-foreground px-2 py-0.5 rounded-full bg-secondary">
+                          {company.ats}
+                        </span>
+                        {company.status === 'inactive' && (
+                          <span className="text-xs text-amber-500/80 font-medium">Inactiva</span>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-1">
+                      <button 
+                        onClick={() => {
+                          setEditingId(company.id);
+                          setEditUrl(company.careersUrl || "");
+                          setError(null);
+                        }}
+                        className="p-2 rounded-full text-muted-foreground hover:bg-secondary transition-colors"
+                        title="Editar URL"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button 
+                        onClick={() => handleDelete(company.id)}
+                        className="p-2 rounded-full text-muted-foreground hover:bg-red-500/10 hover:text-red-500 transition-colors"
+                        title="Borrar"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                      <button 
+                        onClick={() => handleToggleStatus(company.id, company.status)}
+                        className={`p-2 rounded-full transition-colors cursor-pointer ${company.status === 'active' ? 'text-green-500 hover:bg-green-500/10' : 'text-muted-foreground hover:bg-secondary'}`}
+                        title={company.status === 'active' ? "Desactivar" : "Activar"}
+                      >
+                        {company.status === 'active' ? <Check className="w-4 h-4" /> : <X className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             ))
           )}

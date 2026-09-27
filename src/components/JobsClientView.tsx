@@ -41,6 +41,13 @@ const getSourceBadge = (source: string | null | undefined, externalId: string | 
       </span>
     );
   }
+  if (s.includes('teamtailor')) {
+    return (
+      <span className="text-[11px] text-pink-500 bg-pink-500/10 border border-pink-500/20 px-2 py-0.5 rounded-md font-bold shrink-0 ml-2 shadow-sm">
+        TeamTailor
+      </span>
+    );
+  }
   
   return (
     <span className="text-[11px] text-muted-foreground bg-secondary px-2 py-1 rounded-md font-mono shrink-0 ml-2">

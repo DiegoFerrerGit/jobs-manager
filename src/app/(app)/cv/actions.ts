@@ -3,7 +3,7 @@
 import { db } from "@/db";
 import { userCvs } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 export async function getCvCode() {
@@ -22,27 +22,19 @@ export async function saveCvCode(content: string) {
     throw new Error("Unauthorized");
   }
 
-  // Attempt to update first
-  const updated = await db.update(userCvs)
-    .set({ content, updatedAt: new Date() })
-    .where(eq(userCvs.userId, user.id))
-    .returning({ id: userCvs.id });
-
-  // If no rows were updated, it means it doesn't exist, so insert
-  if (updated.length === 0) {
-    try {
-      await db.insert(userCvs).values({ userId: user.id, content });
-    } catch (err: any) {
-      console.error("DB INSERT FAILED:", err);
-      try {
-        await db.update(userCvs)
-          .set({ content, updatedAt: new Date() })
-          .where(eq(userCvs.userId, user.id));
-      } catch (updateErr: any) {
-        console.error("DB FALLBACK UPDATE FAILED:", updateErr);
-        throw err; // Actually throw to client so the button doesn't hide
-      }
-    }
+  try {
+    // We use raw SQL execution to bypass any Drizzle schema mapping issues that might be failing silently
+    await db.execute(
+      sql`
+        INSERT INTO user_cvs (user_id, content) 
+        VALUES (${user.id}, ${content})
+        ON CONFLICT (user_id) 
+        DO UPDATE SET content = ${content}, updated_at = NOW()
+      `
+    );
+  } catch (err: any) {
+    console.error("DB UPSERT FAILED:", err);
+    throw err;
   }
 
   revalidatePath("/cv");

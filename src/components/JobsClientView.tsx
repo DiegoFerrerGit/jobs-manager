@@ -64,7 +64,7 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialCo
   const [sortParam, setSortParam] = useState<"date" | "salary" | "priority" | "latam" | "employees">("priority");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [filterLatam, setFilterLatam] = useState<string>("all");
-  const [filterStatus, setFilterStatus] = useState<"unapplied" | "all" | "applied" | "hidden">("unapplied");
+  const [filterStatus, setFilterStatus] = useState<"unapplied" | "all" | "applied" | "hidden" | "closed">("unapplied");
   const [filterCompany, setFilterCompany] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -181,11 +181,17 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialCo
 
     // Filter by Status
     if (filterStatus === "unapplied") {
-      result = result.filter(j => j.status !== "APPLIED" && j.status !== "REJECTED");
+      result = result.filter(j => 
+        j.status !== "APPLIED" && 
+        j.status !== "REJECTED" && 
+        (j.closedAt === null || j.status !== "SAVED")
+      );
     } else if (filterStatus === "applied") {
       result = result.filter(j => j.status === "APPLIED");
     } else if (filterStatus === "hidden") {
       result = result.filter(j => j.status === "REJECTED");
+    } else if (filterStatus === "closed") {
+      result = result.filter(j => j.closedAt !== null);
     }
 
     // Filter by Company
@@ -268,6 +274,7 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialCo
               <option value="all">Mostrar todas</option>
               <option value="applied">Aplicadas</option>
               <option value="hidden">Ocultas</option>
+              <option value="closed">Cerradas</option>
             </select>
           </div>
 
@@ -401,6 +408,11 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialCo
                   {(job.acceptsArgentina === "yes" || job.acceptsArgentina === "maybe") && (
                     <span className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-semibold border ${job.acceptsArgentina === "yes" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "bg-yellow-500/10 text-yellow-400 border-yellow-500/20"}`}>
                       🇦🇷 {job.acceptsArgentina === "yes" ? "LATAM Ok" : "Posible"}
+                    </span>
+                  )}
+                  {job.closedAt && (
+                    <span className="inline-flex items-center justify-center rounded-full px-2 py-0.5 text-[11px] font-semibold border bg-secondary/80 text-muted-foreground border-border/60 shadow-sm">
+                      Cerrada
                     </span>
                   )}
                 </div>
@@ -569,7 +581,16 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialCo
                 >
                   <td className="px-6 py-4">
                     <div className="flex items-start justify-between gap-2">
-                      <p className={`font-bold text-base mb-1 ${job.status === "REJECTED" ? "text-muted-foreground line-through" : "text-foreground"}`}>{job.title}</p>
+                      <div className="flex flex-col mb-1">
+                        <div className="flex items-center gap-2">
+                          <p className={`font-bold text-base ${job.status === "REJECTED" ? "text-muted-foreground line-through" : "text-foreground"}`}>{job.title}</p>
+                          {job.closedAt && (
+                            <span className="inline-flex items-center justify-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-secondary/80 border border-border/60 text-muted-foreground">
+                              Cerrada
+                            </span>
+                          )}
+                        </div>
+                      </div>
                       <button
                         onClick={() => handleHide(job.id, job.status)}
                         className={`transition-all p-1.5 rounded-md cursor-pointer ${job.status === "REJECTED"

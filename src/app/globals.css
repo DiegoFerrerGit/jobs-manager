@@ -63,6 +63,14 @@ body {
   @apply antialiased selection:bg-primary selection:text-primary-foreground;
 }
 
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
 /* Glassmorphism utility */
 .glass {
   background: rgba(24, 24, 27, 0.6);

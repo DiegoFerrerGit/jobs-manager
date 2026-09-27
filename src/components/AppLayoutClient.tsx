@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Target, ChevronLeft, ChevronRight, BriefcaseBusiness } from "lucide-react";
+import { Target, ChevronLeft, ChevronRight, BriefcaseBusiness, FileText } from "lucide-react";
 import LogoutButton from "./LogoutButton";
 
 export default function AppLayoutClient({ children, user }: { children: React.ReactNode, user: any }) {
@@ -51,6 +51,15 @@ export default function AppLayoutClient({ children, user }: { children: React.Re
             >
               <BriefcaseBusiness className="w-5 h-5 shrink-0" />
               {!isCollapsed && <span>TRACKER</span>}
+            </Link>
+
+            <Link 
+              href="/cv" 
+              className={`flex items-center gap-3 py-2.5 rounded-lg text-sm font-bold transition-colors cursor-pointer ${pathname === '/cv' ? 'bg-secondary/40 text-green-500 hover:bg-secondary/60 hover:text-green-400' : 'text-muted-foreground hover:bg-secondary/20 hover:text-foreground'} ${isCollapsed ? 'justify-center px-0' : 'px-3'}`}
+              title="CV"
+            >
+              <FileText className="w-5 h-5 shrink-0" />
+              {!isCollapsed && <span>CV</span>}
             </Link>
           </nav>
         </div>

@@ -162,3 +162,11 @@ export async function updateManualCompany(id: number, url: string) {
   revalidatePath("/");
   return updatedCompany;
 }
+
+export async function updateCompanyLinkedin(companyName: string, linkedinUrl: string) {
+  const manualUrl = linkedinUrl ? (linkedinUrl.includes('#manual') ? linkedinUrl : `${linkedinUrl}#manual`) : null;
+  await db.update(jobs)
+    .set({ companyLinkedin: manualUrl })
+    .where(eq(jobs.company, companyName));
+  revalidatePath("/");
+}

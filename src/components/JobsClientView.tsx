@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { Briefcase, Building2, MapPin, DollarSign, Calendar, ExternalLink, Globe2, LayoutGrid, List, SlidersHorizontal, ArrowUpDown, CheckCircle, XCircle, Search, EyeOff, Eye, Settings, X, Star, Info, Flag } from "lucide-react";
+import { Briefcase, Building2, MapPin, DollarSign, Calendar, ExternalLink, Globe2, LayoutGrid, List, SlidersHorizontal, ArrowUpDown, CheckCircle, XCircle, Search, EyeOff, Eye, Settings, X, Star, Info, Flag, Pencil } from "lucide-react";
 import Link from "next/link";
 import { Job, IgnoredKeyword, Company } from "@/db/schema";
-import { toggleJobStatus, hideJob, toggleFavoriteCompany } from "@/app/actions";
+import { toggleJobStatus, hideJob, toggleFavoriteCompany, updateCompanyLinkedin } from "@/app/actions";
 import { filterJobsBySearch } from "@/utils/search";
 import KeywordManager from "./KeywordManager";
 import ManualCompanyManager from "./ManualCompanyManager";
@@ -96,6 +96,20 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialCo
       } catch (e) {}
       return next;
     });
+  };
+
+  const handleEditLinkedin = async (companyName: string, currentUrl: string | null) => {
+    const cleanUrl = currentUrl?.replace('#manual', '') || '';
+    const newUrl = window.prompt(`Ingresa el link de LinkedIn para ${companyName}:`, cleanUrl);
+    if (newUrl !== null) {
+      const finalUrl = newUrl.trim() ? `${newUrl.trim()}#manual` : null;
+      setJobs(prev => prev.map(j => j.company === companyName ? { ...j, companyLinkedin: finalUrl } : j));
+      try {
+        await updateCompanyLinkedin(companyName, newUrl.trim());
+      } catch (error) {
+        console.error("Failed to update linkedin", error);
+      }
+    }
   };
 
   const hasFiltersChanged = filterLatam !== "all" || filterPriority !== "all" || filterStatus !== "unapplied" || sortParam !== "priority" || sortOrder !== "asc" || searchQuery !== "" || filterCompany !== "all";
@@ -554,11 +568,23 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialCo
                   <Star className={`w-3.5 h-3.5 ${favoriteCompanies.has(job.company) ? "fill-yellow-500 text-yellow-500" : "text-muted-foreground/70 hover:text-yellow-500"}`} />
                 </button>
                 {job.companyLinkedin ? (
-                  <a href={job.companyLinkedin} target="_blank" rel="noopener noreferrer" className="font-semibold text-sky-400 hover:text-sky-300 hover:underline">
-                    {job.company}
-                  </a>
+                  <div className="flex items-center gap-1">
+                    <a href={job.companyLinkedin.replace('#manual', '')} target="_blank" rel="noopener noreferrer" className="font-semibold text-sky-400 hover:text-sky-300 hover:underline">
+                      {job.company}
+                    </a>
+                    {job.companyLinkedin.includes('#manual') && (
+                      <button onClick={() => handleEditLinkedin(job.company, job.companyLinkedin)} className="p-0.5 rounded text-sky-400/50 hover:text-sky-400 hover:bg-secondary transition-colors" title="Editar LinkedIn">
+                        <Pencil className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
                 ) : (
-                  <span className="font-semibold text-sky-400">{job.company}</span>
+                  <div className="flex items-center gap-1">
+                    <span className="font-semibold text-sky-400">{job.company}</span>
+                    <button onClick={() => handleEditLinkedin(job.company, null)} className="p-0.5 rounded text-sky-400/50 hover:text-sky-400 hover:bg-secondary transition-colors" title="Añadir LinkedIn">
+                      <Pencil className="w-3 h-3" />
+                    </button>
+                  </div>
                 )}
                 {job.companyHq && (
                   <>
@@ -727,11 +753,23 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialCo
                         <Star className={`w-3.5 h-3.5 ${favoriteCompanies.has(job.company) ? "fill-yellow-500 text-yellow-500" : "text-muted-foreground/70 hover:text-yellow-500"}`} />
                       </button>
                       {job.companyLinkedin ? (
-                        <a href={job.companyLinkedin} target="_blank" rel="noopener noreferrer" className="text-sky-400 font-semibold hover:text-sky-300 hover:underline">
-                          {job.company}
-                        </a>
+                        <div className="flex items-center gap-1">
+                          <a href={job.companyLinkedin.replace('#manual', '')} target="_blank" rel="noopener noreferrer" className="text-sky-400 font-semibold hover:text-sky-300 hover:underline">
+                            {job.company}
+                          </a>
+                          {job.companyLinkedin.includes('#manual') && (
+                            <button onClick={() => handleEditLinkedin(job.company, job.companyLinkedin)} className="p-0.5 rounded text-sky-400/50 hover:text-sky-400 hover:bg-secondary transition-colors" title="Editar LinkedIn">
+                              <Pencil className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
                       ) : (
-                        <span className="text-sky-400 font-semibold">{job.company}</span>
+                        <div className="flex items-center gap-1">
+                          <span className="text-sky-400 font-semibold">{job.company}</span>
+                          <button onClick={() => handleEditLinkedin(job.company, null)} className="p-0.5 rounded text-sky-400/50 hover:text-sky-400 hover:bg-secondary transition-colors" title="Añadir LinkedIn">
+                            <Pencil className="w-3 h-3" />
+                          </button>
+                        </div>
                       )}
                       {job.companyHq && (
                         <>

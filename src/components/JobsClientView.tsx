@@ -71,6 +71,10 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialCo
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isPriorityInfoOpen, setIsPriorityInfoOpen] = useState(false);
   const [visitedJobs, setVisitedJobs] = useState<Set<number>>(new Set());
+  const [salaryModal, setSalaryModal] = useState<{ isOpen: boolean, jobId: number, currentStatus: string } | null>(null);
+  const [salaryInput, setSalaryInput] = useState("");
+  const [linkedinModal, setLinkedinModal] = useState<{ isOpen: boolean, companyName: string, currentUrl: string } | null>(null);
+  const [linkedinInput, setLinkedinInput] = useState("");
 
   useEffect(() => {
     setJobs(initialJobs);
@@ -98,17 +102,25 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialCo
     });
   };
 
-  const handleEditLinkedin = async (companyName: string, currentUrl: string | null) => {
+  const handleEditLinkedin = (companyName: string, currentUrl: string | null) => {
     const cleanUrl = currentUrl?.replace('#manual', '') || '';
-    const newUrl = window.prompt(`Ingresa el link de LinkedIn para ${companyName}:`, cleanUrl);
-    if (newUrl !== null) {
-      const finalUrl = newUrl.trim() ? `${newUrl.trim()}#manual` : null;
-      setJobs(prev => prev.map(j => j.company === companyName ? { ...j, companyLinkedin: finalUrl } : j));
-      try {
-        await updateCompanyLinkedin(companyName, newUrl.trim());
-      } catch (error) {
-        console.error("Failed to update linkedin", error);
-      }
+    setLinkedinInput(cleanUrl);
+    setLinkedinModal({ isOpen: true, companyName, currentUrl: cleanUrl });
+  };
+
+  const confirmLinkedinModal = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!linkedinModal) return;
+    const { companyName } = linkedinModal;
+    const newUrl = linkedinInput.trim();
+    const finalUrl = newUrl ? `${newUrl}#manual` : null;
+    
+    setLinkedinModal(null);
+    setJobs(prev => prev.map(j => j.company === companyName ? { ...j, companyLinkedin: finalUrl } : j));
+    try {
+      await updateCompanyLinkedin(companyName, newUrl);
+    } catch (error) {
+      console.error("Failed to update linkedin", error);
     }
   };
 
@@ -155,24 +167,39 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialCo
   }, [jobs, favoriteCompanies]);
 
   const handleToggleStatus = async (id: number, currentStatus: string) => {
-    let expectedSalary: string | null = null;
     const newStatus = currentStatus === "APPLIED" ? "SAVED" : "APPLIED";
 
     if (newStatus === "APPLIED") {
-      const salary = window.prompt("¿Cuál es el salario pretendido para esta aplicación?");
-      if (salary === null) return; // User cancelled
-      expectedSalary = salary;
+      setSalaryInput("");
+      setSalaryModal({ isOpen: true, jobId: id, currentStatus });
+      return;
     }
 
     // Optimistic update
-    setJobs(prev => prev.map(j => j.id === id ? { ...j, status: newStatus as any, expectedSalary } : j));
+    setJobs(prev => prev.map(j => j.id === id ? { ...j, status: newStatus as any, expectedSalary: null } : j));
 
     try {
-      await toggleJobStatus(id, currentStatus, expectedSalary);
+      await toggleJobStatus(id, currentStatus, null);
     } catch (error) {
       console.error(error);
       // Revert on error
       setJobs(prev => prev.map(j => j.id === id ? { ...j, status: currentStatus as any } : j));
+    }
+  };
+
+  const confirmSalaryModal = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!salaryModal) return;
+    const { jobId, currentStatus } = salaryModal;
+    const expectedSalary = salaryInput.trim() || null;
+    
+    setSalaryModal(null);
+    setJobs(prev => prev.map(j => j.id === jobId ? { ...j, status: "APPLIED" as any, expectedSalary } : j));
+    try {
+      await toggleJobStatus(jobId, currentStatus, expectedSalary);
+    } catch (error) {
+      console.error(error);
+      setJobs(prev => prev.map(j => j.id === jobId ? { ...j, status: currentStatus as any } : j));
     }
   };
 
@@ -919,6 +946,72 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialCo
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* SALARY MODAL */}
+      {salaryModal?.isOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setSalaryModal(null)} />
+          <div className="relative w-full max-w-sm bg-background rounded-2xl shadow-2xl border border-border overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center p-4 border-b border-border bg-secondary/20">
+              <h2 className="text-lg font-bold text-foreground">Salario Pretendido</h2>
+              <button
+                onClick={() => setSalaryModal(null)}
+                className="p-1 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={confirmSalaryModal} className="p-4">
+              <p className="text-sm text-muted-foreground mb-4">¿Cuál es el salario pretendido para esta aplicación? (opcional)</p>
+              <input
+                type="text"
+                autoFocus
+                placeholder="Ej. USD 5000"
+                value={salaryInput}
+                onChange={e => setSalaryInput(e.target.value)}
+                className="w-full px-3 py-2 bg-secondary/50 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground mb-4"
+              />
+              <div className="flex justify-end gap-2">
+                <button type="button" onClick={() => setSalaryModal(null)} className="px-4 py-2 rounded-lg text-sm font-medium hover:bg-secondary text-muted-foreground transition-colors cursor-pointer">Cancelar</button>
+                <button type="submit" className="px-4 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors cursor-pointer shadow-sm">Guardar y Aplicar</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* LINKEDIN MODAL */}
+      {linkedinModal?.isOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setLinkedinModal(null)} />
+          <div className="relative w-full max-w-sm bg-background rounded-2xl shadow-2xl border border-border overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center p-4 border-b border-border bg-secondary/20">
+              <h2 className="text-lg font-bold text-foreground flex items-center gap-2"><Globe2 className="w-5 h-5 text-primary" /> Link de LinkedIn</h2>
+              <button
+                onClick={() => setLinkedinModal(null)}
+                className="p-1 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={confirmLinkedinModal} className="p-4">
+              <p className="text-sm text-muted-foreground mb-4">Ingresa el link de LinkedIn para <strong className="text-foreground">{linkedinModal.companyName}</strong>.</p>
+              <input
+                type="url"
+                autoFocus
+                placeholder="https://linkedin.com/company/..."
+                value={linkedinInput}
+                onChange={e => setLinkedinInput(e.target.value)}
+                className="w-full px-3 py-2 bg-secondary/50 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground mb-4"
+              />
+              <div className="flex justify-end gap-2">
+                <button type="button" onClick={() => setLinkedinModal(null)} className="px-4 py-2 rounded-lg text-sm font-medium hover:bg-secondary text-muted-foreground transition-colors cursor-pointer">Cancelar</button>
+                <button type="submit" className="px-4 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors cursor-pointer shadow-sm">Guardar</button>
+              </div>
+            </form>
           </div>
         </div>
       )}

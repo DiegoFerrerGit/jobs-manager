@@ -113,8 +113,50 @@ type ColumnData = {
 };
 
 export default function TrackerClient({ initialData }: { initialData: any }) {
-  const [columns, setColumns] = useState<Record<string, ColumnData>>(initialData.columns);
-  const [columnOrder, setColumnOrder] = useState<string[]>(initialData.columnOrder);
+  
+  // -- MIGRATION LOGIC (Run once on initialData) --
+  const getAnnualSalaryLocal = (job: any) => job.salarioAnual || (job.salarioMensual ? job.salarioMensual * 12 : 0);
+  const sortJobsLocal = (jobs: any[]) => [...jobs].sort((a, b) => getAnnualSalaryLocal(b) - getAnnualSalaryLocal(a));
+
+  const initialColumns = { ...initialData.columns };
+  let initialOrder = [...(initialData.columnOrder || [])];
+
+  const acceptedJobs: any[] = [];
+  const rejectedJobs: any[] = [];
+  const idsToRemove = new Set<string>();
+
+  Object.keys(initialColumns).forEach(colId => {
+    const titleLower = initialColumns[colId].title.toLowerCase();
+    if (titleLower.includes('aceptada')) {
+      acceptedJobs.push(...initialColumns[colId].jobs);
+      idsToRemove.add(colId);
+    } else if (titleLower.includes('no continuam') || titleLower.includes('rechazad')) {
+      rejectedJobs.push(...initialColumns[colId].jobs);
+      idsToRemove.add(colId);
+    }
+  });
+
+  idsToRemove.forEach(id => delete initialColumns[id]);
+  initialOrder = initialOrder.filter(id => !idsToRemove.has(id) && id !== 'col-accepted' && id !== 'col-rejected');
+
+  if (!initialColumns['col-accepted']) {
+    initialColumns['col-accepted'] = { id: 'col-accepted', title: 'Aceptadas', jobs: sortJobsLocal(acceptedJobs), badge: 'bg-green-500/20 text-green-500', wrapperBg: '', cardBg: '', cardHover: '' };
+  } else {
+    initialColumns['col-accepted'].jobs.push(...acceptedJobs);
+    initialColumns['col-accepted'].jobs = sortJobsLocal(initialColumns['col-accepted'].jobs);
+  }
+
+  if (!initialColumns['col-rejected']) {
+    initialColumns['col-rejected'] = { id: 'col-rejected', title: 'No Continuamos', jobs: sortJobsLocal(rejectedJobs), badge: 'bg-red-500/20 text-red-500', wrapperBg: '', cardBg: '', cardHover: '' };
+  } else {
+    initialColumns['col-rejected'].jobs.push(...rejectedJobs);
+    initialColumns['col-rejected'].jobs = sortJobsLocal(initialColumns['col-rejected'].jobs);
+  }
+  // -- END MIGRATION LOGIC --
+
+  const [columns, setColumns] = useState<Record<string, ColumnData>>(initialColumns);
+  const [columnOrder, setColumnOrder] = useState<string[]>(initialOrder);
+
   const [config, setConfig] = useState<TrackerConfig>(initialData.config || { options: DEFAULT_SELECT_OPTIONS });
   const [isMounted, setIsMounted] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
@@ -138,112 +180,10 @@ export default function TrackerClient({ initialData }: { initialData: any }) {
   };
 
   useEffect(() => {
-    // Hydrate from localStorage
-    const savedColumns = localStorage.getItem("jobs-tracker-columns");
-    const savedOrder = localStorage.getItem("jobs-tracker-column-order");
-    const savedConfig = localStorage.getItem("jobs-tracker-config");
-    
-    let colsToDelete: string[] = [];
-    if (savedColumns) {
-      try { 
-        const parsedColumns = JSON.parse(savedColumns);
-        const OLD_TO_NEW_COLORS: Record<string, string> = {
-          "bg-[#454545] text-[#cccccc]": "bg-[#787774] text-white",
-          "bg-[#67442f] text-[#e2c8b5]": "bg-[#9f6b53] text-white",
-          "bg-[#673c1d] text-[#e6bc9c]": "bg-[#d9730d] text-white",
-          "bg-[#5f4f22] text-[#e5d4a1]": "bg-[#cb912f] text-white",
-          "bg-[#2c4a35] text-[#b4deb8]": "bg-[#448361] text-white",
-          "bg-[#2b4b66] text-[#b3d3ed]": "bg-[#337ea9] text-white",
-          "bg-[#443560] text-[#c9b7e3]": "bg-[#9065b0] text-white",
-          "bg-[#672b49] text-[#e6c1d3]": "bg-[#c14c8a] text-white",
-          "bg-[#602e2e] text-[#e8b5b5]": "bg-[#d44c47] text-white",
-        };
-        // Migration: migrate old data if they have 'company' or 'salary' instead of new schema
-        
-        const acceptedJobs: any[] = [];
-        const rejectedJobs: any[] = [];
-
-        Object.keys(parsedColumns).forEach(colKey => {
-          if (OLD_TO_NEW_COLORS[parsedColumns[colKey].badge]) {
-            parsedColumns[colKey].badge = OLD_TO_NEW_COLORS[parsedColumns[colKey].badge];
-          }
-          
-          const titleLower = parsedColumns[colKey].title.toLowerCase();
-          if (titleLower.includes('aceptada')) {
-            acceptedJobs.push(...parsedColumns[colKey].jobs);
-            colsToDelete.push(colKey);
-          } else if (titleLower.includes('no continuam') || titleLower.includes('rechazad')) {
-            rejectedJobs.push(...parsedColumns[colKey].jobs);
-            colsToDelete.push(colKey);
-          }
-
-          parsedColumns[colKey].jobs = sortJobsBySalary(parsedColumns[colKey].jobs.map((j: any) => {
-            const newJob = { ...j };
-            if (j.company) {
-              newJob.name = j.company;
-              delete newJob.company;
-            }
-            if (j.salary) {
-              const num = parseInt(j.salary.replace(/[^0-9]/g, ''));
-              if (!isNaN(num)) newJob.salarioAnual = num;
-              delete newJob.salary;
-            }
-            if (j.equity) delete newJob.equity;
-            if (j.locationColor) delete newJob.locationColor;
-            if (j.roleColor) delete newJob.roleColor;
-            return newJob;
-          }));
-        });
-        
-        colsToDelete.forEach(id => delete parsedColumns[id]);
-        
-        if (!parsedColumns['col-accepted']) {
-          parsedColumns['col-accepted'] = {
-            id: 'col-accepted', title: 'Aceptadas', jobs: sortJobsBySalary(acceptedJobs),
-            badge: 'bg-green-500/20 text-green-500', wrapperBg: '', cardBg: '', cardHover: ''
-          };
-        } else {
-          parsedColumns['col-accepted'].jobs.push(...acceptedJobs);
-        }
-        
-        if (!parsedColumns['col-rejected']) {
-          parsedColumns['col-rejected'] = {
-            id: 'col-rejected', title: 'No Continuamos', jobs: sortJobsBySalary(rejectedJobs),
-            badge: 'bg-red-500/20 text-red-500', wrapperBg: '', cardBg: '', cardHover: ''
-          };
-        } else {
-          parsedColumns['col-rejected'].jobs.push(...rejectedJobs);
-        }
-
-        setColumns(parsedColumns);
-      } catch (e) { console.error(e); }
-    }
-    if (savedOrder) {
-      try { 
-        let parsedOrder = JSON.parse(savedOrder);
-        parsedOrder = parsedOrder.filter((id: string) => !id.includes('col-accepted') && !id.includes('col-rejected') && !colsToDelete.includes(id));
-        setColumnOrder(parsedOrder); 
-      } catch (e) { console.error(e); }
-    }
-    if (savedConfig) {
-      try { setConfig(JSON.parse(savedConfig)); } catch (e) { console.error(e); }
-    }
-    
     setIsMounted(true);
   }, []);
 
-  // Sync to localStorage
-  useEffect(() => {
-    if (isMounted) {
-      localStorage.setItem("jobs-tracker-columns", JSON.stringify(columns));
-    }
-  }, [columns, isMounted]);
-
-  useEffect(() => {
-    if (isMounted) {
-      localStorage.setItem("jobs-tracker-column-order", JSON.stringify(columnOrder));
-    }
-  }, [columnOrder, isMounted]);
+  
 
   const deleteColumn = (id: string) => {
     setColumnOrder(prev => prev.filter(c => c !== id));
@@ -415,7 +355,8 @@ export default function TrackerClient({ initialData }: { initialData: any }) {
                 ref={provided.innerRef}
               >
                 {columnOrder.map((columnId, index) => {
-                  const column = columns[columnId as keyof typeof columns];
+              const column = columns[columnId as keyof typeof columns];
+              if (!column) return null;
                   return (
                     <Draggable key={columnId} draggableId={columnId} index={index}>
                       {(providedCol, snapshotCol) => (

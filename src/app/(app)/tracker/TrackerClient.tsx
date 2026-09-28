@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
-import { Plus, Eye, EyeOff, GripVertical, Trash2, CheckCircle2 } from "lucide-react";
+import { Plus, Eye, EyeOff, GripVertical, Trash2, CheckCircle2, Check } from "lucide-react";
 import { TrackerJob, TrackerConfig, DEFAULT_SELECT_OPTIONS } from "./types";
 import JobPanel from "./components/JobPanel";
 import { updateJobAction, updateJobColumnAction, deleteJobAction, updateColumnsAction, updateConfigAction } from "./actions";

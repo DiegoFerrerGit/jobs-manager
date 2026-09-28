@@ -129,11 +129,17 @@ export async function updateJobAction(jobId: string, columnId: string, jobData: 
   }
 }
 
-export async function updateJobColumnAction(jobId: string, newColumnId: string) {
+export async function updateJobColumnAction(jobId: string, newColumnId: string, instanciaCierre?: string) {
   const user = await getCurrentUser();
   if (!user?.sub) throw new Error("Unauthorized");
+  
+  const payload: any = { columnId: newColumnId, updatedAt: new Date() };
+  if (instanciaCierre !== undefined) {
+    payload.instanciaCierre = instanciaCierre;
+  }
+  
   await db.update(trackerJobs)
-    .set({ columnId: newColumnId, updatedAt: new Date() })
+    .set(payload)
     .where(eq(trackerJobs.id, jobId));
 }
 

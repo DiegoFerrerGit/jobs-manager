@@ -5,9 +5,13 @@ import { jobs, ignoredKeywords, companies, favoriteCompanies } from "@/db/schema
 import { eq, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
-export async function toggleJobStatus(id: number, currentStatus: string) {
+export async function toggleJobStatus(id: number, currentStatus: string, expectedSalary?: string | null) {
   const newStatus = currentStatus === "APPLIED" ? "SAVED" : "APPLIED";
-  await db.update(jobs).set({ status: newStatus }).where(eq(jobs.id, id));
+  if (newStatus === "APPLIED") {
+    await db.update(jobs).set({ status: newStatus, expectedSalary }).where(eq(jobs.id, id));
+  } else {
+    await db.update(jobs).set({ status: newStatus, expectedSalary: null }).where(eq(jobs.id, id));
+  }
   revalidatePath("/");
 }
 export async function deleteJob(id: number) {

@@ -106,6 +106,7 @@ export const jobs = pgTable('jobs', {
   status: jobStatus('status').notNull().default('SAVED'),
   notes: text('notes'),
   appliedAt: timestamp('applied_at', { withTimezone: true }),
+  expectedSalary: text('expected_salary'),
 
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),

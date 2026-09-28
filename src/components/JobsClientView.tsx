@@ -155,13 +155,20 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialCo
   }, [jobs, favoriteCompanies]);
 
   const handleToggleStatus = async (id: number, currentStatus: string) => {
+    let expectedSalary: string | null = null;
     const newStatus = currentStatus === "APPLIED" ? "SAVED" : "APPLIED";
 
+    if (newStatus === "APPLIED") {
+      const salary = window.prompt("¿Cuál es el salario pretendido para esta aplicación?");
+      if (salary === null) return; // User cancelled
+      expectedSalary = salary;
+    }
+
     // Optimistic update
-    setJobs(prev => prev.map(j => j.id === id ? { ...j, status: newStatus as any } : j));
+    setJobs(prev => prev.map(j => j.id === id ? { ...j, status: newStatus as any, expectedSalary } : j));
 
     try {
-      await toggleJobStatus(id, currentStatus);
+      await toggleJobStatus(id, currentStatus, expectedSalary);
     } catch (error) {
       console.error(error);
       // Revert on error
@@ -633,7 +640,7 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialCo
                     className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all duration-200 hover:scale-105 active:scale-95 border cursor-pointer shadow-sm ${job.status === "APPLIED" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20" : "bg-secondary text-muted-foreground border-transparent hover:text-foreground hover:border-border hover:bg-secondary/80"}`}
                   >
                     <CheckCircle className="w-3 h-3" />
-                    {job.status === "APPLIED" ? "Aplicada" : "Marcar como aplicado"}
+                    {job.status === "APPLIED" ? `Aplicada ${job.expectedSalary ? `(${job.expectedSalary})` : ''}` : "Marcar como aplicado"}
                   </button>
 
                   {job.applyUrl && (
@@ -810,9 +817,12 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialCo
                       <button
                         onClick={() => handleToggleStatus(job.id, job.status)}
                         className={`inline-flex items-center gap-1 px-2 py-1.5 rounded-md text-xs font-medium transition-all duration-200 hover:scale-110 active:scale-95 border cursor-pointer shadow-sm ${job.status === "APPLIED" ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/20" : "text-muted-foreground border-transparent hover:text-foreground hover:bg-secondary/80"}`}
-                        title={job.status === "APPLIED" ? "Deshacer" : "Marcar como aplicada"}
+                        title={job.status === "APPLIED" ? `Deshacer aplicada ${job.expectedSalary ? `(${job.expectedSalary})` : ''}` : "Marcar como aplicada"}
                       >
                         <CheckCircle className="w-3.5 h-3.5" />
+                        {job.status === "APPLIED" && job.expectedSalary && (
+                          <span className="ml-1 text-[10px] uppercase font-bold opacity-80">{job.expectedSalary}</span>
+                        )}
                       </button>
 
                       {job.applyUrl && (

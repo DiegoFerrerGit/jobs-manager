@@ -621,6 +621,8 @@ export default function TrackerClient({ initialData }: { initialData: any }) {
                 
                 return newColumns;
               });
+              
+              updateJobAction(selectedJobId, targetColumnId || selectedColumnId, updatedJob).catch(console.error);
             }}
           />
         )}
@@ -635,6 +637,43 @@ export default function TrackerClient({ initialData }: { initialData: any }) {
           </div>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {jobToDelete && (
+        <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4">
+          <div className="bg-[#202020] border border-[#303030] p-6 rounded-xl shadow-2xl max-w-sm w-full">
+            <h3 className="text-xl font-bold mb-4 text-foreground">Confirmar eliminación</h3>
+            <p className="text-muted-foreground mb-6">¿Estás seguro que quieres eliminar esta tarjeta? Esta acción no se puede deshacer.</p>
+            <div className="flex justify-end gap-3">
+              <button 
+                onClick={() => setJobToDelete(null)}
+                className="px-4 py-2 rounded-lg text-sm font-medium hover:bg-white/5 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={() => {
+                  if (!jobToDelete) return;
+                  
+                  // Update UI first
+                  setColumns(prev => {
+                    const newCols = { ...prev };
+                    newCols[jobToDelete.columnId].jobs = newCols[jobToDelete.columnId].jobs.filter(j => j.id !== jobToDelete.jobId);
+                    return newCols;
+                  });
+                  
+                  // Delete from DB
+                  deleteJobAction(jobToDelete.jobId).catch(console.error);
+                  setJobToDelete(null);
+                }}
+                className="px-4 py-2 rounded-lg text-sm font-medium bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors"
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </DragDropContext>
   );
 }

@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { trackerColumns, trackerJobs, trackerConfig } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth";
+import { DEFAULT_SELECT_OPTIONS } from "./types";
 
 export async function getTrackerData() {
   const user = await getCurrentUser();
@@ -80,7 +81,7 @@ export async function getTrackerData() {
   }
 
   const columnOrder = cols.map((c: any) => c.id);
-  const config = configRow ? { options: configRow.options } : null;
+  const config = configRow ? { options: { ...DEFAULT_SELECT_OPTIONS, ...configRow.options } } : null;
 
   return { columns: columnsRecord, columnOrder, config };
 }

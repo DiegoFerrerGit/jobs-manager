@@ -140,17 +140,23 @@ export default function TrackerClient({ initialData }: { initialData: any }) {
   initialOrder = initialOrder.filter(id => !idsToRemove.has(id) && id !== 'col-accepted' && id !== 'col-rejected');
 
   if (!initialColumns['col-accepted']) {
-    initialColumns['col-accepted'] = { id: 'col-accepted', title: 'Aceptadas', jobs: sortJobsLocal(acceptedJobs), badge: 'bg-green-500/20 text-green-500', wrapperBg: '', cardBg: '', cardHover: '' };
+    initialColumns['col-accepted'] = { id: 'col-accepted', title: 'Aceptadas', jobs: sortJobsLocal(acceptedJobs), badge: 'bg-green-500/20 text-green-500', wrapperBg: 'bg-[#1e2621]', cardBg: 'bg-[#283a2d]', cardHover: 'hover:bg-[#304536]' };
   } else {
     initialColumns['col-accepted'].jobs.push(...acceptedJobs);
     initialColumns['col-accepted'].jobs = sortJobsLocal(initialColumns['col-accepted'].jobs);
+    initialColumns['col-accepted'].wrapperBg = 'bg-[#1e2621]';
+    initialColumns['col-accepted'].cardBg = 'bg-[#283a2d]';
+    initialColumns['col-accepted'].cardHover = 'hover:bg-[#304536]';
   }
 
   if (!initialColumns['col-rejected']) {
-    initialColumns['col-rejected'] = { id: 'col-rejected', title: 'No Continuamos', jobs: sortJobsLocal(rejectedJobs), badge: 'bg-red-500/20 text-red-500', wrapperBg: '', cardBg: '', cardHover: '' };
+    initialColumns['col-rejected'] = { id: 'col-rejected', title: 'No Continuamos', jobs: sortJobsLocal(rejectedJobs), badge: 'bg-red-500/20 text-red-500', wrapperBg: 'bg-[#2d1d1d]', cardBg: 'bg-[#422828]', cardHover: 'hover:bg-[#4f3030]' };
   } else {
     initialColumns['col-rejected'].jobs.push(...rejectedJobs);
     initialColumns['col-rejected'].jobs = sortJobsLocal(initialColumns['col-rejected'].jobs);
+    initialColumns['col-rejected'].wrapperBg = 'bg-[#2d1d1d]';
+    initialColumns['col-rejected'].cardBg = 'bg-[#422828]';
+    initialColumns['col-rejected'].cardHover = 'hover:bg-[#4f3030]';
   }
   // -- END MIGRATION LOGIC --
 
@@ -178,7 +184,7 @@ export default function TrackerClient({ initialData }: { initialData: any }) {
         ref={providedJob?.innerRef}
         {...providedJob?.draggableProps}
         {...providedJob?.dragHandleProps}
-        className={`${isFinalized ? "shrink-0 w-[300px]" : "mb-3"} rounded-xl p-3 shadow-sm cursor-pointer group relative transition-colors flex flex-col gap-3 ${column.cardBg} ${column.cardHover} border border-white/5 ${snapshotJob?.isDragging ? "ring-2 ring-primary shadow-lg" : ""} ${selectedJobId === job.id ? "ring-2 ring-inset ring-blue-500 bg-white/5" : ""}`}
+        className={`${isFinalized ? "w-full sm:w-[280px]" : "mb-3"} rounded-xl p-3 shadow-sm cursor-pointer group relative transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:shadow-black/20 flex flex-col gap-3 ${column.cardBg} ${column.cardHover} border border-white/5 ${snapshotJob?.isDragging ? "ring-2 ring-primary shadow-lg" : ""} ${selectedJobId === job.id ? "ring-2 ring-inset ring-blue-500 bg-white/5" : ""}`}
         style={providedJob ? { ...providedJob.draggableProps.style } : undefined}
         onClick={() => {
           setSelectedJobId(job.id);
@@ -364,7 +370,14 @@ export default function TrackerClient({ initialData }: { initialData: any }) {
               <span>🗃️</span> Jobs Tracking
             </h1>
           </div>
-          <div className="relative">
+          <div className="relative flex items-center gap-3">
+            <button
+              onClick={addNewColumn}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-dashed border-white/10 hover:border-white/20 bg-white/5 hover:bg-white/10 text-sm font-medium transition-colors"
+            >
+              <Plus className="w-4 h-4 text-muted-foreground" />
+              Nueva Columna
+            </button>
             <button
               onClick={() => setIsColumnDropdownOpen(!isColumnDropdownOpen)}
               className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-white/10 hover:border-white/20 bg-white/5 hover:bg-white/10 text-sm font-medium transition-colors"
@@ -604,18 +617,7 @@ export default function TrackerClient({ initialData }: { initialData: any }) {
                 })}
                 {provided.placeholder}
 
-                {/* Add new column button */}
-                <div className="w-[280px] shrink-0 p-2">
-                  <button 
-                    type="button"
-                    onClick={addNewColumn}
-                    className="flex items-center gap-2 text-sm p-3 rounded-xl transition-colors w-full text-muted-foreground hover:bg-white/5 hover:text-foreground border border-dashed border-white/10 hover:border-white/20 font-medium"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Agregar columna
-                  </button>
                 </div>
-              </div>
             )}
           </Droppable>
         </div>
@@ -710,7 +712,7 @@ export default function TrackerClient({ initialData }: { initialData: any }) {
                     </span>
                   </div>
                   <div className="w-full">
-                    <div className="flex overflow-x-auto pb-4 gap-3 custom-scrollbar">
+                    <div className="flex flex-wrap gap-4">
                       {columns['col-rejected'].jobs.map(job => (
                         <div key={job.id}>
                           {renderJobCard(job, 'col-rejected', columns['col-rejected'], undefined, undefined, true)}
@@ -734,7 +736,7 @@ export default function TrackerClient({ initialData }: { initialData: any }) {
                     </span>
                   </div>
                   <div className="w-full">
-                    <div className="flex overflow-x-auto pb-4 gap-3 custom-scrollbar">
+                    <div className="flex flex-wrap gap-4">
                       {columns['col-accepted'].jobs.map(job => (
                         <div key={job.id}>
                           {renderJobCard(job, 'col-accepted', columns['col-accepted'], undefined, undefined, true)}
@@ -841,7 +843,7 @@ export default function TrackerClient({ initialData }: { initialData: any }) {
                   setColumns(prev => {
                     const newCols = { ...prev };
                     newCols[jobToFinalize.columnId].jobs = newCols[jobToFinalize.columnId].jobs.filter(j => j.id !== jobToFinalize.jobId);
-                    if (!newCols['col-rejected']) newCols['col-rejected'] = { id: 'col-rejected', title: 'No Continuamos', jobs: [], badge: '', wrapperBg: '', cardBg: '', cardHover: '' };
+                    if (!newCols['col-rejected']) newCols['col-rejected'] = { id: 'col-rejected', title: 'No Continuamos', jobs: [], badge: 'bg-red-500/20 text-red-500', wrapperBg: 'bg-[#2d1d1d]', cardBg: 'bg-[#422828]', cardHover: 'hover:bg-[#4f3030]' };
                     newCols['col-rejected'].jobs = sortJobsBySalary([...newCols['col-rejected'].jobs, updatedJob]);
                     return newCols;
                   });
@@ -868,7 +870,7 @@ export default function TrackerClient({ initialData }: { initialData: any }) {
                   setColumns(prev => {
                     const newCols = { ...prev };
                     newCols[jobToFinalize.columnId].jobs = newCols[jobToFinalize.columnId].jobs.filter(j => j.id !== jobToFinalize.jobId);
-                    if (!newCols['col-accepted']) newCols['col-accepted'] = { id: 'col-accepted', title: 'Aceptadas', jobs: [], badge: '', wrapperBg: '', cardBg: '', cardHover: '' };
+                    if (!newCols['col-accepted']) newCols['col-accepted'] = { id: 'col-accepted', title: 'Aceptadas', jobs: [], badge: 'bg-green-500/20 text-green-500', wrapperBg: 'bg-[#1e2621]', cardBg: 'bg-[#283a2d]', cardHover: 'hover:bg-[#304536]' };
                     newCols['col-accepted'].jobs = sortJobsBySalary([...newCols['col-accepted'].jobs, updatedJob]);
                     return newCols;
                   });

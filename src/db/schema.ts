@@ -1,6 +1,6 @@
 import {
   pgTable, pgEnum, serial, integer, smallint, text, char, date,
-  timestamp, uniqueIndex, index, uuid
+  timestamp, uniqueIndex, index, uuid, jsonb
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
@@ -146,6 +146,68 @@ export const userCvs = pgTable("user_cvs", {
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });
 
+// ---------- Tracker (Kanban) ----------
+export const trackerColumns = pgTable("tracker_columns", {
+  id: text("id").primaryKey(), // e.g. "people", "oferta"
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  title: text("title").notNull(),
+  badge: text("badge").notNull(),
+  wrapperBg: text("wrapper_bg").notNull(),
+  cardBg: text("card_bg").notNull(),
+  cardHover: text("card_hover").notNull(),
+  orderIndex: integer("order_index").notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const trackerJobs = pgTable("tracker_jobs", {
+  id: text("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  columnId: text("column_id").notNull().references(() => trackerColumns.id, { onDelete: 'cascade' }),
+  
+  // Basic info
+  name: text("name").notNull(), // Empresa
+  role: text("role"),
+  location: text("location"),
+  
+  // Salaries
+  salarioMensual: integer("salario_mensual"),
+  salarioAnual: integer("salario_anual"),
+  monedaSalario: text("moneda_salario").default('USD'),
+  
+  // Details
+  beneficios: text("beneficios"),
+  contras: text("contras"),
+  inglesRequerido: text("ingles_requerido"),
+  handsOn: text("hands_on"),
+  idiomaPosicion: text("idioma_posicion"),
+  tipoContratacion: text("tipo_contratacion"),
+  formaPago: text("forma_pago"),
+  plataforma: text("plataforma"),
+  
+  // Links
+  linkPosicion: text("link_posicion"),
+  linkEmpresa: text("link_empresa"),
+  contactoRecruiter: text("contacto_recruiter"),
+  contactoLeader: text("contacto_leader"),
+  jd: text("jd"),
+  linkNotion: text("link_notion"),
+  notionId: text("notion_id"),
+  
+  // Rejection/Closure
+  instanciaCierre: text("instancia_cierre"),
+  categoriaCierre: text("categoria_cierre"),
+  motivoRechazo: text("motivo_rechazo"),
+
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+});
+
+export const trackerConfig = pgTable("tracker_config", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }).unique(),
+  options: jsonb("options").notNull().default('{"instanciaCierre": [], "categoriaCierre": []}'),
+});
+
 export type Job = typeof jobs.$inferSelect;
 export type NewJob = typeof jobs.$inferInsert;
 export type Company = typeof companies.$inferSelect;
@@ -161,3 +223,6 @@ export type FavoriteCompany = typeof favoriteCompanies.$inferSelect;
 export type NewFavoriteCompany = typeof favoriteCompanies.$inferInsert;
 export type UserCv = typeof userCvs.$inferSelect;
 export type NewUserCv = typeof userCvs.$inferInsert;
+export type TrackerColumn = typeof trackerColumns.$inferSelect;
+export type TrackerJobDb = typeof trackerJobs.$inferSelect;
+export type TrackerConfigDb = typeof trackerConfig.$inferSelect;

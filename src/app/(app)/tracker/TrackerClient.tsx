@@ -5,6 +5,7 @@ import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea
 import { Plus, Eye, EyeOff, GripVertical, Trash2 } from "lucide-react";
 import { TrackerJob, TrackerConfig, DEFAULT_SELECT_OPTIONS } from "./types";
 import JobPanel from "./components/JobPanel";
+import { updateJobAction, updateJobColumnAction, deleteJobAction, updateColumnsAction, updateConfigAction } from "./actions";
 
 // Updated mock data with vibrant Notion dark mode colors
 const initialColumns = {
@@ -111,10 +112,10 @@ type ColumnData = {
   jobs: TrackerJob[];
 };
 
-export default function TrackerClient() {
-  const [columns, setColumns] = useState<Record<string, ColumnData>>(initialColumns);
-  const [columnOrder, setColumnOrder] = useState(Object.keys(initialColumns));
-  const [config, setConfig] = useState<TrackerConfig>({ options: DEFAULT_SELECT_OPTIONS });
+export default function TrackerClient({ initialData }: { initialData: any }) {
+  const [columns, setColumns] = useState<Record<string, ColumnData>>(initialData.columns);
+  const [columnOrder, setColumnOrder] = useState<string[]>(initialData.columnOrder);
+  const [config, setConfig] = useState<TrackerConfig>(initialData.config || { options: DEFAULT_SELECT_OPTIONS });
   const [isMounted, setIsMounted] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [isColumnDropdownOpen, setIsColumnDropdownOpen] = useState(false);
@@ -253,8 +254,14 @@ export default function TrackerClient() {
       const newColumnOrder = Array.from(columnOrder);
       newColumnOrder.splice(source.index, 1);
       newColumnOrder.splice(destination.index, 0, result.draggableId);
-      setColumnOrder(newColumnOrder);
+      
+      const newOrder = Array.from(columnOrder);
+      const [reorderedItem] = newOrder.splice(source.index, 1);
+      newOrder.splice(destination.index, 0, reorderedItem);
+      setColumnOrder(newOrder);
+      // Optional: save order to DB
       return;
+
     }
 
     if (source.droppableId === destination.droppableId) {
@@ -279,6 +286,7 @@ export default function TrackerClient() {
 
       const [removed] = sourceItems.splice(source.index, 1);
       destItems.splice(destination.index, 0, removed);
+      updateJobColumnAction(result.draggableId, destination.droppableId).catch(console.error);
 
       setColumns({
         ...columns,

@@ -187,20 +187,23 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialCo
     }
   };
 
-  const confirmSalaryModal = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const submitSalary = async (salary: string | null) => {
     if (!salaryModal) return;
     const { jobId, currentStatus } = salaryModal;
-    const expectedSalary = salaryInput.trim() || null;
     
     setSalaryModal(null);
-    setJobs(prev => prev.map(j => j.id === jobId ? { ...j, status: "APPLIED" as any, expectedSalary } : j));
+    setJobs(prev => prev.map(j => j.id === jobId ? { ...j, status: "APPLIED" as any, expectedSalary: salary } : j));
     try {
-      await toggleJobStatus(jobId, currentStatus, expectedSalary);
+      await toggleJobStatus(jobId, currentStatus, salary);
     } catch (error) {
       console.error(error);
       setJobs(prev => prev.map(j => j.id === jobId ? { ...j, status: currentStatus as any } : j));
     }
+  };
+
+  const confirmSalaryModal = (e: React.FormEvent) => {
+    e.preventDefault();
+    submitSalary(salaryInput.trim() || null);
   };
 
   const handleHide = async (id: number, currentStatus: string) => {
@@ -974,9 +977,10 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialCo
                 onChange={e => setSalaryInput(e.target.value)}
                 className="w-full px-3 py-2 bg-secondary/50 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground mb-4"
               />
-              <div className="flex justify-end gap-2">
-                <button type="button" onClick={() => setSalaryModal(null)} className="px-4 py-2 rounded-lg text-sm font-medium hover:bg-secondary text-muted-foreground transition-colors cursor-pointer">Cancelar</button>
-                <button type="submit" className="px-4 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors cursor-pointer shadow-sm">Guardar y Aplicar</button>
+              <div className="flex flex-col sm:flex-row justify-end gap-2 mt-4">
+                <button type="button" onClick={() => setSalaryModal(null)} className="px-4 py-2 rounded-lg text-sm font-medium hover:bg-secondary text-muted-foreground transition-colors cursor-pointer w-full sm:w-auto order-3 sm:order-1">Cancelar</button>
+                <button type="button" onClick={() => submitSalary("No pidieron")} className="px-4 py-2 rounded-lg text-sm font-medium border border-border/50 bg-secondary/30 hover:bg-secondary text-foreground transition-colors cursor-pointer shadow-sm w-full sm:w-auto order-2">No pidieron sueldo</button>
+                <button type="submit" className="px-4 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors cursor-pointer shadow-sm w-full sm:w-auto order-1 sm:order-3">Guardar y Aplicar</button>
               </div>
             </form>
           </div>

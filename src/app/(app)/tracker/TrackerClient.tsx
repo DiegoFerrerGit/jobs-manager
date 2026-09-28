@@ -451,7 +451,7 @@ export default function TrackerClient({ initialData }: { initialData: any }) {
                               <div
                                 {...providedDrop.droppableProps}
                                 ref={providedDrop.innerRef}
-                                className="w-full h-full overflow-y-auto custom-scrollbar-v"
+                                className="w-full overflow-y-auto custom-scrollbar-v min-h-0"
                               >
                                 <div className={`flex flex-col rounded-xl p-2 h-fit min-h-[60px] transition-colors ${column.wrapperBg} ${snapshotDrop.isDraggingOver ? 'ring-2 ring-white/20' : ''} ${snapshotCol.isDragging ? 'ring-2 ring-primary shadow-2xl' : ''}`}>
                                   {/* Column Header */}
@@ -703,10 +703,11 @@ export default function TrackerClient({ initialData }: { initialData: any }) {
               {columns['col-rejected']?.jobs?.length > 0 && (
                 <div className="bg-[#1a1a1f] rounded-2xl border border-white/5 p-5 w-full">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-semibold text-red-500 flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-red-500"></span>
-                      No Continuamos
-                    </h3>
+                    <div className="flex items-center gap-2">
+                      <div className="px-2.5 py-1 rounded-md text-[13px] font-bold bg-[#d44c47] text-white shadow-sm tracking-wide uppercase">
+                        No Continuamos
+                      </div>
+                    </div>
                     <span className="bg-red-500/10 text-red-500 text-xs font-bold px-2.5 py-1 rounded-full">
                       {columns['col-rejected']?.jobs?.length}
                     </span>
@@ -727,10 +728,11 @@ export default function TrackerClient({ initialData }: { initialData: any }) {
               {columns['col-accepted']?.jobs?.length > 0 && (
                 <div className="bg-[#1a1a1f] rounded-2xl border border-white/5 p-5 w-full">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-semibold text-green-500 flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-green-500"></span>
-                      Propuestas Aceptadas
-                    </h3>
+                    <div className="flex items-center gap-2">
+                      <div className="px-2.5 py-1 rounded-md text-[13px] font-bold bg-[#448361] text-white shadow-sm tracking-wide uppercase">
+                        Propuestas Aceptadas
+                      </div>
+                    </div>
                     <span className="bg-green-500/10 text-green-500 text-xs font-bold px-2.5 py-1 rounded-full">
                       {columns['col-accepted']?.jobs?.length}
                     </span>

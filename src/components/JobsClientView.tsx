@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { Briefcase, Building2, MapPin, DollarSign, Calendar, ExternalLink, Globe2, LayoutGrid, List, SlidersHorizontal, ArrowUpDown, CheckCircle, XCircle, Search, EyeOff, Eye, Settings, X, Star, Info } from "lucide-react";
+import { Briefcase, Building2, MapPin, DollarSign, Calendar, ExternalLink, Globe2, LayoutGrid, List, SlidersHorizontal, ArrowUpDown, CheckCircle, XCircle, Search, EyeOff, Eye, Settings, X, Star, Info, Flag } from "lucide-react";
 import Link from "next/link";
 import { Job, IgnoredKeyword, Company } from "@/db/schema";
 import { toggleJobStatus, hideJob, toggleFavoriteCompany } from "@/app/actions";
@@ -64,20 +64,45 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialCo
   const [sortParam, setSortParam] = useState<"date" | "salary" | "priority" | "latam" | "employees">("priority");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [filterLatam, setFilterLatam] = useState<string>("all");
+  const [filterPriority, setFilterPriority] = useState<"all" | "1" | "2" | "3">("all");
   const [filterStatus, setFilterStatus] = useState<"unapplied" | "all" | "applied" | "hidden" | "closed">("unapplied");
   const [filterCompany, setFilterCompany] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isPriorityInfoOpen, setIsPriorityInfoOpen] = useState(false);
+  const [visitedJobs, setVisitedJobs] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     setJobs(initialJobs);
   }, [initialJobs]);
 
-  const hasFiltersChanged = filterLatam !== "all" || filterStatus !== "unapplied" || sortParam !== "priority" || sortOrder !== "asc" || searchQuery !== "" || filterCompany !== "all";
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('visitedJobs');
+      if (stored) {
+        setVisitedJobs(new Set(JSON.parse(stored)));
+      }
+    } catch (e) {
+      console.error('Error loading visited jobs', e);
+    }
+  }, []);
+
+  const handleVisitJob = (id: number) => {
+    setVisitedJobs(prev => {
+      const next = new Set(prev);
+      next.add(id);
+      try {
+        localStorage.setItem('visitedJobs', JSON.stringify(Array.from(next)));
+      } catch (e) {}
+      return next;
+    });
+  };
+
+  const hasFiltersChanged = filterLatam !== "all" || filterPriority !== "all" || filterStatus !== "unapplied" || sortParam !== "priority" || sortOrder !== "asc" || searchQuery !== "" || filterCompany !== "all";
 
   const handleClearFilters = () => {
     setFilterLatam("all");
+    setFilterPriority("all");
     setFilterStatus("unapplied");
     setSortParam("priority");
     setSortOrder("asc");
@@ -220,6 +245,17 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialCo
       result = result.filter(j => j.acceptsArgentina === filterLatam);
     }
 
+    // Filter by Priority
+    if (filterPriority !== "all") {
+      const prioVal = parseInt(filterPriority);
+      result = result.filter(j => (j.priority || 3) === prioVal);
+    }
+
+    // Filter only with salary if sorting by salary
+    if (sortParam === "salary") {
+      result = result.filter(j => extractSalary(j.salary) > 0);
+    }
+
     // Filter by Status
     if (filterStatus === "unapplied") {
       result = result.filter(j => 
@@ -273,14 +309,14 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialCo
     });
 
     return result;
-  }, [jobs, sortParam, sortOrder, filterLatam, filterStatus, filterCompany, searchQuery, initialKeywords, favoriteCompanies]);
+  }, [jobs, sortParam, sortOrder, filterLatam, filterPriority, filterStatus, filterCompany, searchQuery, initialKeywords, favoriteCompanies]);
 
   const handleHeaderSort = (param: "date" | "salary" | "priority" | "latam" | "employees") => {
     if (sortParam === param) {
       setSortOrder(prev => prev === "asc" ? "desc" : "asc");
     } else {
       setSortParam(param);
-      setSortOrder("asc");
+      setSortOrder(param === "salary" ? "desc" : "asc");
     }
   };
 
@@ -333,11 +369,31 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialCo
           </div>
 
           <div className="flex flex-1 sm:flex-none items-center gap-2 bg-secondary/50 px-3 py-2 rounded-lg border border-border">
+            <Flag className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+            <select
+              className="bg-transparent text-foreground outline-none border-none cursor-pointer w-full"
+              value={filterPriority}
+              onChange={(e) => setFilterPriority(e.target.value as any)}
+            >
+              <option value="all">Cualquier Prio</option>
+              <option value="1">Alta</option>
+              <option value="2">Media</option>
+              <option value="3">Baja</option>
+            </select>
+          </div>
+
+          <div className="flex flex-1 sm:flex-none items-center gap-2 bg-secondary/50 px-3 py-2 rounded-lg border border-border">
             <ArrowUpDown className="w-4 h-4 text-muted-foreground flex-shrink-0" />
             <select
               className="bg-transparent text-foreground outline-none border-none cursor-pointer w-full"
               value={sortParam}
-              onChange={(e) => setSortParam(e.target.value as any)}
+              onChange={(e) => {
+                const newVal = e.target.value as any;
+                if (sortParam !== newVal) {
+                  setSortParam(newVal);
+                  setSortOrder(newVal === "salary" ? "desc" : "asc");
+                }
+              }}
             >
               <option value="date">Fecha</option>
               <option value="salary">Salario</option>
@@ -444,13 +500,18 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialCo
           {processedJobs.map((job, idx) => (
             <div
               key={job.id}
-              className="glass-card rounded-xl p-4 hover-lift flex flex-col h-full relative group overflow-hidden animate-fade-in-up"
+              className={`glass-card rounded-xl p-4 hover-lift flex flex-col h-full relative group overflow-hidden animate-fade-in-up ${visitedJobs.has(job.id) ? 'bg-secondary/30 opacity-75' : ''}`}
               style={{ animationDelay: `${idx * 40}ms` }}
             >
               <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-blue-500 to-purple-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
               <div className="flex justify-between items-start mb-4">
                 <div className="flex items-center gap-1.5 flex-wrap">
+                  {visitedJobs.has(job.id) && (
+                    <span className="inline-flex items-center justify-center rounded-full px-2 py-0.5 text-[11px] font-semibold border bg-purple-500/10 text-purple-400 border-purple-500/20">
+                      Visitada
+                    </span>
+                  )}
                   <span className={`inline-flex items-center justify-center rounded-full px-2 py-0.5 text-[11px] font-semibold border ${job.priority === 1 ? "bg-red-500/10 text-red-400 border-red-500/20" : job.priority === 2 ? "bg-blue-500/10 text-blue-400 border-blue-500/20" : "bg-gray-500/10 text-gray-400 border-gray-500/20"}`}>
                     {job.priority === 1 ? "Alta" : job.priority === 2 ? "Media" : "Baja"}
                   </span>
@@ -554,6 +615,7 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialCo
                       href={job.applyUrl}
                       target="_blank"
                       rel="noopener noreferrer"
+                      onClick={() => handleVisitJob(job.id)}
                       className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-xs font-medium transition-all duration-200 hover:bg-primary/90 hover:scale-105 active:scale-95 cursor-pointer shadow-sm"
                     >
                       Aplicar
@@ -625,7 +687,7 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialCo
               {processedJobs.map((job, idx) => (
                 <tr
                   key={job.id}
-                  className="border-b border-border/50 hover:bg-secondary/20 transition-colors group animate-fade-in-up"
+                  className={`border-b border-border/50 hover:bg-secondary/20 transition-colors group animate-fade-in-up ${visitedJobs.has(job.id) ? 'bg-secondary/10 opacity-75' : ''}`}
                   style={{ animationDelay: `${idx * 20}ms` }}
                 >
                   <td className="px-6 py-4">
@@ -633,6 +695,11 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialCo
                       <div className="flex flex-col mb-1">
                         <div className="flex items-center gap-2">
                           <p className={`font-bold text-base ${job.status === "REJECTED" ? "text-muted-foreground line-through" : "text-foreground"}`}>{job.title}</p>
+                          {visitedJobs.has(job.id) && (
+                            <span className="inline-flex items-center justify-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-purple-500/10 border border-purple-500/20 text-purple-400">
+                              Visitada
+                            </span>
+                          )}
                           {job.closedAt && (
                             <span className="inline-flex items-center justify-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-secondary/80 border border-border/60 text-muted-foreground">
                               Cerrada
@@ -715,6 +782,7 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialCo
                           href={job.applyUrl}
                           target="_blank"
                           rel="noopener noreferrer"
+                          onClick={() => handleVisitJob(job.id)}
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 text-primary transition-all duration-200 hover:bg-primary hover:text-primary-foreground text-xs font-medium border border-primary/20 hover:scale-105 active:scale-95 cursor-pointer shadow-sm"
                         >
                           Aplicar

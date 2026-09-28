@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-09-27T20:01:21.134Z",
+  "updatedAt": "2026-09-28T16:02:57.027Z",
   "createdAt": "2026-09-26T19:42:16.898Z",
   "id": "fy5nReKHsAB0hPiF",
   "name": "Job Hunter 2 - Daily jobs (DB)",
@@ -155,7 +155,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Descarta las ofertas cuyo título contenga alguna palabra de ignored_keywords\nlet raw = $('Get user').first().json.ignored_keywords || [];\n// Postgres puede devolver el array como texto: \"{qa,junior}\"\nif (typeof raw === 'string') raw = raw.replace(/^\\{|\\}$/g, '').split(',');\n\nconst words = raw.map(w => String(w).replace(/^\"|\"$/g, '').trim().toLowerCase()).filter(Boolean);\n\nif (!words.length) return $input.all();\n\nconst esc = w => w.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&');\nconst re = new RegExp(`(^|[^a-z0-9])(${words.map(esc).join('|')})([^a-z0-9]|$)`, 'i');\n\nreturn $input.all().filter(item => !re.test(String(item.json.title || '')));"
+        "jsCode": "// Descarta las ofertas cuyo título contenga alguna palabra de ignored_keywords\nlet raw = $('Get user').first().json.ignored_keywords || [];\n// Postgres puede devolver el array como texto: \"{qa,junior}\"\nif (typeof raw === 'string') raw = raw.replace(/^\\{|\\}$/g, '').split(',');\n\nconst words = raw.map(w => String(w).replace(/^\"|\"$/g, '').trim().toLowerCase()).filter(Boolean);\n\n// Lista negra de empresas, provisoria hasta que se pueda administrar desde la app\nconst IGNORED_COMPANIES = ['canonical'];\n\nconst esc = w => w.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&');\nconst re = words.length\n  ? new RegExp(`(^|[^a-z0-9])(${words.map(esc).join('|')})([^a-z0-9]|$)`, 'i')\n  : null;\n\nreturn $input.all().filter(item => {\n  const company = String(item.json.company || '').trim().toLowerCase();\n  if (IGNORED_COMPANIES.includes(company)) return false;\n  return !re || !re.test(String(item.json.title || ''));\n});"
       },
       "name": "Filter ignored",
       "type": "n8n-nodes-base.code",
@@ -547,9 +547,9 @@
   },
   "nodeGroups": [],
   "pinData": {},
-  "versionId": "58a2d87e-620f-472c-b3a7-e547da5a814d",
-  "activeVersionId": "58a2d87e-620f-472c-b3a7-e547da5a814d",
-  "versionCounter": 216,
+  "versionId": "fda61f85-ff32-4388-841a-6f93c54c482a",
+  "activeVersionId": "fda61f85-ff32-4388-841a-6f93c54c482a",
+  "versionCounter": 217,
   "triggerCount": 1,
   "sourceWorkflowId": null,
   "tags": [],
@@ -574,7 +574,7 @@
     }
   ],
   "versionMetadata": {
-    "name": "3.1",
+    "name": "4.0",
     "description": ""
   }
 }

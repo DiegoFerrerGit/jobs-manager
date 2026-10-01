@@ -638,7 +638,7 @@ function LinkInput({ value, onChange }: { value?: string; onChange: (v: string) 
           href={href} 
           target="_blank" 
           rel="noopener noreferrer" 
-          className="text-sm text-sky-400 hover:underline break-all w-full"
+          className="text-sm text-sky-400 hover:underline break-all"
           onClick={(e) => e.stopPropagation()}
         >
           {cleanValue}

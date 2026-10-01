@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     template: '%s · The Jobs Manager',
   },
   description:
-    'Avisos de cientos de empresas, filtrados por si realmente contratan desde Argentina y LATAM. Seguí tus procesos y escribí tu CV en un solo lugar.',
+    'Avisos de cientos de empresas, filtrados por si realmente contratan desde LATAM. Seguí tus procesos y escribí tu CV en un solo lugar.',
   openGraph: {
     type: 'website',
     siteName: 'The Jobs Manager',
@@ -27,7 +27,7 @@ export const metadata: Metadata = {
     url: 'https://www.thejobsmanager.com',
     title: 'The Jobs Manager',
     description:
-      'Avisos de cientos de empresas, filtrados por si realmente contratan desde Argentina y LATAM.',
+      'Avisos de cientos de empresas, filtrados por si realmente contratan desde LATAM.',
     images: [{
       url: '/og-image.png',
       width: 1200,

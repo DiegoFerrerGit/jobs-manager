@@ -31,7 +31,7 @@ export default function LoginClient({ clientId }: { clientId: string }) {
     {
       id: "hunter",
       title: "Ofertas que de verdad te pueden contratar",
-      desc: "Avisos de cientos de empresas, filtrados por si realmente contratan desde Argentina y LATAM."
+      desc: "Avisos de cientos de empresas, filtrados por si realmente contratan desde LATAM."
     },
     {
       id: "tracker",
@@ -181,7 +181,7 @@ export default function LoginClient({ clientId }: { clientId: string }) {
             <img src="/branding/logo-mark-animated.svg" alt="" width={56} height={56} />
             <span style={{ marginTop: 10, fontFamily: "'Space Grotesk', system-ui, sans-serif", fontSize: 17, fontWeight: 600, letterSpacing: '0.01em', color: '#5B6B63' }}>The Jobs Manager</span>
           </div>
-          
+
           <h1 style={{ fontSize: 30, fontWeight: 700, letterSpacing: '-0.02em', color: '#0E1512', textAlign: 'center', margin: 0 }}>Entrá a tu cuenta</h1>
           <p style={{ marginTop: 10, fontSize: 15, lineHeight: '22px', color: '#5B6B63', textAlign: 'center', maxWidth: 340 }}>Usá tu cuenta de Google. Si ya entraste antes, seguís donde lo dejaste.</p>
 
@@ -204,11 +204,12 @@ export default function LoginClient({ clientId }: { clientId: string }) {
 
                 {/* Capa VISIBLE: nuestro boton. No recibe clicks. */}
                 <div aria-hidden="true" style={{
-                    position: 'absolute', inset: 0, pointerEvents: 'none',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    gap: 10, background: '#FFFFFF', border: '1px solid #E3E7E4',
-                    borderRadius: 12, fontSize: 15, fontWeight: 600, color: '#0E1512',
-                    boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}>
+                  position: 'absolute', inset: 0, pointerEvents: 'none',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  gap: 10, background: '#FFFFFF', border: '1px solid #E3E7E4',
+                  borderRadius: 12, fontSize: 15, fontWeight: 600, color: '#0E1512',
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.04)'
+                }}>
                   <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
                     <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
@@ -220,14 +221,15 @@ export default function LoginClient({ clientId }: { clientId: string }) {
 
                 {/* Capa REAL: el boton de Google, invisible, arriba de todo */}
                 <div ref={gsiRef} className="gsi-overlay" style={{
-                    position: 'absolute', inset: 0, opacity: 0, zIndex: 2,
-                    overflow: 'hidden' }} />
+                  position: 'absolute', inset: 0, opacity: 0, zIndex: 2,
+                  overflow: 'hidden'
+                }} />
               </div>
 
               {/* Waitlist note box */}
               <div style={{ marginTop: 24, width: '100%', background: '#F2F5F3', border: '1px solid #E8ECEA', borderRadius: 10, padding: '13px 16px', textAlign: 'center', fontSize: 13, lineHeight: '19px', color: '#5B6B63' }}>
                 <div>El acceso está por lista de espera.</div>
-                <button 
+                <button
                   onClick={() => { setMode("beta"); setError(""); setSuccess(""); }}
                   style={{ color: '#00744A', fontWeight: 500, textDecoration: 'none' }}
                   className="hover:underline mt-1"
@@ -560,217 +562,217 @@ export default function LoginClient({ clientId }: { clientId: string }) {
                 )}
 
 
-                  {/* CV MOCKUP */}
-                  {activeIndex === 2 && (
-                    <div style={{ width: '100%', height: 'auto', background: '#121215', border: '1px solid rgba(255,255,255,0.10)', borderRadius: 16, boxShadow: '0 20px 50px rgba(0,0,0,0.35)', padding: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', cursor: 'default', pointerEvents: 'none', userSelect: 'none' }}>
+                {/* CV MOCKUP */}
+                {activeIndex === 2 && (
+                  <div style={{ width: '100%', height: 'auto', background: '#121215', border: '1px solid rgba(255,255,255,0.10)', borderRadius: 16, boxShadow: '0 20px 50px rgba(0,0,0,0.35)', padding: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', cursor: 'default', pointerEvents: 'none', userSelect: 'none' }}>
 
-                      {/* Editor chrome bar */}
-                      <div style={{ height: 38, background: '#0C1210', borderBottom: '1px solid rgba(255,255,255,0.08)', padding: '0 14px', display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#2E3A34' }}></div>
-                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#2E3A34' }}></div>
-                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#2E3A34' }}></div>
-                        <span style={{ fontFamily: 'monospace', fontSize: 11.5, color: '#8A9A92', marginLeft: 8 }}>cv.typ</span>
-                        <span style={{ marginLeft: 'auto', background: 'rgba(0,201,122,0.14)', color: '#34D399', fontSize: 10, padding: '3px 10px', borderRadius: 6 }}>PDF actualizado</span>
-                      </div>
-
-                      {/* Two-panel body */}
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1px 1fr', height: 'auto', alignItems: 'stretch' }}>
-
-                        {/* Left: code with line numbers */}
-                        <div style={{ background: '#0C1210', padding: '16px 0', overflow: 'hidden', display: 'flex', flexDirection: 'column', height: 'auto', justifyContent: 'flex-start' }}>
-                          {[
-                            { n: 1,  code: <><span style={{color:'#C792EA'}}>#let</span> <span style={{color:'#C7D2CC'}}>cv(name, title, body) = {'{'}</span></> },
-                            { n: 2,  code: <><span style={{color:'#82AAFF'}}>  set</span> <span style={{color:'#82AAFF'}}>text</span><span style={{color:'#C7D2CC'}}>(font: </span><span style={{color:'#C3E88D'}}>"Inter"</span><span style={{color:'#C7D2CC'}}>, size: 10pt)</span></> },
-                            { n: 3,  code: <><span style={{color:'#82AAFF'}}>  align</span><span style={{color:'#C7D2CC'}}>(center)[</span></> },
-                            { n: 4,  code: <><span style={{color:'#C792EA'}}>    #text</span><span style={{color:'#C7D2CC'}}>(17pt, weight: 700)[</span><span style={{color:'#C792EA'}}>#name</span><span style={{color:'#C7D2CC'}}>]</span></> },
-                            { n: 5,  code: <><span style={{color:'#C792EA'}}>    #v</span><span style={{color:'#C7D2CC'}}>(2pt)</span></> },
-                            { n: 6,  code: <><span style={{color:'#C792EA'}}>    #text</span><span style={{color:'#C7D2CC'}}>(9pt, fill: gray)[</span><span style={{color:'#C792EA'}}>#title</span><span style={{color:'#C7D2CC'}}>]</span></> },
-                            { n: 7,  code: <><span style={{color:'#C7D2CC'}}>  ]</span></> },
-                            { n: 8,  code: <><span style={{color:'#82AAFF'}}>  line</span><span style={{color:'#C7D2CC'}}>(length: 100%)</span></> },
-                            { n: 9,  code: <><span style={{color:'#C7D2CC'}}>  body</span></> },
-                            { n: 10, code: <><span style={{color:'#C7D2CC'}}>{'}'}</span></> },
-                            { n: 11, code: null },
-                            { n: 12, code: <><span style={{color:'#F97316'}}>=</span> <span style={{color:'#C7D2CC'}}>Experience</span></> },
-                            { n: 13, code: null },
-                            { n: 14, code: <><span style={{color:'#FB923C'}}>{`== Engineering Manager`}</span></> },
-                            { n: 15, code: <><span style={{color:'#7E8B84', fontStyle:'italic'}}>_Stripe (2022 - Present)_</span></> },
-                            { n: 16, code: <><span style={{color:'#C7D2CC'}}>- Led a team of 15 engineers</span></> },
-                            { n: 17, code: <><span style={{color:'#C7D2CC'}}>- Architected the ledger system</span></> },
-                            { n: 18, code: <><span style={{color:'#C7D2CC'}}>- Improved team velocity by 40%</span></> },
-                            { n: 19, code: null },
-                            { n: 20, code: <><span style={{color:'#FB923C'}}>{`== Senior Frontend Engineer`}</span></> },
-                            { n: 21, code: <><span style={{color:'#7E8B84', fontStyle:'italic'}}>_Coinbase (2019 - 2022)_</span></> },
-                            { n: 22, code: <><span style={{color:'#C7D2CC'}}>- Rebuilt the trading dashboard</span></> },
-                          ].map(({ n, code }) => (
-                            <div key={n} style={{ display: 'flex', lineHeight: '18px', flexShrink: 0 }}>
-                              <span style={{ width: 30, textAlign: 'right', paddingRight: 10, color: '#3F4C46', fontSize: 10.5, fontFamily: 'monospace', flexShrink: 0 }}>{n}</span>
-                              <span style={{ fontFamily: 'monospace', fontSize: 10.5, whiteSpace: 'pre', color: '#C7D2CC' }}>{code ?? '\u00a0'}</span>
-                            </div>
-                          ))}
-                        </div>
-
-                        {/* Divider */}
-                        <div style={{ background: 'rgba(255,255,255,0.08)' }}></div>
-
-                        {/* Right: A4 sheet */}
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px 20px', background: 'transparent' }}>
-                          <div style={{ height: 391, width: 277, background: '#FFFFFF', borderRadius: 3, boxShadow: '0 10px 30px rgba(0,0,0,0.45)', padding: '22px 24px', boxSizing: 'border-box', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-
-                            {/* Name */}
-                            <div style={{ textAlign: 'center', fontSize: 12, fontWeight: 800, letterSpacing: '0.1em', color: '#111', marginBottom: 3 }}>ALEX MORGAN</div>
-                            <div style={{ textAlign: 'center', fontSize: 6.5, color: '#666', marginBottom: 10 }}>Engineering Manager · Buenos Aires · alex@mail.com</div>
-                            <div style={{ height: 1.5, background: '#111', marginBottom: 12 }}></div>
-
-                            {/* Experience */}
-                            <div style={{ fontSize: 7, fontWeight: 700, letterSpacing: '0.16em', color: '#0E9F6E', marginBottom: 5 }}>EXPERIENCE</div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
-                              <span style={{ fontSize: 8, fontWeight: 700, color: '#111' }}>Engineering Manager, Stripe</span>
-                              <span style={{ fontSize: 6.5, color: '#666' }}>2022 – Present</span>
-                            </div>
-                            <div style={{ height: 3.5, background: '#D9DEDB', borderRadius: 2, marginBottom: 5, width: '100%' }}></div>
-                            <div style={{ height: 3.5, background: '#D9DEDB', borderRadius: 2, marginBottom: 5, width: '92%' }}></div>
-                            <div style={{ height: 3.5, background: '#D9DEDB', borderRadius: 2, marginBottom: 14, width: '68%' }}></div>
-                            
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
-                              <span style={{ fontSize: 8, fontWeight: 700, color: '#111' }}>Senior Frontend, Coinbase</span>
-                              <span style={{ fontSize: 6.5, color: '#666' }}>2019 – 2022</span>
-                            </div>
-                            <div style={{ height: 3.5, background: '#D9DEDB', borderRadius: 2, marginBottom: 5, width: '100%' }}></div>
-                            <div style={{ height: 3.5, background: '#D9DEDB', borderRadius: 2, marginBottom: 5, width: '86%' }}></div>
-                            <div style={{ height: 3.5, background: '#D9DEDB', borderRadius: 2, marginBottom: 14, width: '61%' }}></div>
-
-                            {/* Skills */}
-                            <div style={{ fontSize: 7, fontWeight: 700, letterSpacing: '0.16em', color: '#0E9F6E', marginBottom: 5 }}>SKILLS</div>
-                            <div style={{ height: 3.5, background: '#D9DEDB', borderRadius: 2, marginBottom: 5, width: '100%' }}></div>
-                            <div style={{ height: 3.5, background: '#D9DEDB', borderRadius: 2, marginBottom: 14, width: '74%' }}></div>
-
-                            {/* Education */}
-                            <div style={{ fontSize: 7, fontWeight: 700, letterSpacing: '0.16em', color: '#0E9F6E', marginBottom: 5 }}>EDUCATION</div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
-                              <span style={{ fontSize: 8, fontWeight: 700, color: '#111' }}>Ing. en Sistemas, UBA</span>
-                              <span style={{ fontSize: 6.5, color: '#666' }}>2014 – 2019</span>
-                            </div>
-                            <div style={{ height: 3.5, background: '#D9DEDB', borderRadius: 2, marginBottom: 5, width: '88%' }}></div>
-                            <div style={{ height: 3.5, background: '#D9DEDB', borderRadius: 2, marginBottom: 14, width: '62%' }}></div>
-
-                            {/* Languages */}
-                            <div style={{ fontSize: 7, fontWeight: 700, letterSpacing: '0.16em', color: '#0E9F6E', marginBottom: 5 }}>LANGUAGES</div>
-                            <div style={{ height: 3.5, background: '#D9DEDB', borderRadius: 2, marginBottom: 5, width: '72%' }}></div>
-                            <div style={{ height: 3.5, background: '#D9DEDB', borderRadius: 2, marginBottom: 0, width: '48%' }}></div>
-
-                          </div>
-                        </div>
-
-                      </div>
+                    {/* Editor chrome bar */}
+                    <div style={{ height: 38, background: '#0C1210', borderBottom: '1px solid rgba(255,255,255,0.08)', padding: '0 14px', display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                      <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#2E3A34' }}></div>
+                      <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#2E3A34' }}></div>
+                      <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#2E3A34' }}></div>
+                      <span style={{ fontFamily: 'monospace', fontSize: 11.5, color: '#8A9A92', marginLeft: 8 }}>cv.typ</span>
+                      <span style={{ marginLeft: 'auto', background: 'rgba(0,201,122,0.14)', color: '#34D399', fontSize: 10, padding: '3px 10px', borderRadius: 6 }}>PDF actualizado</span>
                     </div>
-                  )}
 
-                  {/* AI Match MOCKUP */}
-                  {activeIndex === 3 && (
-                    <div style={{ width: '100%', height: 'auto', background: '#121215', border: '1px solid rgba(255,255,255,0.10)', borderRadius: 16, boxShadow: '0 20px 50px rgba(0,0,0,0.35)', padding: 18, display: 'flex', flexDirection: 'column', overflow: 'hidden', cursor: 'default', pointerEvents: 'none', userSelect: 'none' }}>
-                      
-                      {/* Header */}
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-                        <span style={{ fontSize: 14, fontWeight: 700, color: '#E8EEEA' }}>Match con tu perfil</span>
-                        <span style={{ background: 'rgba(0,201,122,0.14)', color: '#34D399', fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', padding: '3px 10px', borderRadius: 6 }}>PRÓXIMAMENTE</span>
+                    {/* Two-panel body */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1px 1fr', height: 'auto', alignItems: 'stretch' }}>
+
+                      {/* Left: code with line numbers */}
+                      <div style={{ background: '#0C1210', padding: '16px 0', overflow: 'hidden', display: 'flex', flexDirection: 'column', height: 'auto', justifyContent: 'flex-start' }}>
+                        {[
+                          { n: 1, code: <><span style={{ color: '#C792EA' }}>#let</span> <span style={{ color: '#C7D2CC' }}>cv(name, title, body) = {'{'}</span></> },
+                          { n: 2, code: <><span style={{ color: '#82AAFF' }}>  set</span> <span style={{ color: '#82AAFF' }}>text</span><span style={{ color: '#C7D2CC' }}>(font: </span><span style={{ color: '#C3E88D' }}>"Inter"</span><span style={{ color: '#C7D2CC' }}>, size: 10pt)</span></> },
+                          { n: 3, code: <><span style={{ color: '#82AAFF' }}>  align</span><span style={{ color: '#C7D2CC' }}>(center)[</span></> },
+                          { n: 4, code: <><span style={{ color: '#C792EA' }}>    #text</span><span style={{ color: '#C7D2CC' }}>(17pt, weight: 700)[</span><span style={{ color: '#C792EA' }}>#name</span><span style={{ color: '#C7D2CC' }}>]</span></> },
+                          { n: 5, code: <><span style={{ color: '#C792EA' }}>    #v</span><span style={{ color: '#C7D2CC' }}>(2pt)</span></> },
+                          { n: 6, code: <><span style={{ color: '#C792EA' }}>    #text</span><span style={{ color: '#C7D2CC' }}>(9pt, fill: gray)[</span><span style={{ color: '#C792EA' }}>#title</span><span style={{ color: '#C7D2CC' }}>]</span></> },
+                          { n: 7, code: <><span style={{ color: '#C7D2CC' }}>  ]</span></> },
+                          { n: 8, code: <><span style={{ color: '#82AAFF' }}>  line</span><span style={{ color: '#C7D2CC' }}>(length: 100%)</span></> },
+                          { n: 9, code: <><span style={{ color: '#C7D2CC' }}>  body</span></> },
+                          { n: 10, code: <><span style={{ color: '#C7D2CC' }}>{'}'}</span></> },
+                          { n: 11, code: null },
+                          { n: 12, code: <><span style={{ color: '#F97316' }}>=</span> <span style={{ color: '#C7D2CC' }}>Experience</span></> },
+                          { n: 13, code: null },
+                          { n: 14, code: <><span style={{ color: '#FB923C' }}>{`== Engineering Manager`}</span></> },
+                          { n: 15, code: <><span style={{ color: '#7E8B84', fontStyle: 'italic' }}>_Stripe (2022 - Present)_</span></> },
+                          { n: 16, code: <><span style={{ color: '#C7D2CC' }}>- Led a team of 15 engineers</span></> },
+                          { n: 17, code: <><span style={{ color: '#C7D2CC' }}>- Architected the ledger system</span></> },
+                          { n: 18, code: <><span style={{ color: '#C7D2CC' }}>- Improved team velocity by 40%</span></> },
+                          { n: 19, code: null },
+                          { n: 20, code: <><span style={{ color: '#FB923C' }}>{`== Senior Frontend Engineer`}</span></> },
+                          { n: 21, code: <><span style={{ color: '#7E8B84', fontStyle: 'italic' }}>_Coinbase (2019 - 2022)_</span></> },
+                          { n: 22, code: <><span style={{ color: '#C7D2CC' }}>- Rebuilt the trading dashboard</span></> },
+                        ].map(({ n, code }) => (
+                          <div key={n} style={{ display: 'flex', lineHeight: '18px', flexShrink: 0 }}>
+                            <span style={{ width: 30, textAlign: 'right', paddingRight: 10, color: '#3F4C46', fontSize: 10.5, fontFamily: 'monospace', flexShrink: 0 }}>{n}</span>
+                            <span style={{ fontFamily: 'monospace', fontSize: 10.5, whiteSpace: 'pre', color: '#C7D2CC' }}>{code ?? '\u00a0'}</span>
+                          </div>
+                        ))}
                       </div>
 
-                      {/* Job card with score */}
-                      <div style={{ background: '#141A17', border: '1px solid #1F2B25', borderRadius: 14, padding: '16px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-                        {/* Left column */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                          <div style={{ display: 'flex', gap: 6 }}>
-                            <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.02em', background: 'rgba(239,68,68,0.15)', color: '#EF4444', padding: '2px 8px', borderRadius: 4 }}>Alta</span>
-                            <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.02em', background: 'rgba(16,185,129,0.15)', color: '#10B981', padding: '2px 8px', borderRadius: 4 }}>LATAM Ok</span>
-                            <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.02em', background: 'rgba(168,85,247,0.15)', color: '#A855F7', padding: '2px 8px', borderRadius: 4 }}>Ashby</span>
+                      {/* Divider */}
+                      <div style={{ background: 'rgba(255,255,255,0.08)' }}></div>
+
+                      {/* Right: A4 sheet */}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px 20px', background: 'transparent' }}>
+                        <div style={{ height: 391, width: 277, background: '#FFFFFF', borderRadius: 3, boxShadow: '0 10px 30px rgba(0,0,0,0.45)', padding: '22px 24px', boxSizing: 'border-box', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+
+                          {/* Name */}
+                          <div style={{ textAlign: 'center', fontSize: 12, fontWeight: 800, letterSpacing: '0.1em', color: '#111', marginBottom: 3 }}>ALEX MORGAN</div>
+                          <div style={{ textAlign: 'center', fontSize: 6.5, color: '#666', marginBottom: 10 }}>Engineering Manager · Buenos Aires · alex@mail.com</div>
+                          <div style={{ height: 1.5, background: '#111', marginBottom: 12 }}></div>
+
+                          {/* Experience */}
+                          <div style={{ fontSize: 7, fontWeight: 700, letterSpacing: '0.16em', color: '#0E9F6E', marginBottom: 5 }}>EXPERIENCE</div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+                            <span style={{ fontSize: 8, fontWeight: 700, color: '#111' }}>Engineering Manager, Stripe</span>
+                            <span style={{ fontSize: 6.5, color: '#666' }}>2022 – Present</span>
                           </div>
-                          <h3 style={{ fontSize: 16, fontWeight: 700, color: '#E8EEEA', margin: 0 }}>Staff Engineer – Payments</h3>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#8A9A92' }}>
-                            <Star className="w-3.5 h-3.5 text-yellow-500" />
-                            <span style={{ color: '#34D399', fontWeight: 500 }}>nubank.com</span>
-                            <PenLine className="w-3 h-3" />
-                            <span>·</span>
-                            <MapPin className="w-3.5 h-3.5 text-sky-400" />
-                            <span>São Paulo</span>
+                          <div style={{ height: 3.5, background: '#D9DEDB', borderRadius: 2, marginBottom: 5, width: '100%' }}></div>
+                          <div style={{ height: 3.5, background: '#D9DEDB', borderRadius: 2, marginBottom: 5, width: '92%' }}></div>
+                          <div style={{ height: 3.5, background: '#D9DEDB', borderRadius: 2, marginBottom: 14, width: '68%' }}></div>
+
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+                            <span style={{ fontSize: 8, fontWeight: 700, color: '#111' }}>Senior Frontend, Coinbase</span>
+                            <span style={{ fontSize: 6.5, color: '#666' }}>2019 – 2022</span>
                           </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#8A9A92' }}>
-                            <MapPin className="w-3.5 h-3.5 text-sky-400" />
-                            <span>Remote | Brazil | Argentina</span>
+                          <div style={{ height: 3.5, background: '#D9DEDB', borderRadius: 2, marginBottom: 5, width: '100%' }}></div>
+                          <div style={{ height: 3.5, background: '#D9DEDB', borderRadius: 2, marginBottom: 5, width: '86%' }}></div>
+                          <div style={{ height: 3.5, background: '#D9DEDB', borderRadius: 2, marginBottom: 14, width: '61%' }}></div>
+
+                          {/* Skills */}
+                          <div style={{ fontSize: 7, fontWeight: 700, letterSpacing: '0.16em', color: '#0E9F6E', marginBottom: 5 }}>SKILLS</div>
+                          <div style={{ height: 3.5, background: '#D9DEDB', borderRadius: 2, marginBottom: 5, width: '100%' }}></div>
+                          <div style={{ height: 3.5, background: '#D9DEDB', borderRadius: 2, marginBottom: 14, width: '74%' }}></div>
+
+                          {/* Education */}
+                          <div style={{ fontSize: 7, fontWeight: 700, letterSpacing: '0.16em', color: '#0E9F6E', marginBottom: 5 }}>EDUCATION</div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+                            <span style={{ fontSize: 8, fontWeight: 700, color: '#111' }}>Ing. en Sistemas, UBA</span>
+                            <span style={{ fontSize: 6.5, color: '#666' }}>2014 – 2019</span>
                           </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#8A9A92' }}>
-                            <Calendar className="w-3.5 h-3.5 text-orange-400" />
-                            <span>2026-09-22</span>
-                          </div>
+                          <div style={{ height: 3.5, background: '#D9DEDB', borderRadius: 2, marginBottom: 5, width: '88%' }}></div>
+                          <div style={{ height: 3.5, background: '#D9DEDB', borderRadius: 2, marginBottom: 14, width: '62%' }}></div>
+
+                          {/* Languages */}
+                          <div style={{ fontSize: 7, fontWeight: 700, letterSpacing: '0.16em', color: '#0E9F6E', marginBottom: 5 }}>LANGUAGES</div>
+                          <div style={{ height: 3.5, background: '#D9DEDB', borderRadius: 2, marginBottom: 5, width: '72%' }}></div>
+                          <div style={{ height: 3.5, background: '#D9DEDB', borderRadius: 2, marginBottom: 0, width: '48%' }}></div>
+
                         </div>
-
-                        {/* Right column (Score Ring) */}
-                        <div style={{ width: 110, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                          <div style={{ position: 'relative', width: 86, height: 86 }}>
-                            <svg viewBox="0 0 100 100" style={{ width: '100%', height: '100%', transform: 'rotate(-90deg)' }}>
-                              <circle cx="50" cy="50" r="36" fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="9" />
-                              <circle cx="50" cy="50" r="36" fill="none" stroke="#00C97A" strokeWidth="9" strokeLinecap="round" strokeDasharray="226.19" strokeDashoffset="29.4" />
-                            </svg>
-                            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                              <span style={{ fontSize: 20, fontWeight: 700, color: '#E8EEEA' }}>87%</span>
-                            </div>
-                          </div>
-                          <span style={{ marginTop: 6, fontSize: 10, color: '#8A9A92' }}>para tu perfil</span>
-                        </div>
-                      </div>
-
-                      {/* Grid header */}
-                      <div style={{ fontSize: 9.5, letterSpacing: '0.12em', color: '#5E6E66', marginBottom: 10 }}>LO QUE LA IA LEYÓ DEL AVISO</div>
-
-                      {/* Info grid */}
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: 28, rowGap: 0, marginBottom: 12 }}>
-                        {/* Column 1 */}
-                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 26, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                            <span style={{ fontSize: 11, color: '#5E6E66' }}>Elegibilidad</span>
-                            <span style={{ fontSize: 11.5, fontWeight: 500, color: '#E8EEEA' }}>Argentina · Brasil · Uruguay</span>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 26, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                            <span style={{ fontSize: 11, color: '#5E6E66' }}>Contratación</span>
-                            <span style={{ fontSize: 11.5, fontWeight: 500, color: '#E8EEEA' }}>EOR, sin visa</span>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 26, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                            <span style={{ fontSize: 11, color: '#5E6E66' }}>Remoto</span>
-                            <span style={{ fontSize: 11.5, fontWeight: 500, color: '#E8EEEA' }}>Real, sin oficina</span>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 26 }}>
-                            <span style={{ fontSize: 11, color: '#5E6E66' }}>Seniority</span>
-                            <span style={{ fontSize: 11.5, fontWeight: 500, color: '#E8EEEA' }}>Staff</span>
-                          </div>
-                        </div>
-
-                        {/* Column 2 */}
-                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 26, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                            <span style={{ fontSize: 11, color: '#5E6E66' }}>Stack</span>
-                            <span style={{ fontSize: 11.5, fontWeight: 500, color: '#E8EEEA' }}>Go · Postgres · K8s</span>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 26, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                            <span style={{ fontSize: 11, color: '#5E6E66' }}>Salario</span>
-                            <span style={{ fontSize: 11.5, fontWeight: 500, color: '#E8EEEA' }}>US$ 180k – 220k</span>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 26, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                            <span style={{ fontSize: 11, color: '#5E6E66' }}>Inglés</span>
-                            <span style={{ fontSize: 11.5, fontWeight: 500, color: '#FBBF24' }}>Avanzado, excluyente</span>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 26 }}>
-                            <span style={{ fontSize: 11, color: '#5E6E66' }}>Tus skills</span>
-                            <span style={{ fontSize: 11.5, fontWeight: 500, color: '#34D399' }}>7 de 9</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Footer */}
-                      <div style={{ fontSize: 11.5, color: '#5E6E66', textAlign: 'left' }}>
-                        La IA lee el aviso una sola vez y lo guarda como datos. El match se calcula contra tu CV.
                       </div>
 
                     </div>
-                  )}
+                  </div>
+                )}
+
+                {/* AI Match MOCKUP */}
+                {activeIndex === 3 && (
+                  <div style={{ width: '100%', height: 'auto', background: '#121215', border: '1px solid rgba(255,255,255,0.10)', borderRadius: 16, boxShadow: '0 20px 50px rgba(0,0,0,0.35)', padding: 18, display: 'flex', flexDirection: 'column', overflow: 'hidden', cursor: 'default', pointerEvents: 'none', userSelect: 'none' }}>
+
+                    {/* Header */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+                      <span style={{ fontSize: 14, fontWeight: 700, color: '#E8EEEA' }}>Match con tu perfil</span>
+                      <span style={{ background: 'rgba(0,201,122,0.14)', color: '#34D399', fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', padding: '3px 10px', borderRadius: 6 }}>PRÓXIMAMENTE</span>
+                    </div>
+
+                    {/* Job card with score */}
+                    <div style={{ background: '#141A17', border: '1px solid #1F2B25', borderRadius: 14, padding: '16px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+                      {/* Left column */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.02em', background: 'rgba(239,68,68,0.15)', color: '#EF4444', padding: '2px 8px', borderRadius: 4 }}>Alta</span>
+                          <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.02em', background: 'rgba(16,185,129,0.15)', color: '#10B981', padding: '2px 8px', borderRadius: 4 }}>LATAM Ok</span>
+                          <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.02em', background: 'rgba(168,85,247,0.15)', color: '#A855F7', padding: '2px 8px', borderRadius: 4 }}>Ashby</span>
+                        </div>
+                        <h3 style={{ fontSize: 16, fontWeight: 700, color: '#E8EEEA', margin: 0 }}>Staff Engineer – Payments</h3>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#8A9A92' }}>
+                          <Star className="w-3.5 h-3.5 text-yellow-500" />
+                          <span style={{ color: '#34D399', fontWeight: 500 }}>nubank.com</span>
+                          <PenLine className="w-3 h-3" />
+                          <span>·</span>
+                          <MapPin className="w-3.5 h-3.5 text-sky-400" />
+                          <span>São Paulo</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#8A9A92' }}>
+                          <MapPin className="w-3.5 h-3.5 text-sky-400" />
+                          <span>Remote | Brazil | Argentina</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#8A9A92' }}>
+                          <Calendar className="w-3.5 h-3.5 text-orange-400" />
+                          <span>2026-09-22</span>
+                        </div>
+                      </div>
+
+                      {/* Right column (Score Ring) */}
+                      <div style={{ width: 110, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{ position: 'relative', width: 86, height: 86 }}>
+                          <svg viewBox="0 0 100 100" style={{ width: '100%', height: '100%', transform: 'rotate(-90deg)' }}>
+                            <circle cx="50" cy="50" r="36" fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="9" />
+                            <circle cx="50" cy="50" r="36" fill="none" stroke="#00C97A" strokeWidth="9" strokeLinecap="round" strokeDasharray="226.19" strokeDashoffset="29.4" />
+                          </svg>
+                          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <span style={{ fontSize: 20, fontWeight: 700, color: '#E8EEEA' }}>87%</span>
+                          </div>
+                        </div>
+                        <span style={{ marginTop: 6, fontSize: 10, color: '#8A9A92' }}>para tu perfil</span>
+                      </div>
+                    </div>
+
+                    {/* Grid header */}
+                    <div style={{ fontSize: 9.5, letterSpacing: '0.12em', color: '#5E6E66', marginBottom: 10 }}>LO QUE LA IA LEYÓ DEL AVISO</div>
+
+                    {/* Info grid */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: 28, rowGap: 0, marginBottom: 12 }}>
+                      {/* Column 1 */}
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 26, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                          <span style={{ fontSize: 11, color: '#5E6E66' }}>Elegibilidad</span>
+                          <span style={{ fontSize: 11.5, fontWeight: 500, color: '#E8EEEA' }}>Argentina · Brasil · Uruguay</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 26, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                          <span style={{ fontSize: 11, color: '#5E6E66' }}>Contratación</span>
+                          <span style={{ fontSize: 11.5, fontWeight: 500, color: '#E8EEEA' }}>EOR, sin visa</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 26, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                          <span style={{ fontSize: 11, color: '#5E6E66' }}>Remoto</span>
+                          <span style={{ fontSize: 11.5, fontWeight: 500, color: '#E8EEEA' }}>Real, sin oficina</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 26 }}>
+                          <span style={{ fontSize: 11, color: '#5E6E66' }}>Seniority</span>
+                          <span style={{ fontSize: 11.5, fontWeight: 500, color: '#E8EEEA' }}>Staff</span>
+                        </div>
+                      </div>
+
+                      {/* Column 2 */}
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 26, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                          <span style={{ fontSize: 11, color: '#5E6E66' }}>Stack</span>
+                          <span style={{ fontSize: 11.5, fontWeight: 500, color: '#E8EEEA' }}>Go · Postgres · K8s</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 26, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                          <span style={{ fontSize: 11, color: '#5E6E66' }}>Salario</span>
+                          <span style={{ fontSize: 11.5, fontWeight: 500, color: '#E8EEEA' }}>US$ 180k – 220k</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 26, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                          <span style={{ fontSize: 11, color: '#5E6E66' }}>Inglés</span>
+                          <span style={{ fontSize: 11.5, fontWeight: 500, color: '#FBBF24' }}>Avanzado, excluyente</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 26 }}>
+                          <span style={{ fontSize: 11, color: '#5E6E66' }}>Tus skills</span>
+                          <span style={{ fontSize: 11.5, fontWeight: 500, color: '#34D399' }}>7 de 9</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Footer */}
+                    <div style={{ fontSize: 11.5, color: '#5E6E66', textAlign: 'left' }}>
+                      La IA lee el aviso una sola vez y lo guarda como datos. El match se calcula contra tu CV.
+                    </div>
+
+                  </div>
+                )}
 
               </motion.div>
             </AnimatePresence>

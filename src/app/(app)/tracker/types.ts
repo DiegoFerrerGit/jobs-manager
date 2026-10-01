@@ -23,6 +23,15 @@ export interface TrackerJob {
   monedaSalario?: 'USD' | 'ARS';
   closedAt?: Date | null;
   customProps?: Record<string, CustomPropertyValue>;
+  comments?: JobComment[];
+  notes?: string;
+}
+
+export interface JobComment {
+  id: string;
+  author: string;
+  content: string;
+  createdAt: Date;
 }
 
 export type CustomPropertyType =

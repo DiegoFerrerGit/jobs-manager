@@ -5,6 +5,8 @@ import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea
 import { TrackerJob, TrackerConfig, SelectOption, OPTION_COLORS, CustomPropertyDef, CustomPropertyType, CustomPropertyValue } from "../types";
 import { X, ExternalLink, Link as LinkIcon, MapPin, Target, Hash, AlignLeft, GripVertical, Plus, Type, ToggleLeft, Globe, Mail, Phone, List, CheckSquare, Clock, Check, Trash2, Calendar } from "lucide-react";
 import NotionSelect from "./NotionSelect";
+import JobComments from "./JobComments";
+import JobNotes from "./JobNotes";
 
 interface JobPanelProps {
   job: TrackerJob;
@@ -330,6 +332,9 @@ export default function JobPanel({ job, columnId, config, columns, onClose, onUp
               <span>Add a property</span>
             </button>
           </div>
+
+          <JobComments comments={data.comments || []} onChange={v => handleChange("comments", v)} />
+          <JobNotes notes={data.notes} onChange={v => handleChange("notes", v)} />
         </div>
       </motion.div>
 

@@ -626,19 +626,22 @@ function LinkInput({ value, onChange }: { value?: string; onChange: (v: string) 
   const [isEditing, setIsEditing] = useState(false);
 
   if (!isEditing && value) {
+    const cleanValue = value.trim();
+    const href = cleanValue.startsWith("http") ? cleanValue : `https://${cleanValue}`;
+    
     return (
       <div 
         className="flex items-center w-full group/link min-h-[32px] px-2 py-1.5 hover:bg-white/5 rounded transition-all cursor-text"
         onClick={() => setIsEditing(true)}
       >
         <a 
-          href={value.startsWith("http") ? value : `https://${value}`} 
+          href={href} 
           target="_blank" 
           rel="noopener noreferrer" 
-          className="text-sm text-sky-400 hover:underline truncate block w-full"
+          className="text-sm text-sky-400 hover:underline break-all w-full"
           onClick={(e) => e.stopPropagation()}
         >
-          {value}
+          {cleanValue}
         </a>
       </div>
     );

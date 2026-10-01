@@ -911,11 +911,14 @@ export default function TrackerClient({ initialData }: { initialData: any }) {
                                   {/* Centro del Donut (Hover State) */}
                                   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                                     {activeMotivoIndex !== -1 ? (
-                                      <div className="flex flex-col items-center justify-center animate-in fade-in zoom-in duration-200">
-                                        <span className="text-[10px] font-bold uppercase tracking-widest mb-1 text-center px-2 max-w-[150px] line-clamp-2 leading-tight" style={{ color: motivosData[activeMotivoIndex].color }}>
+                                      <div 
+                                        className="flex flex-col items-center justify-center animate-in fade-in zoom-in duration-200"
+                                        style={{ filter: "drop-shadow(0px 2px 10px rgba(0,0,0,0.5)) saturate(1.8) brightness(1.2)" }}
+                                      >
+                                        <span className="text-[10px] font-bold uppercase tracking-widest mb-1 text-center px-2 max-w-[150px] line-clamp-2 leading-tight" style={{ color: motivosData[activeMotivoIndex].color, textShadow: "0px 1px 2px rgba(0,0,0,0.8)" }}>
                                           {motivosData[activeMotivoIndex].name}
                                         </span>
-                                        <div className="flex items-baseline gap-1.5" style={{ color: motivosData[activeMotivoIndex].color }}>
+                                        <div className="flex items-baseline gap-1.5" style={{ color: motivosData[activeMotivoIndex].color, textShadow: "0px 2px 4px rgba(0,0,0,0.8)" }}>
                                           <span className="text-4xl font-black">{motivosData[activeMotivoIndex].value}</span>
                                           <span className="text-sm font-bold opacity-80">
                                             ({((motivosData[activeMotivoIndex].value / totalMotivos) * 100).toFixed(0)}%)

@@ -1,0 +1,24 @@
+
+> jobs-manager@0.1.0 dev
+> next dev
+
+⚠ Port 3000 is in use by process 95679, using available port 3001 instead.
+▲ Next.js 16.3.6 (Turbopack)
+- Local:         http://localhost:3001
+- Network:       http://192.168.1.2:3001
+- Environments: .env.local
+✓ Ready in 327ms
+⚠ Warning: Next.js ignored package-lock.json in /Users/diegoferrer because it is outside the current Git repository (/Users/diegoferrer/Desktop/Proyectos/Jobs-Manager).
+ To use this directory, set `turbopack.root` in your Next.js config.
+
+✓ Running next.config.ts took 18ms
+⨯ Another next dev server is already running.
+
+- Local:        http://localhost:3000
+- PID:          95679
+- Dir:          /Users/diegoferrer/Desktop/Proyectos/Jobs-Manager
+- Log:          .next/dev/logs/next-development.log
+
+You can access the existing server at http://localhost:3000,
+or run kill 95679 to stop it and start a new one.
+[?25h

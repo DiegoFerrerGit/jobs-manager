@@ -897,10 +897,11 @@ export default function TrackerClient({ initialData }: { initialData: any }) {
                                             fill={entry.color}
                                             style={{ 
                                               cursor: 'pointer', 
-                                              transition: 'all 0.3s ease', 
+                                              transition: 'transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.25s ease', 
                                               opacity: chartMotivoFilter && chartMotivoFilter !== entry.name ? 0.2 : (activeMotivoIndex === index ? 1 : 0.85),
-                                              transform: activeMotivoIndex === index ? 'scale(1.05)' : 'scale(1)',
-                                              transformOrigin: 'center'
+                                              transform: activeMotivoIndex === index ? 'scale(1.08)' : 'scale(1)',
+                                              transformOrigin: 'center',
+                                              transformBox: 'fill-box'
                                             }}
                                           />
                                         ))}
@@ -926,7 +927,7 @@ export default function TrackerClient({ initialData }: { initialData: any }) {
                                         </div>
                                       </div>
                                     ) : (
-                                      <div className="flex flex-col items-center justify-center text-muted-foreground/40">
+                                      <div className="flex flex-col items-center justify-center text-zinc-200" style={{ filter: "drop-shadow(0px 2px 10px rgba(0,0,0,0.5)) saturate(1.8) brightness(1.2)" }}>
                                         <span className="text-xs font-medium uppercase tracking-widest mb-1">Total</span>
                                         <span className="text-3xl font-black">{totalMotivos}</span>
                                       </div>

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import { Star, PenLine, MapPin, Calendar, CheckCircle2, AlertTriangle } from "lucide-react";
 import Spinner from "@/components/Spinner";
 
 declare global {
@@ -24,6 +25,7 @@ export default function LoginClient({ clientId }: { clientId: string }) {
   const [isHovered, setIsHovered] = useState(false);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
   const gsiRef = useRef<HTMLDivElement>(null);
+  const googleInit = useRef(false);
 
   const slides = [
     {
@@ -40,13 +42,18 @@ export default function LoginClient({ clientId }: { clientId: string }) {
       id: "cv",
       title: "Tu currículum como código, listo para cada postulación",
       desc: "Escribe tu CV en formato texto y genera PDFs perfectos con diseño profesional en tiempo real."
+    },
+    {
+      id: "ai",
+      title: "La IA lee cada aviso y lo mide contra tu CV",
+      desc: "Convierte dos mil avisos escritos de dos mil formas en campos comparables. Y te dice cuáles encajan con vos, y por qué."
     }
   ];
 
   const startTimer = useCallback(() => {
     if (timer.current) clearInterval(timer.current);
     timer.current = setInterval(() => {
-      setActiveIndex(prev => (prev + 1) % 3);
+      setActiveIndex(prev => (prev + 1) % 4);
     }, 6000);
   }, []);
 
@@ -56,12 +63,12 @@ export default function LoginClient({ clientId }: { clientId: string }) {
   }, [isHovered, startTimer]);
 
   const goToSlide = (index: number) => {
-    setActiveIndex((index + 3) % 3);
+    setActiveIndex((index + 4) % 4);
     startTimer();
   };
 
   const nextSlide = () => {
-    setActiveIndex(prev => (prev + 1) % 3);
+    setActiveIndex(prev => (prev + 1) % 4);
     startTimer();
   };
 
@@ -74,7 +81,8 @@ export default function LoginClient({ clientId }: { clientId: string }) {
     if (mode !== "login") return;
 
     const loadGoogle = () => {
-      if (window.google) {
+      if (window.google && !googleInit.current) {
+        googleInit.current = true;
         window.google.accounts.id.initialize({
           client_id: clientId,
           locale: "es-419",
@@ -104,7 +112,13 @@ export default function LoginClient({ clientId }: { clientId: string }) {
             { theme: "outline", size: "large", shape: "pill", text: "continue_with", logo_alignment: "left", width: 360, locale: "es-419" }
           );
         }
-        window.google.accounts.id.prompt();
+        if (process.env.NODE_ENV === 'production') {
+          window.google.accounts.id.prompt((notification: any) => {
+            if (notification.isNotDisplayed?.() || notification.isSkippedMoment?.()) {
+              console.debug('One Tap no disponible:', notification.getNotDisplayedReason?.());
+            }
+          });
+        }
       }
     };
 
@@ -648,6 +662,113 @@ export default function LoginClient({ clientId }: { clientId: string }) {
                         </div>
 
                       </div>
+                    </div>
+                  )}
+
+                  {/* AI Match MOCKUP */}
+                  {activeIndex === 3 && (
+                    <div style={{ width: '100%', height: 'auto', background: '#121215', border: '1px solid rgba(255,255,255,0.10)', borderRadius: 16, boxShadow: '0 20px 50px rgba(0,0,0,0.35)', padding: 18, display: 'flex', flexDirection: 'column', overflow: 'hidden', cursor: 'default', pointerEvents: 'none', userSelect: 'none' }}>
+                      
+                      {/* Header */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+                        <span style={{ fontSize: 14, fontWeight: 700, color: '#E8EEEA' }}>Match con tu perfil</span>
+                        <span style={{ background: 'rgba(0,201,122,0.14)', color: '#34D399', fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', padding: '3px 10px', borderRadius: 6 }}>PRÓXIMAMENTE</span>
+                      </div>
+
+                      {/* Job card with score */}
+                      <div style={{ background: '#141A17', border: '1px solid #1F2B25', borderRadius: 14, padding: '16px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+                        {/* Left column */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                          <div style={{ display: 'flex', gap: 6 }}>
+                            <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.02em', background: 'rgba(239,68,68,0.15)', color: '#EF4444', padding: '2px 8px', borderRadius: 4 }}>Alta</span>
+                            <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.02em', background: 'rgba(16,185,129,0.15)', color: '#10B981', padding: '2px 8px', borderRadius: 4 }}>LATAM Ok</span>
+                            <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.02em', background: 'rgba(168,85,247,0.15)', color: '#A855F7', padding: '2px 8px', borderRadius: 4 }}>Ashby</span>
+                          </div>
+                          <h3 style={{ fontSize: 16, fontWeight: 700, color: '#E8EEEA', margin: 0 }}>Staff Engineer – Payments</h3>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#8A9A92' }}>
+                            <Star className="w-3.5 h-3.5 text-yellow-500" />
+                            <span style={{ color: '#34D399', fontWeight: 500 }}>nubank.com</span>
+                            <PenLine className="w-3 h-3" />
+                            <span>·</span>
+                            <MapPin className="w-3.5 h-3.5 text-sky-400" />
+                            <span>São Paulo</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#8A9A92' }}>
+                            <MapPin className="w-3.5 h-3.5 text-sky-400" />
+                            <span>Remote | Brazil | Argentina</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#8A9A92' }}>
+                            <Calendar className="w-3.5 h-3.5 text-orange-400" />
+                            <span>2026-09-22</span>
+                          </div>
+                        </div>
+
+                        {/* Right column (Score Ring) */}
+                        <div style={{ width: 110, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                          <div style={{ position: 'relative', width: 86, height: 86 }}>
+                            <svg viewBox="0 0 100 100" style={{ width: '100%', height: '100%', transform: 'rotate(-90deg)' }}>
+                              <circle cx="50" cy="50" r="36" fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="9" />
+                              <circle cx="50" cy="50" r="36" fill="none" stroke="#00C97A" strokeWidth="9" strokeLinecap="round" strokeDasharray="226.19" strokeDashoffset="29.4" />
+                            </svg>
+                            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              <span style={{ fontSize: 20, fontWeight: 700, color: '#E8EEEA' }}>87%</span>
+                            </div>
+                          </div>
+                          <span style={{ marginTop: 6, fontSize: 10, color: '#8A9A92' }}>para tu perfil</span>
+                        </div>
+                      </div>
+
+                      {/* Grid header */}
+                      <div style={{ fontSize: 9.5, letterSpacing: '0.12em', color: '#5E6E66', marginBottom: 10 }}>LO QUE LA IA LEYÓ DEL AVISO</div>
+
+                      {/* Info grid */}
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: 28, rowGap: 0, marginBottom: 12 }}>
+                        {/* Column 1 */}
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 26, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                            <span style={{ fontSize: 11, color: '#5E6E66' }}>Elegibilidad</span>
+                            <span style={{ fontSize: 11.5, fontWeight: 500, color: '#E8EEEA' }}>Argentina · Brasil · Uruguay</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 26, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                            <span style={{ fontSize: 11, color: '#5E6E66' }}>Contratación</span>
+                            <span style={{ fontSize: 11.5, fontWeight: 500, color: '#E8EEEA' }}>EOR, sin visa</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 26, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                            <span style={{ fontSize: 11, color: '#5E6E66' }}>Remoto</span>
+                            <span style={{ fontSize: 11.5, fontWeight: 500, color: '#E8EEEA' }}>Real, sin oficina</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 26 }}>
+                            <span style={{ fontSize: 11, color: '#5E6E66' }}>Seniority</span>
+                            <span style={{ fontSize: 11.5, fontWeight: 500, color: '#E8EEEA' }}>Staff</span>
+                          </div>
+                        </div>
+
+                        {/* Column 2 */}
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 26, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                            <span style={{ fontSize: 11, color: '#5E6E66' }}>Stack</span>
+                            <span style={{ fontSize: 11.5, fontWeight: 500, color: '#E8EEEA' }}>Go · Postgres · K8s</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 26, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                            <span style={{ fontSize: 11, color: '#5E6E66' }}>Salario</span>
+                            <span style={{ fontSize: 11.5, fontWeight: 500, color: '#E8EEEA' }}>US$ 180k – 220k</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 26, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                            <span style={{ fontSize: 11, color: '#5E6E66' }}>Inglés</span>
+                            <span style={{ fontSize: 11.5, fontWeight: 500, color: '#FBBF24' }}>Avanzado, excluyente</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 26 }}>
+                            <span style={{ fontSize: 11, color: '#5E6E66' }}>Tus skills</span>
+                            <span style={{ fontSize: 11.5, fontWeight: 500, color: '#34D399' }}>7 de 9</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Footer */}
+                      <div style={{ fontSize: 11.5, color: '#5E6E66', textAlign: 'left' }}>
+                        La IA lee el aviso una sola vez y lo guarda como datos. El match se calcula contra tu CV.
+                      </div>
+
                     </div>
                   )}
 

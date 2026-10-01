@@ -289,10 +289,10 @@ export default function TrackerClient({ initialData }: { initialData: any }) {
           )}
         </div>
 
-        {(job.salarioMensual || job.salarioAnual) && (
+        {(Boolean(job.salarioMensual) || Boolean(job.salarioAnual)) && (
           <div className={`mt-1 flex flex-col gap-1.5 text-[12px] font-semibold ${job.monedaSalario === 'ARS' ? 'text-sky-400' : 'text-emerald-400'}`}>
-            {job.salarioAnual && <span>{job.monedaSalario === 'ARS' ? '$ ' : 'US$ '}{job.salarioAnual.toLocaleString(job.monedaSalario === 'ARS' ? 'es-AR' : 'en-US')}</span>}
-            {job.salarioMensual && <span>{job.monedaSalario === 'ARS' ? '$ ' : 'US$ '}{job.salarioMensual.toLocaleString(job.monedaSalario === 'ARS' ? 'es-AR' : 'en-US')}</span>}
+            {Boolean(job.salarioAnual) && <span>{job.monedaSalario === 'ARS' ? '$ ' : 'US$ '}{job.salarioAnual!.toLocaleString(job.monedaSalario === 'ARS' ? 'es-AR' : 'en-US')}</span>}
+            {Boolean(job.salarioMensual) && <span>{job.monedaSalario === 'ARS' ? '$ ' : 'US$ '}{job.salarioMensual!.toLocaleString(job.monedaSalario === 'ARS' ? 'es-AR' : 'en-US')}</span>}
           </div>
         )}
       </div>

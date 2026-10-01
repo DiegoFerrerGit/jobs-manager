@@ -40,6 +40,7 @@ export default function JobPanel({ job, columnId, config, columns, onClose, onUp
   const [showAddProperty, setShowAddProperty] = useState(false);
   const [newPropName, setNewPropName] = useState("");
   const [panelStyle, setPanelStyle] = useState<React.CSSProperties>({});
+  const [newlyAddedPropId, setNewlyAddedPropId] = useState<string | null>(null);
   const addPropBtnRef = useRef<HTMLButtonElement>(null);
   const addPropRef = useRef<HTMLDivElement>(null);
 
@@ -100,6 +101,7 @@ export default function JobPanel({ job, columnId, config, columns, onClose, onUp
     onUpdateConfig({ ...config, customProperties: [...(config.customProperties || []), newDef] });
     setNewPropName("");
     setShowAddProperty(false);
+    setNewlyAddedPropId(id);
   };
 
   const openAddPropertyPanel = () => {
@@ -290,6 +292,7 @@ export default function JobPanel({ job, columnId, config, columns, onClose, onUp
                   onChange={v => handleCustomPropChange(prop.id, v)}
                   onDelete={() => handleDeleteProperty(prop.id)}
                   onRename={newName => handleRenameProperty(prop.id, newName)}
+                  autoFocusName={newlyAddedPropId === prop.id}
                   onAddOption={o => handleCustomSelectOptionAdd(prop.id, o)}
                   onEditOption={(ol, no) => handleCustomSelectOptionEdit(prop.id, ol, no)}
                   onDeleteOption={l => handleCustomSelectOptionDelete(prop.id, l)}
@@ -362,7 +365,7 @@ export default function JobPanel({ job, columnId, config, columns, onClose, onUp
   );
 }
 
-function CustomPropertyRow({ prop, value, job, onChange, onDelete, onRename, onAddOption, onEditOption, onDeleteOption }: {
+function CustomPropertyRow({ prop, value, job, onChange, onDelete, onRename, onAddOption, onEditOption, onDeleteOption, autoFocusName }: {
   prop: CustomPropertyDef;
   value: CustomPropertyValue;
   job: TrackerJob;
@@ -372,8 +375,9 @@ function CustomPropertyRow({ prop, value, job, onChange, onDelete, onRename, onA
   onAddOption: (o: SelectOption) => void;
   onEditOption: (oldLabel: string, newOpt: SelectOption) => void;
   onDeleteOption: (label: string) => void;
+  autoFocusName?: boolean;
 }) {
-  const [isEditingName, setIsEditingName] = useState(false);
+  const [isEditingName, setIsEditingName] = useState(autoFocusName || false);
   const [editName, setEditName] = useState(prop.name);
   
   useEffect(() => { setEditName(prop.name); }, [prop.name]);

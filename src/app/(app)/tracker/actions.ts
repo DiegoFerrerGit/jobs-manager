@@ -130,7 +130,28 @@ export async function getTrackerData() {
   }
 
   const columnOrder = cols.map((c: any) => c.id);
-  const config = configRow ? { options: { ...DEFAULT_SELECT_OPTIONS, ...configRow.options } } : null;
+  
+  let mergedOptions = { ...DEFAULT_SELECT_OPTIONS };
+  if (configRow && configRow.options) {
+    const saved = configRow.options as any;
+    for (const key in DEFAULT_SELECT_OPTIONS) {
+      if (saved[key] && Array.isArray(saved[key])) {
+        const defaultOpts = (DEFAULT_SELECT_OPTIONS as any)[key];
+        mergedOptions[key as keyof typeof DEFAULT_SELECT_OPTIONS] = saved[key].map((opt: any) => {
+          if (!opt.color) {
+            const defOpt = defaultOpts.find((d: any) => d.label === opt.label);
+            return { ...opt, color: defOpt ? defOpt.color : "bg-[#5c5c5c] text-white/95" };
+          }
+          return opt;
+        });
+      }
+    }
+  }
+  const config = {
+    options: mergedOptions,
+    fieldOrder: configRow?.fieldOrder || undefined,
+    customProperties: configRow?.customProperties || undefined
+  };
 
   return { columns: columnsRecord, columnOrder, config };
 }
@@ -240,15 +261,19 @@ export async function updateColumnsAction(columnsRecord: Record<string, any>, co
   }
 }
 
-export async function updateConfigAction(options: any) {
+export async function updateConfigAction(configObj: any) {
   const user = await getCurrentUser();
   if (!user?.sub) throw new Error("Unauthorized");
   const userId = user.sub;
 
+  const { options, fieldOrder, customProperties } = configObj;
+
   const existing = await db.query.trackerConfig.findFirst({ where: eq(trackerConfig.userId, userId) });
   if (existing) {
-    await db.update(trackerConfig).set({ options }).where(eq(trackerConfig.id, existing.id));
+    await db.update(trackerConfig)
+      .set({ options, fieldOrder, customProperties })
+      .where(eq(trackerConfig.id, existing.id));
   } else {
-    await db.insert(trackerConfig).values({ userId, options });
+    await db.insert(trackerConfig).values({ userId, options, fieldOrder, customProperties });
   }
 }

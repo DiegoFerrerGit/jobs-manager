@@ -769,7 +769,10 @@ export default function TrackerClient({ initialData }: { initialData: any }) {
               columnId={selectedColumnId}
               columns={Object.values(columns).map(c => ({ id: c.id, title: c.title, badge: c.badge, cardBg: c.cardBg, wrapperBg: c.wrapperBg }))}
               config={config}
-              onUpdateConfig={setConfig}
+              onUpdateConfig={(newConf) => {
+                setConfig(newConf);
+                updateConfigAction(newConf).catch(console.error);
+              }}
               onClose={() => {
                 setSelectedJobId(null);
                 setSelectedColumnId(null);

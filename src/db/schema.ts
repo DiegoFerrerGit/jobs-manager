@@ -208,6 +208,8 @@ export const trackerConfig = pgTable("tracker_config", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }).unique(),
   options: jsonb("options").notNull().default('{"instanciaCierre": [], "categoriaCierre": []}'),
+  fieldOrder: jsonb("field_order"),
+  customProperties: jsonb("custom_properties"),
 });
 
 export type Job = typeof jobs.$inferSelect;

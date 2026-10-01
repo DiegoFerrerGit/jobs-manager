@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48" fill="none" role="img" aria-label="The Jobs Manager">
+  <style>
+    .ring { transform-box: view-box; transform-origin: 24px 24px; }
+    .outer { animation: spin-cw 16s linear infinite; }
+    .inner { animation: spin-ccw 11s linear infinite; }
+    @keyframes spin-cw  { to { transform: rotate(360deg); } }
+    @keyframes spin-ccw { to { transform: rotate(-360deg); } }
+    @media (prefers-reduced-motion: reduce) {
+      .outer, .inner { animation: none; }
+    }
+  </style>
+
+  <g class="ring outer" stroke="#0E1512" stroke-width="4" stroke-linecap="round">
+    <path d="M24 6 A18 18 0 0 1 41.73 27.12"/>
+    <path d="M39.59 33 A18 18 0 0 1 12.43 37.79"/>
+    <path d="M8.41 33 A18 18 0 0 1 17.84 7.09"/>
+  </g>
+
+  <g class="ring inner" stroke="#0E1512" stroke-width="4" stroke-linecap="round">
+    <path d="M32.5 24 A8.5 8.5 0 0 1 16.64 28.25"/>
+    <path d="M15.5 24 A8.5 8.5 0 0 1 31.36 19.75"/>
+  </g>
+
+  <circle cx="24" cy="24" r="3.6" fill="#00A565"/>
+</svg>

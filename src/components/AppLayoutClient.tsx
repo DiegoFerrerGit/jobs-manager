@@ -32,13 +32,12 @@ export default function AppLayoutClient({ children, user }: { children: React.Re
         </button>
 
         <div>
-          <div className="h-20 flex items-center justify-center border-b border-border/20 transition-all overflow-hidden whitespace-nowrap">
-            {isCollapsed ? (
-              <img src="/logo.jpg" alt="Jobs Manager Logo" className="w-8 h-8 rounded-md object-contain shadow-lg shadow-emerald-400/20 ring-1 ring-border/50" />
-            ) : (
-              <h1 className="text-xl font-extrabold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-400 uppercase">
-                Jobs Manager
-              </h1>
+          <div className="h-20 flex items-center justify-center border-b border-border/20 transition-all overflow-hidden whitespace-nowrap gap-3">
+            <img src="/branding/01-mira-oscuro.svg" alt="The Jobs Manager" className="w-8 h-8 shrink-0" />
+            {!isCollapsed && (
+              <span style={{ fontFamily: "'Space Grotesk', system-ui, sans-serif", fontSize: 17, fontWeight: 600, letterSpacing: '0.01em', color: '#F2F5F3' }}>
+                The Jobs Manager
+              </span>
             )}
           </div>
           
@@ -57,7 +56,7 @@ export default function AppLayoutClient({ children, user }: { children: React.Re
               className={`flex items-center gap-3 py-2.5 rounded-lg text-sm font-bold transition-colors cursor-pointer ${pathname === '/tracker' ? 'bg-secondary/40 text-emerald-400 hover:bg-secondary/60 hover:text-emerald-300' : 'text-muted-foreground hover:bg-secondary/20 hover:text-foreground'} ${isCollapsed ? 'justify-center px-0' : 'px-3'}`}
               title="Tracker"
             >
-              <BriefcaseBusiness className="w-5 h-5 shrink-0" />
+              <img src="/branding/03-columnas-oscuro.svg" alt="" className="w-5 h-5 shrink-0" />
               {!isCollapsed && <span>TRACKER</span>}
             </Link>
 

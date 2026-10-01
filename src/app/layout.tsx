@@ -13,16 +13,19 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Jobs Manager",
+  title: "The Jobs Manager",
   description: "Descubre las mejores ofertas para roles de liderazgo en tech",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
-      lang="en"
+      lang="es"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
+      <head>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap" />
+      </head>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );

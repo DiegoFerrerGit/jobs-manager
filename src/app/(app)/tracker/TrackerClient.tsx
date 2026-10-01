@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { Plus, Eye, EyeOff, GripVertical, Trash2, CheckCircle2, Check, Undo2, Filter, XCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -193,6 +194,7 @@ export default function TrackerClient({ initialData }: { initialData: any }) {
   const [config, setConfig] = useState<TrackerConfig>(initialData.config || { options: DEFAULT_SELECT_OPTIONS });
   const [isMounted, setIsMounted] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [dropdownRect, setDropdownRect] = useState<{ top: number, left: number } | null>(null);
   const [isColumnDropdownOpen, setIsColumnDropdownOpen] = useState(false);
 
   // Panel state
@@ -621,18 +623,29 @@ export default function TrackerClient({ initialData }: { initialData: any }) {
                               <button
                                 type="button"
                                 className="cursor-pointer hover:bg-white/10 p-1.5 rounded-md transition-colors flex items-center justify-center border-0 bg-transparent"
-                                onClick={() => setActiveDropdown(prev => prev === columnId ? null : columnId)}
+                                onClick={(e) => {
+                                  if (activeDropdown === columnId) {
+                                    setActiveDropdown(null);
+                                  } else {
+                                    const rect = e.currentTarget.getBoundingClientRect();
+                                    setDropdownRect({ top: rect.bottom, left: rect.right - 220 });
+                                    setActiveDropdown(columnId);
+                                  }
+                                }}
                               >
                                 <span className="text-xl leading-none pb-2">...</span>
                               </button>
 
-                              {activeDropdown === columnId && (
+                              {activeDropdown === columnId && isMounted && createPortal(
                                 <>
                                   <div
-                                    className="fixed inset-0 z-40"
+                                    className="fixed inset-0 z-[100]"
                                     onClick={() => setActiveDropdown(null)}
                                   />
-                                  <div className="absolute right-0 top-8 w-[220px] bg-[#202020] border border-[#303030] rounded-xl shadow-2xl z-50 overflow-hidden text-[13px] text-muted-foreground">
+                                  <div 
+                                    className="fixed w-[220px] bg-[#202020] border border-[#303030] rounded-xl shadow-2xl z-[101] overflow-hidden text-[13px] text-muted-foreground"
+                                    style={{ top: dropdownRect?.top ? dropdownRect.top + 8 : 0, left: dropdownRect?.left }}
+                                  >
                                     <div className="p-1">
                                       <button
                                         type="button"
@@ -672,7 +685,8 @@ export default function TrackerClient({ initialData }: { initialData: any }) {
                                       })}
                                     </div>
                                   </div>
-                                </>
+                                </>,
+                                document.body
                               )}
                             </div>
                           </div>

@@ -137,6 +137,14 @@ export default function JobPanel({ job, columnId, config, columns, onClose, onUp
     onUpdateConfig({ ...config, customProperties: (config.customProperties || []).filter(p => p.id !== propId) });
   };
 
+  const handleRenameProperty = (propId: string, newName: string) => {
+    if (!newName.trim()) return;
+    onUpdateConfig({
+      ...config,
+      customProperties: config.customProperties?.map(p => p.id === propId ? { ...p, name: newName } : p) || []
+    });
+  };
+
   const handleCustomSelectOptionAdd = (propId: string, option: SelectOption) => {
     onUpdateConfig({
       ...config,
@@ -281,6 +289,7 @@ export default function JobPanel({ job, columnId, config, columns, onClose, onUp
                   job={data}
                   onChange={v => handleCustomPropChange(prop.id, v)}
                   onDelete={() => handleDeleteProperty(prop.id)}
+                  onRename={newName => handleRenameProperty(prop.id, newName)}
                   onAddOption={o => handleCustomSelectOptionAdd(prop.id, o)}
                   onEditOption={(ol, no) => handleCustomSelectOptionEdit(prop.id, ol, no)}
                   onDeleteOption={l => handleCustomSelectOptionDelete(prop.id, l)}
@@ -353,16 +362,29 @@ export default function JobPanel({ job, columnId, config, columns, onClose, onUp
   );
 }
 
-function CustomPropertyRow({ prop, value, job, onChange, onDelete, onAddOption, onEditOption, onDeleteOption }: {
+function CustomPropertyRow({ prop, value, job, onChange, onDelete, onRename, onAddOption, onEditOption, onDeleteOption }: {
   prop: CustomPropertyDef;
   value: CustomPropertyValue;
   job: TrackerJob;
   onChange: (v: CustomPropertyValue) => void;
   onDelete: () => void;
+  onRename: (newName: string) => void;
   onAddOption: (o: SelectOption) => void;
   onEditOption: (oldLabel: string, newOpt: SelectOption) => void;
   onDeleteOption: (label: string) => void;
 }) {
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editName, setEditName] = useState(prop.name);
+  
+  useEffect(() => { setEditName(prop.name); }, [prop.name]);
+  
+  const handleRenameSubmit = () => {
+    if (editName.trim() !== prop.name) {
+      onRename(editName);
+    }
+    setIsEditingName(false);
+  };
+
   const renderInput = () => {
     switch (prop.type) {
       case "text":
@@ -454,7 +476,25 @@ function CustomPropertyRow({ prop, value, job, onChange, onDelete, onAddOption, 
     <div className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-4 group/customrow">
       <div className="flex items-center gap-2 text-muted-foreground w-44 shrink-0 pt-1.5 pb-1.5 px-1.5 -ml-1.5">
         <span className="text-muted-foreground/60 shrink-0">{getTypeIcon(prop.type)}</span>
-        <span className="text-[13px] truncate flex-1" title={prop.name}>{prop.name}</span>
+        {isEditingName ? (
+          <input
+            autoFocus
+            type="text"
+            value={editName}
+            onChange={e => setEditName(e.target.value)}
+            onBlur={handleRenameSubmit}
+            onKeyDown={e => e.key === 'Enter' && handleRenameSubmit()}
+            className="flex-1 bg-[#2a2a2a] border border-[#555] rounded px-1.5 py-0.5 text-[13px] text-foreground outline-none"
+          />
+        ) : (
+          <span 
+            className="text-[13px] truncate flex-1 cursor-pointer hover:bg-white/5 rounded px-1 -ml-1 transition-colors" 
+            title={prop.name}
+            onClick={() => setIsEditingName(true)}
+          >
+            {prop.name}
+          </span>
+        )}
         <button
           onClick={onDelete}
           className="opacity-0 group-hover/customrow:opacity-100 p-0.5 hover:text-red-400 transition-all text-muted-foreground/40 shrink-0"

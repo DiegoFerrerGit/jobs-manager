@@ -880,18 +880,29 @@ export default function TrackerClient({ initialData }: { initialData: any }) {
                                   <ResponsiveContainer width="100%" height="100%">
                                     <PieChart style={{ filter: "drop-shadow(0px 8px 12px rgba(0,0,0,0.85)) saturate(1.8) brightness(1.2)", cursor: "pointer" }}>
                                       <Pie
-                                        data={motivosData.map((entry, index) => ({
-                                          ...entry,
-                                          innerRadius: activeMotivoIndex === index ? 95 : 100,
-                                          outerRadius: activeMotivoIndex === index ? 148 : 138,
-                                        }))}
+                                        data={motivosData}
                                         cx="50%"
                                         cy="50%"
                                         innerRadius={100}
                                         outerRadius={138}
                                         dataKey="value"
                                         stroke="none"
-                                        isAnimationActive={false}
+                                        {...({ activeIndex: activeMotivoIndex !== -1 ? activeMotivoIndex : undefined } as any)}
+                                        activeShape={(props: any) => {
+                                          const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill } = props;
+                                          return (
+                                            <Sector
+                                              cx={cx}
+                                              cy={cy}
+                                              innerRadius={innerRadius - 5}
+                                              outerRadius={outerRadius + 10}
+                                              startAngle={startAngle}
+                                              endAngle={endAngle}
+                                              fill={fill}
+                                              style={{ transition: 'all 0.3s ease' }}
+                                            />
+                                          );
+                                        }}
                                         onClick={(data: any) => setChartMotivoFilter(chartMotivoFilter === data.name ? null : (data.name || null))}
                                         onMouseEnter={(_: any, index: number) => setActiveMotivoIndex(index)}
                                         onMouseLeave={() => setActiveMotivoIndex(-1)}
@@ -903,6 +914,7 @@ export default function TrackerClient({ initialData }: { initialData: any }) {
                                             style={{ 
                                               cursor: 'pointer',
                                               opacity: chartMotivoFilter && chartMotivoFilter !== entry.name ? 0.2 : 0.9,
+                                              transition: 'all 0.3s ease',
                                             }}
                                           />
                                         ))}

@@ -111,3 +111,12 @@ button:disabled {
   animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   opacity: 0;
 }
+
+/* Remove focus outline from Recharts */
+.recharts-wrapper,
+.recharts-surface,
+.recharts-pie,
+.recharts-pie-sector,
+.recharts-layer {
+  outline: none !important;
+}

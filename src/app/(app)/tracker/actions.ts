@@ -138,7 +138,7 @@ export async function getTrackerData() {
       if (saved[key] && Array.isArray(saved[key])) {
         const defaultOpts = (DEFAULT_SELECT_OPTIONS as any)[key];
         mergedOptions[key as keyof typeof DEFAULT_SELECT_OPTIONS] = saved[key].map((opt: any) => {
-          if (!opt.color) {
+          if (!opt.color || opt.color === "#e3e2e0" || !opt.color.startsWith("bg-[")) {
             const defOpt = defaultOpts.find((d: any) => d.label === opt.label);
             return { ...opt, color: defOpt ? defOpt.color : "bg-[#5c5c5c] text-white/95" };
           }

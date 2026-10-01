@@ -211,6 +211,7 @@ export default function TrackerClient({ initialData }: { initialData: any }) {
   const [sortOrder, setSortOrder] = useState<Record<string, 'recent' | 'salary'>>({});
 
   const [finalizeCategory, setFinalizeCategory] = useState<string>("");
+  const [finalizeCLevelSuccess, setFinalizeCLevelSuccess] = useState<boolean | null>(null);
   const [chartMotivoFilter, setChartMotivoFilter] = useState<string | null>(null);
   const [chartInstanciaFilter, setChartInstanciaFilter] = useState<string | null>(null);
   const [activeMotivoIndex, setActiveMotivoIndex] = useState<number>(-1);
@@ -259,6 +260,7 @@ export default function TrackerClient({ initialData }: { initialData: any }) {
               e.stopPropagation();
               setJobToFinalize({ jobId: job.id, columnId, currentColumnTitle: column.title });
               setFinalizeCategory("");
+              setFinalizeCLevelSuccess(null);
             }}
             className="absolute top-2 right-9 opacity-0 group-hover:opacity-100 p-1.5 bg-[#202020] hover:bg-green-500/20 text-muted-foreground hover:text-green-500 rounded-md transition-all z-10"
             title="Finalizar proceso"
@@ -1232,6 +1234,34 @@ export default function TrackerClient({ initialData }: { initialData: any }) {
                   ))}
                 </select>
               </div>
+
+              {jobToFinalize.currentColumnTitle === "C-Level / Culture" && (
+                <div className="mt-4 p-4 border border-[#303030] bg-[#1a1a1f] rounded-lg">
+                  <label className="block text-sm font-medium text-muted-foreground mb-3">¿Te fue bien en este paso de C-Level/Culture?</label>
+                  <div className="flex gap-6">
+                    <label className="flex items-center gap-2 text-sm text-foreground cursor-pointer hover:text-primary transition-colors">
+                      <input 
+                        type="radio" 
+                        name="clevelSuccess" 
+                        checked={finalizeCLevelSuccess === true} 
+                        onChange={() => setFinalizeCLevelSuccess(true)}
+                        className="accent-primary"
+                      />
+                      Sí
+                    </label>
+                    <label className="flex items-center gap-2 text-sm text-foreground cursor-pointer hover:text-primary transition-colors">
+                      <input 
+                        type="radio" 
+                        name="clevelSuccess" 
+                        checked={finalizeCLevelSuccess === false} 
+                        onChange={() => setFinalizeCLevelSuccess(false)}
+                        className="accent-primary"
+                      />
+                      No
+                    </label>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="flex justify-between items-center pt-2 gap-2">
@@ -1249,12 +1279,22 @@ export default function TrackerClient({ initialData }: { initialData: any }) {
                     return;
                   }
 
+                  if (jobToFinalize.currentColumnTitle === "C-Level / Culture" && finalizeCLevelSuccess === null) {
+                    alert("Debes indicar si te fue bien en el paso de C-Level / Culture.");
+                    return;
+                  }
+
                   const targetJob = columns[jobToFinalize.columnId].jobs.find(j => j.id === jobToFinalize.jobId);
                   if (!targetJob) return;
 
+                  let finalInstanciaCierre = jobToFinalize.currentColumnTitle;
+                  if (jobToFinalize.currentColumnTitle === "C-Level / Culture" && finalizeCLevelSuccess === true) {
+                    finalInstanciaCierre = "Proceso completo";
+                  }
+
                   const updatedJob = {
                     ...targetJob,
-                    instanciaCierre: jobToFinalize.currentColumnTitle,
+                    instanciaCierre: finalInstanciaCierre,
                     categoriaCierre: finalizeCategory
                   };
 

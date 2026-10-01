@@ -277,6 +277,10 @@ export default function JobPanel({ job, columnId, config, columns, onClose, onUp
                     
                     if (!fieldDef && !customProp) return null;
 
+                    if (columnId !== 'col-rejected' && ['motivoRechazo', 'instanciaCierre', 'categoriaCierre'].includes(fieldId)) {
+                      return null;
+                    }
+
                     return (
                       <Draggable key={fieldId} draggableId={fieldId} index={index}>
                         {(provided, snapshot) => (

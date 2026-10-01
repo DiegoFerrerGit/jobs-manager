@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
-import { Plus, Eye, EyeOff, GripVertical, Trash2, CheckCircle2, Check, Undo2, Filter, XCircle } from "lucide-react";
+import { Plus, Eye, EyeOff, GripVertical, Trash2, CheckCircle2, Check, Undo2, Filter, XCircle, Search } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { TrackerJob, TrackerConfig, DEFAULT_SELECT_OPTIONS } from "./types";
 import JobPanel from "./components/JobPanel";
@@ -208,6 +208,7 @@ export default function TrackerClient({ initialData }: { initialData: any }) {
   const [restoreTargetCol, setRestoreTargetCol] = useState<string>("");
   const [filterEmpresa, setFilterEmpresa] = useState<Record<string, string>>({});
   const [filterRole, setFilterRole] = useState<Record<string, string>>({});
+  const [searchQuery, setSearchQuery] = useState<Record<string, string>>({});
   const [sortOrder, setSortOrder] = useState<Record<string, 'recent' | 'salary'>>({});
 
   const [finalizeCategory, setFinalizeCategory] = useState<string>("");
@@ -323,7 +324,7 @@ export default function TrackerClient({ initialData }: { initialData: any }) {
             className="bg-transparent text-xs font-medium text-foreground outline-none w-32 cursor-pointer"
           >
             <option value="">Todas las empresas</option>
-            {Array.from(new Set(jobs.map(j => j.name))).filter(Boolean).map(eName => (
+            {Array.from(new Set(jobs.map(j => j.name))).filter(Boolean).sort().map(eName => (
               <option key={eName as string} value={eName as string}>{eName as string}</option>
             ))}
           </select>
@@ -336,7 +337,7 @@ export default function TrackerClient({ initialData }: { initialData: any }) {
             className="bg-transparent text-xs font-medium text-foreground outline-none w-28 cursor-pointer"
           >
             <option value="">Todos los roles</option>
-            {Array.from(new Set(jobs.map(j => j.role))).filter(Boolean).map(r => (
+            {Array.from(new Set(jobs.map(j => j.role))).filter(Boolean).sort().map(r => (
               <option key={r as string} value={r as string}>{r as string}</option>
             ))}
           </select>
@@ -358,6 +359,7 @@ export default function TrackerClient({ initialData }: { initialData: any }) {
             onClick={() => {
               setFilterEmpresa(prev => ({ ...prev, [colId]: '' }));
               setFilterRole(prev => ({ ...prev, [colId]: '' }));
+              setSearchQuery(prev => ({ ...prev, [colId]: '' }));
               setSortOrder(prev => ({ ...prev, [colId]: 'recent' }));
               if (colId === 'col-rejected') {
                 setChartMotivoFilter(null);
@@ -378,6 +380,7 @@ export default function TrackerClient({ initialData }: { initialData: any }) {
     let result = [...jobs];
     const emp = filterEmpresa[colId];
     const rol = filterRole[colId];
+    const query = searchQuery[colId]?.toLowerCase() || '';
     const sort = sortOrder[colId] || 'recent';
 
     if (emp) {
@@ -385,6 +388,12 @@ export default function TrackerClient({ initialData }: { initialData: any }) {
     }
     if (rol) {
       result = result.filter(j => j.role === rol);
+    }
+    if (query) {
+      result = result.filter(j => 
+        (j.name && j.name.toLowerCase().includes(query)) ||
+        (j.role && j.role.toLowerCase().includes(query))
+      );
     }
 
     // Apply chart filters (only applicable for col-rejected)
@@ -1033,6 +1042,16 @@ export default function TrackerClient({ initialData }: { initialData: any }) {
                         <span className="bg-red-500/10 text-red-500 text-xs font-bold px-2.5 py-1 rounded-full">
                           {processedJobs.length}
                         </span>
+                        <div className="ml-2 relative">
+                          <Search className="w-3.5 h-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                          <input 
+                            type="text" 
+                            placeholder="Buscar empresa o rol..." 
+                            value={searchQuery['col-rejected'] || ''}
+                            onChange={e => setSearchQuery(prev => ({ ...prev, 'col-rejected': e.target.value }))}
+                            className="bg-[#202020] text-xs text-white placeholder:text-muted-foreground border border-white/5 rounded-lg pl-7 pr-3 py-1.5 focus:outline-none focus:border-white/20 w-48 transition-all"
+                          />
+                        </div>
                         {(chartMotivoFilter || chartInstanciaFilter) && (
                           <button
                             onClick={() => {

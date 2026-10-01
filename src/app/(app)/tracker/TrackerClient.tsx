@@ -842,7 +842,7 @@ export default function TrackerClient({ initialData }: { initialData: any }) {
                 const motivosData = Array.from(motivosMap.entries()).map(([name, value]) => {
                   const opt = config?.options?.categoriaCierre?.find((o: any) => o.label === name);
                   return { name, value, color: extractHexColor(opt?.color) };
-                });
+                }).sort((a, b) => b.value - a.value);
 
                 const instanciaMap = new Map();
                 chartBaseJobs.forEach(job => {

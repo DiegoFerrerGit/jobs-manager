@@ -1,14 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Target, ChevronLeft, ChevronRight, BriefcaseBusiness, FileText } from "lucide-react";
 import LogoutButton from "./LogoutButton";
 
 export default function AppLayoutClient({ children, user }: { children: React.ReactNode, user: any }) {
-  const [isCollapsed, setIsCollapsed] = useState(false);
   const pathname = usePathname();
+  const [isCollapsed, setIsCollapsed] = useState(pathname === '/tracker');
+
+  useEffect(() => {
+    if (pathname === '/tracker') {
+      setIsCollapsed(true);
+    } else {
+      setIsCollapsed(false);
+    }
+  }, [pathname]);
 
   return (
     <div className="min-h-screen bg-background flex">

@@ -21,6 +21,7 @@ export interface TrackerJob {
   instanciaCierre?: string;
   categoriaCierre?: string;
   monedaSalario?: 'USD' | 'ARS';
+  closedAt?: Date | null;
 }
 
 export interface SelectOption {

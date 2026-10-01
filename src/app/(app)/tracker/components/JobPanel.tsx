@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from "react";
+import { motion } from "framer-motion";
+import TextareaAutosize from "react-textarea-autosize";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { TrackerJob, TrackerConfig, SelectOption, OPTION_COLORS } from "../types";
 import { X, ExternalLink, Link as LinkIcon, Building2, MapPin, DollarSign, Calendar, Target, Hash, AlignLeft, UserCircle2, GripVertical } from "lucide-react";
@@ -89,8 +91,8 @@ export default function JobPanel({ job, columnId, config, columns, onClose, onUp
     formaPago: { label: "Forma de pago", icon: <AlignLeft className="w-4 h-4" />, render: () => <TextInput value={data.formaPago} onChange={v => handleChange("formaPago", v)} /> },
     salarioMensual: { label: "Salario Mensual", icon: <Hash className="w-4 h-4" />, render: () => <CurrencyInput value={data.salarioMensual} currency={data.monedaSalario || 'USD'} onChange={v => handleChange("salarioMensual", v)} onCurrencyChange={c => handleChange("monedaSalario", c)} /> },
     salarioAnual: { label: "Salario Anual", icon: <Hash className="w-4 h-4" />, render: () => <CurrencyInput value={data.salarioAnual} currency={data.monedaSalario || 'USD'} onChange={v => handleChange("salarioAnual", v)} onCurrencyChange={c => handleChange("monedaSalario", c)} /> },
-    beneficios: { label: "Beneficios", icon: <AlignLeft className="w-4 h-4" />, render: () => <textarea rows={1} value={data.beneficios || ""} onChange={e => handleChange("beneficios", e.target.value)} placeholder="Vacío" className="bg-transparent border border-transparent focus:border-[#444] outline-none text-foreground placeholder:text-muted-foreground w-full text-sm resize-y custom-scrollbar min-h-[32px] px-2 py-1.5 rounded transition-all hover:bg-white/5 focus:bg-[#2a2a2a]" /> },
-    contras: { label: "Contras", icon: <AlignLeft className="w-4 h-4" />, render: () => <textarea rows={1} value={data.contras || ""} onChange={e => handleChange("contras", e.target.value)} placeholder="Vacío" className="bg-transparent border border-transparent focus:border-[#444] outline-none text-foreground placeholder:text-muted-foreground w-full text-sm resize-y custom-scrollbar min-h-[32px] px-2 py-1.5 rounded transition-all hover:bg-white/5 focus:bg-[#2a2a2a]" /> },
+    beneficios: { label: "Beneficios", icon: <AlignLeft className="w-4 h-4" />, render: () => <TextareaAutosize minRows={1} value={data.beneficios || ""} onChange={e => handleChange("beneficios", e.target.value)} placeholder="Vacío" className="bg-transparent border border-transparent focus:border-[#444] outline-none text-foreground placeholder:text-muted-foreground w-full text-sm resize-none custom-scrollbar min-h-[32px] px-2 py-1.5 rounded transition-all hover:bg-white/5 focus:bg-[#2a2a2a]" /> },
+    contras: { label: "Contras", icon: <AlignLeft className="w-4 h-4" />, render: () => <TextareaAutosize minRows={1} value={data.contras || ""} onChange={e => handleChange("contras", e.target.value)} placeholder="Vacío" className="bg-transparent border border-transparent focus:border-[#444] outline-none text-foreground placeholder:text-muted-foreground w-full text-sm resize-none custom-scrollbar min-h-[32px] px-2 py-1.5 rounded transition-all hover:bg-white/5 focus:bg-[#2a2a2a]" /> },
     motivoRechazo: { label: "Motivo Rechazo", icon: <AlignLeft className="w-4 h-4" />, render: () => <TextInput value={data.motivoRechazo} onChange={v => handleChange("motivoRechazo", v)} /> },
     instanciaCierre: { label: "Instancia de Cierre", icon: <Target className="w-4 h-4" />, render: () => <NotionSelect value={data.instanciaCierre} options={config.options.instanciaCierre} onChange={v => handleChange("instanciaCierre", v)} onAddOption={o => handleAddOption("instanciaCierre", o)} onEditOption={(oldL, newO) => handleEditOption("instanciaCierre", oldL, newO)} onDeleteOption={l => handleDeleteOption("instanciaCierre", l)} /> },
     categoriaCierre: { label: "Categoria de Cierre", icon: <Target className="w-4 h-4" />, render: () => <NotionSelect value={data.categoriaCierre} options={config.options.categoriaCierre} onChange={v => handleChange("categoriaCierre", v)} onAddOption={o => handleAddOption("categoriaCierre", o)} onEditOption={(oldL, newO) => handleEditOption("categoriaCierre", oldL, newO)} onDeleteOption={l => handleDeleteOption("categoriaCierre", l)} /> },
@@ -98,8 +100,21 @@ export default function JobPanel({ job, columnId, config, columns, onClose, onUp
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/20 z-40" onClick={onClose} />
-      <div className="fixed top-0 right-0 w-[600px] bg-[#1a1a1a] border-l border-[#333] h-screen flex flex-col shadow-2xl z-50 text-[14px] animate-in slide-in-from-right-8 duration-200">
+      <motion.div 
+        className="fixed inset-0 bg-black/20 z-40" 
+        onClick={onClose} 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.2 }}
+      />
+      <motion.div 
+        className="fixed top-0 right-0 w-[600px] max-w-[100vw] bg-[#1a1a1a] border-l border-[#333] h-screen flex flex-col shadow-2xl z-50 text-[14px]"
+        initial={{ x: "100%" }}
+        animate={{ x: 0 }}
+        exit={{ x: "100%" }}
+        transition={{ type: "spring", damping: 25, stiffness: 200 }}
+      >
       <div className="flex items-center justify-between p-4 border-b border-white/5 shrink-0">
         <button onClick={onClose} className="p-1 hover:bg-white/10 rounded-md transition-colors text-muted-foreground hover:text-foreground">
           <X className="w-5 h-5" />
@@ -109,12 +124,12 @@ export default function JobPanel({ job, columnId, config, columns, onClose, onUp
       <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
         {/* Header - Name */}
         <div className="mb-8">
-          <input
-            type="text"
+          <TextareaAutosize
+            minRows={1}
             value={data.name || ""}
             onChange={e => handleChange("name", e.target.value)}
             placeholder="Untitled"
-            className="w-full text-4xl font-bold bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground/30"
+            className="w-full text-4xl font-bold bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground/30 resize-none overflow-hidden"
           />
         </div>
 
@@ -162,7 +177,7 @@ export default function JobPanel({ job, columnId, config, columns, onClose, onUp
           </Droppable>
         </DragDropContext>
       </div>
-      </div>
+      </motion.div>
     </>
   );
 }
@@ -187,12 +202,12 @@ function FieldRow({ icon, label, children, dragHandleProps }: { icon: React.Reac
 function LinkInput({ value, onChange }: { value?: string, onChange: (v: string) => void }) {
   return (
     <div className="flex items-center gap-2 w-full group/link">
-      <input
-        type="text"
+      <TextareaAutosize
+        minRows={1}
         value={value || ""}
         onChange={e => onChange(e.target.value)}
         placeholder="Vacío"
-        className="w-full bg-transparent border border-transparent focus:border-[#444] outline-none text-foreground placeholder:text-muted-foreground hover:bg-white/5 focus:bg-[#2a2a2a] px-2 py-1.5 rounded transition-all text-sm"
+        className="w-full bg-transparent border border-transparent focus:border-[#444] outline-none text-foreground placeholder:text-muted-foreground hover:bg-white/5 focus:bg-[#2a2a2a] px-2 py-1.5 rounded transition-all text-sm resize-none custom-scrollbar min-h-[32px]"
       />
       {value && (
         <a href={value.startsWith('http') ? value : `https://${value}`} target="_blank" rel="noopener noreferrer" className="opacity-0 group-hover/link:opacity-100 text-muted-foreground hover:text-sky-400 transition-all p-1">
@@ -205,12 +220,12 @@ function LinkInput({ value, onChange }: { value?: string, onChange: (v: string) 
 
 function TextInput({ value, onChange }: { value?: string, onChange: (v: string) => void }) {
   return (
-    <input
-      type="text"
+    <TextareaAutosize
+      minRows={1}
       value={value || ""}
       onChange={e => onChange(e.target.value)}
       placeholder="Vacío"
-      className="w-full bg-transparent border border-transparent focus:border-[#444] outline-none text-foreground placeholder:text-muted-foreground hover:bg-white/5 focus:bg-[#2a2a2a] px-2 py-1.5 rounded transition-all text-sm"
+      className="w-full bg-transparent border border-transparent focus:border-[#444] outline-none text-foreground placeholder:text-muted-foreground hover:bg-white/5 focus:bg-[#2a2a2a] px-2 py-1.5 rounded transition-all text-sm resize-none custom-scrollbar min-h-[32px]"
     />
   );
 }
@@ -243,12 +258,12 @@ function CurrencyInput({ value, currency, onChange, onCurrencyChange }: { value?
           onChange(isNaN(num) ? undefined : num);
         }}
         placeholder="Vacío"
-        className="bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground w-full text-sm py-1.5"
+        className={`bg-transparent border-none outline-none ${value ? (currency === 'ARS' ? 'text-sky-400 font-medium' : 'text-emerald-400 font-medium') : 'text-foreground'} placeholder:text-muted-foreground w-full text-sm py-1.5`}
       />
       <select 
         value={currency} 
         onChange={e => onCurrencyChange(e.target.value as 'USD' | 'ARS')}
-        className="bg-transparent border-none outline-none text-muted-foreground hover:text-foreground text-xs font-medium cursor-pointer"
+        className={`bg-transparent border-none outline-none ${currency === 'ARS' ? 'text-sky-400' : 'text-emerald-400'} hover:opacity-80 text-xs font-bold cursor-pointer`}
       >
         <option value="USD" className="bg-[#202020] text-foreground">USD</option>
         <option value="ARS" className="bg-[#202020] text-foreground">ARS</option>

@@ -25,6 +25,7 @@
     "clsx": "^2.1.1",
     "date-fns": "^4.4.0",
     "drizzle-orm": "^0.45.3",
+    "framer-motion": "^13.4.4",
     "google-auth-library": "^10.9.1",
     "jose": "^6.2.12",
     "lucide-react": "^1.48.0",
@@ -32,6 +33,8 @@
     "pg": "^8.23.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
+    "react-textarea-autosize": "^8.5.9",
+    "recharts": "^3.10.1",
     "tailwind-merge": "^3.7.0"
   },
   "devDependencies": {

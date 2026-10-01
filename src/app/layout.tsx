@@ -29,7 +29,7 @@ export const metadata: Metadata = {
     description:
       'Avisos de cientos de empresas, filtrados por si realmente contratan desde LATAM.',
     images: [{
-      url: '/og-image.png',
+      url: '/branding/og-image.png',
       width: 1200,
       height: 630,
       alt: 'The Jobs Manager',

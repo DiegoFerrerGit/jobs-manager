@@ -13,8 +13,28 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "The Jobs Manager",
-  description: "Descubre las mejores ofertas para roles de liderazgo en tech",
+  metadataBase: new URL('https://www.thejobsmanager.com'),
+  title: {
+    default: 'The Jobs Manager',
+    template: '%s · The Jobs Manager',
+  },
+  description:
+    'Avisos de cientos de empresas, filtrados por si realmente contratan desde Argentina y LATAM. Seguí tus procesos y escribí tu CV en un solo lugar.',
+  openGraph: {
+    type: 'website',
+    siteName: 'The Jobs Manager',
+    locale: 'es_AR',
+    url: 'https://www.thejobsmanager.com',
+    title: 'The Jobs Manager',
+    description:
+      'Avisos de cientos de empresas, filtrados por si realmente contratan desde Argentina y LATAM.',
+    images: [{
+      url: '/og-image.png',
+      width: 1200,
+      height: 630,
+      alt: 'The Jobs Manager',
+    }],
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

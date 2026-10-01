@@ -22,7 +22,38 @@ export interface TrackerJob {
   categoriaCierre?: string;
   monedaSalario?: 'USD' | 'ARS';
   closedAt?: Date | null;
+  customProps?: Record<string, CustomPropertyValue>;
 }
+
+export type CustomPropertyType =
+  | 'text'
+  | 'number'
+  | 'select'
+  | 'multi_select'
+  | 'status'
+  | 'date'
+  | 'checkbox'
+  | 'url'
+  | 'email'
+  | 'phone'
+  | 'created_at'
+  | 'location';
+
+export interface CustomPropertyDef {
+  id: string;
+  name: string;
+  type: CustomPropertyType;
+  /** For select/multi_select/status: available options */
+  options?: SelectOption[];
+}
+
+export type CustomPropertyValue =
+  | string
+  | number
+  | boolean
+  | string[]
+  | null
+  | undefined;
 
 export interface SelectOption {
   label: string;
@@ -42,6 +73,7 @@ export interface TrackerConfig {
     categoriaCierre: SelectOption[];
   };
   fieldOrder?: string[];
+  customProperties?: CustomPropertyDef[];
 }
 
 export const DEFAULT_SELECT_OPTIONS: TrackerConfig["options"] = {

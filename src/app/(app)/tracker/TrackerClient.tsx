@@ -880,15 +880,20 @@ export default function TrackerClient({ initialData }: { initialData: any }) {
                                   <ResponsiveContainer width="100%" height="100%">
                                     <PieChart style={{ filter: "drop-shadow(0px 8px 12px rgba(0,0,0,0.85)) saturate(1.8) brightness(1.2)" }}>
                                       <Pie
-                                        data={motivosData}
+                                        data={motivosData.map((entry, index) => ({
+                                          ...entry,
+                                          innerRadius: activeMotivoIndex === index ? 95 : 100,
+                                          outerRadius: activeMotivoIndex === index ? 148 : 138,
+                                        }))}
                                         cx="50%"
                                         cy="50%"
                                         innerRadius={100}
-                                        outerRadius={140}
+                                        outerRadius={138}
                                         dataKey="value"
                                         stroke="none"
-                                        onClick={(data) => setChartMotivoFilter(chartMotivoFilter === data.name ? null : (data.name || null))}
-                                        onMouseEnter={(_, index) => setActiveMotivoIndex(index)}
+                                        isAnimationActive={false}
+                                        onClick={(data: any) => setChartMotivoFilter(chartMotivoFilter === data.name ? null : (data.name || null))}
+                                        onMouseEnter={(_: any, index: number) => setActiveMotivoIndex(index)}
                                         onMouseLeave={() => setActiveMotivoIndex(-1)}
                                       >
                                         {motivosData.map((entry, index) => (
@@ -896,12 +901,8 @@ export default function TrackerClient({ initialData }: { initialData: any }) {
                                             key={`cell-${index}`}
                                             fill={entry.color}
                                             style={{ 
-                                              cursor: 'pointer', 
-                                              transition: 'transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.25s ease', 
-                                              opacity: chartMotivoFilter && chartMotivoFilter !== entry.name ? 0.2 : (activeMotivoIndex === index ? 1 : 0.85),
-                                              transform: activeMotivoIndex === index ? 'scale(1.08)' : 'scale(1)',
-                                              transformOrigin: 'center',
-                                              transformBox: 'fill-box'
+                                              cursor: 'pointer',
+                                              opacity: chartMotivoFilter && chartMotivoFilter !== entry.name ? 0.2 : 0.9,
                                             }}
                                           />
                                         ))}

@@ -115,6 +115,7 @@ export async function getTrackerData() {
         categoriaCierre: job.categoriaCierre || "",
         motivoRechazo: job.motivoRechazo || "",
         closedAt: job.closedAt || null,
+        customProps: (job.customProps as Record<string, any>) ?? {},
       });
     }
   }
@@ -168,6 +169,7 @@ export async function updateJobAction(jobId: string, columnId: string, jobData: 
     categoriaCierre: jobData.categoriaCierre,
     motivoRechazo: jobData.motivoRechazo,
     closedAt: jobData.closedAt,
+    customProps: jobData.customProps ?? null,
     updatedAt: new Date(),
   };
 

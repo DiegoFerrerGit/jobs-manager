@@ -878,7 +878,7 @@ export default function TrackerClient({ initialData }: { initialData: any }) {
                                 {/* Gráfico Donut (Derecha) */}
                                 <div className="w-2/3 h-[300px] relative flex justify-center items-center">
                                   <ResponsiveContainer width="100%" height="100%">
-                                    <PieChart style={{ filter: "drop-shadow(0px 8px 12px rgba(0,0,0,0.85)) saturate(1.8) brightness(1.2)" }}>
+                                    <PieChart style={{ filter: "drop-shadow(0px 8px 12px rgba(0,0,0,0.85)) saturate(1.8) brightness(1.2)", cursor: "pointer" }}>
                                       <Pie
                                         data={motivosData.map((entry, index) => ({
                                           ...entry,

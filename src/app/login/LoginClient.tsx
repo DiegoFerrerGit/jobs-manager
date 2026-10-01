@@ -200,13 +200,12 @@ export default function LoginClient({ clientId }: { clientId: string }) {
           {mode === "login" ? (
             <div className="w-full flex flex-col items-center">
               {/* Google Button Overlay Wrapper */}
-              <div style={{ position: 'relative', width: '100%', maxWidth: 360, height: 52, marginTop: 32 }}>
+              <div className="group" style={{ position: 'relative', width: '100%', maxWidth: 360, height: 52, marginTop: 32 }}>
 
-                {/* Capa VISIBLE: nuestro boton. No recibe clicks. */}
-                <div aria-hidden="true" style={{
+                <div aria-hidden="true" className="bg-white border border-[#E3E7E4] transition-all duration-200 group-hover:bg-zinc-50 group-hover:shadow-md group-hover:-translate-y-[1px] group-hover:border-zinc-300" style={{
                   position: 'absolute', inset: 0, pointerEvents: 'none',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  gap: 10, background: '#FFFFFF', border: '1px solid #E3E7E4',
+                  gap: 10,
                   borderRadius: 12, fontSize: 15, fontWeight: 600, color: '#0E1512',
                   boxShadow: '0 1px 2px rgba(0,0,0,0.04)'
                 }}>

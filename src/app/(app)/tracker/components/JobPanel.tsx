@@ -17,7 +17,7 @@ interface JobPanelProps {
 }
 
 const PROPERTY_TYPES: { type: CustomPropertyType; label: string; icon: React.ReactNode }[] = [
-  { type: "text",         label: "Texto",              icon: <Type className="w-4 h-4" /> },
+  { type: "text",         label: "Texto",              icon: <AlignLeft className="w-4 h-4" /> },
   { type: "number",       label: "Número",             icon: <Hash className="w-4 h-4" /> },
   { type: "select",       label: "Seleccionar",        icon: <List className="w-4 h-4" /> },
   { type: "multi_select", label: "Selección múltiple", icon: <List className="w-4 h-4" /> },
@@ -411,6 +411,15 @@ function CustomPropertyRow({ prop, value, job, onChange, onDelete, onRename, onA
   const renderInput = () => {
     switch (prop.type) {
       case "text":
+        return (
+          <TextareaAutosize
+            minRows={1}
+            value={(value as string) || ""}
+            onChange={e => onChange(e.target.value)}
+            placeholder="Vacío"
+            className="bg-transparent border border-transparent focus:border-[#444] outline-none text-foreground placeholder:text-muted-foreground w-full text-sm resize-none custom-scrollbar min-h-[32px] px-2 py-1.5 rounded transition-all hover:bg-white/5 focus:bg-[#2a2a2a]"
+          />
+        );
       case "location":
         return <TextInput value={value as string | undefined} onChange={v => onChange(v)} />;
       case "number":

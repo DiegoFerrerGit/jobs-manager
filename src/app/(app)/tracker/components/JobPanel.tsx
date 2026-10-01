@@ -98,7 +98,12 @@ export default function JobPanel({ job, columnId, config, columns, onClose, onUp
     const name = newPropName.trim() || PROPERTY_TYPES.find(p => p.type === type)?.label || type;
     const id = `custom_${Date.now()}`;
     const newDef: CustomPropertyDef = { id, name, type, options: [] };
-    onUpdateConfig({ ...config, customProperties: [...(config.customProperties || []), newDef] });
+    const currentOrder = config.fieldOrder || DEFAULT_FIELD_ORDER;
+    onUpdateConfig({ 
+      ...config, 
+      customProperties: [...(config.customProperties || []), newDef],
+      fieldOrder: [...currentOrder, id]
+    });
     setNewPropName("");
     setShowAddProperty(false);
     setNewlyAddedPropId(id);
@@ -136,7 +141,11 @@ export default function JobPanel({ job, columnId, config, columns, onClose, onUp
   };
 
   const handleDeleteProperty = (propId: string) => {
-    onUpdateConfig({ ...config, customProperties: (config.customProperties || []).filter(p => p.id !== propId) });
+    onUpdateConfig({ 
+      ...config, 
+      customProperties: (config.customProperties || []).filter(p => p.id !== propId),
+      fieldOrder: (config.fieldOrder || []).filter(id => id !== propId)
+    });
   };
 
   const handleRenameProperty = (propId: string, newName: string) => {
@@ -208,6 +217,14 @@ export default function JobPanel({ job, columnId, config, columns, onClose, onUp
 
   const customProperties = config.customProperties || [];
 
+  const currentOrder = config.fieldOrder || DEFAULT_FIELD_ORDER;
+  const unifiedOrder = [...currentOrder];
+  for (const p of customProperties) {
+    if (!unifiedOrder.includes(p.id)) {
+      unifiedOrder.push(p.id);
+    }
+  }
+
   return (
     <>
       <motion.div
@@ -243,11 +260,10 @@ export default function JobPanel({ job, columnId, config, columns, onClose, onUp
             />
           </div>
 
-          {/* Fixed fields with drag-to-reorder */}
+          {/* All fields with drag-to-reorder */}
           <DragDropContext onDragEnd={(result: DropResult) => {
             if (!result.destination) return;
-            const currentOrder = config.fieldOrder || DEFAULT_FIELD_ORDER;
-            const newOrder = Array.from(currentOrder);
+            const newOrder = Array.from(unifiedOrder);
             const [item] = newOrder.splice(result.source.index, 1);
             newOrder.splice(result.destination.index, 0, item);
             onUpdateConfig({ ...config, fieldOrder: newOrder });
@@ -255,9 +271,12 @@ export default function JobPanel({ job, columnId, config, columns, onClose, onUp
             <Droppable droppableId="job-fields">
               {(provided) => (
                 <div className="flex flex-col gap-3" {...provided.droppableProps} ref={provided.innerRef}>
-                  {(config.fieldOrder || DEFAULT_FIELD_ORDER).map((fieldId, index) => {
+                  {unifiedOrder.map((fieldId, index) => {
                     const fieldDef = FIELD_DEFINITIONS[fieldId];
-                    if (!fieldDef) return null;
+                    const customProp = customProperties.find(p => p.id === fieldId);
+                    
+                    if (!fieldDef && !customProp) return null;
+
                     return (
                       <Draggable key={fieldId} draggableId={fieldId} index={index}>
                         {(provided, snapshot) => (
@@ -266,9 +285,25 @@ export default function JobPanel({ job, columnId, config, columns, onClose, onUp
                             {...provided.draggableProps}
                             className={snapshot.isDragging ? "opacity-90 bg-[#1a1a1a] rounded shadow-2xl z-50" : ""}
                           >
-                            <FieldRow icon={fieldDef.icon} label={fieldDef.label} dragHandleProps={provided.dragHandleProps}>
-                              {fieldDef.render()}
-                            </FieldRow>
+                            {fieldDef ? (
+                              <FieldRow icon={fieldDef.icon} label={fieldDef.label} dragHandleProps={provided.dragHandleProps}>
+                                {fieldDef.render()}
+                              </FieldRow>
+                            ) : customProp ? (
+                              <CustomPropertyRow
+                                prop={customProp}
+                                value={data.customProps?.[customProp.id]}
+                                job={data}
+                                onChange={v => handleCustomPropChange(customProp.id, v)}
+                                onDelete={() => handleDeleteProperty(customProp.id)}
+                                onRename={newName => handleRenameProperty(customProp.id, newName)}
+                                autoFocusName={newlyAddedPropId === customProp.id}
+                                onAddOption={o => handleCustomSelectOptionAdd(customProp.id, o)}
+                                onEditOption={(ol, no) => handleCustomSelectOptionEdit(customProp.id, ol, no)}
+                                onDeleteOption={l => handleCustomSelectOptionDelete(customProp.id, l)}
+                                dragHandleProps={provided.dragHandleProps}
+                              />
+                            ) : null}
                           </div>
                         )}
                       </Draggable>
@@ -279,27 +314,6 @@ export default function JobPanel({ job, columnId, config, columns, onClose, onUp
               )}
             </Droppable>
           </DragDropContext>
-
-          {/* Custom Properties */}
-          {customProperties.length > 0 && (
-            <div className="mt-3 flex flex-col gap-3">
-              {customProperties.map(prop => (
-                <CustomPropertyRow
-                  key={prop.id}
-                  prop={prop}
-                  value={data.customProps?.[prop.id]}
-                  job={data}
-                  onChange={v => handleCustomPropChange(prop.id, v)}
-                  onDelete={() => handleDeleteProperty(prop.id)}
-                  onRename={newName => handleRenameProperty(prop.id, newName)}
-                  autoFocusName={newlyAddedPropId === prop.id}
-                  onAddOption={o => handleCustomSelectOptionAdd(prop.id, o)}
-                  onEditOption={(ol, no) => handleCustomSelectOptionEdit(prop.id, ol, no)}
-                  onDeleteOption={l => handleCustomSelectOptionDelete(prop.id, l)}
-                />
-              ))}
-            </div>
-          )}
 
           {/* Add a property button */}
           <div className="mt-4">
@@ -365,7 +379,7 @@ export default function JobPanel({ job, columnId, config, columns, onClose, onUp
   );
 }
 
-function CustomPropertyRow({ prop, value, job, onChange, onDelete, onRename, onAddOption, onEditOption, onDeleteOption, autoFocusName }: {
+function CustomPropertyRow({ prop, value, job, onChange, onDelete, onRename, onAddOption, onEditOption, onDeleteOption, autoFocusName, dragHandleProps }: {
   prop: CustomPropertyDef;
   value: CustomPropertyValue;
   job: TrackerJob;
@@ -376,6 +390,7 @@ function CustomPropertyRow({ prop, value, job, onChange, onDelete, onRename, onA
   onEditOption: (oldLabel: string, newOpt: SelectOption) => void;
   onDeleteOption: (label: string) => void;
   autoFocusName?: boolean;
+  dragHandleProps?: any;
 }) {
   const [isEditingName, setIsEditingName] = useState(autoFocusName || false);
   const [editName, setEditName] = useState(prop.name);
@@ -478,7 +493,10 @@ function CustomPropertyRow({ prop, value, job, onChange, onDelete, onRename, onA
 
   return (
     <div className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-4 group/customrow">
-      <div className="flex items-center gap-2 text-muted-foreground w-44 shrink-0 pt-1.5 pb-1.5 px-1.5 -ml-1.5">
+      <div 
+        {...dragHandleProps}
+        className={`flex items-center gap-2 text-muted-foreground w-44 shrink-0 pt-1.5 pb-1.5 px-1.5 -ml-1.5 ${dragHandleProps ? "cursor-grab active:cursor-grabbing hover:bg-white/5 rounded-md transition-colors" : ""}`}
+      >
         <span className="text-muted-foreground/60 shrink-0">{getTypeIcon(prop.type)}</span>
         {isEditingName ? (
           <input

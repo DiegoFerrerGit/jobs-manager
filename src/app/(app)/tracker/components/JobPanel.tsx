@@ -24,7 +24,7 @@ const PROPERTY_TYPES: { type: CustomPropertyType; label: string; icon: React.Rea
   { type: "status",       label: "Estado",             icon: <ToggleLeft className="w-4 h-4" /> },
   { type: "date",         label: "Fecha",              icon: <Calendar className="w-4 h-4" /> },
   { type: "checkbox",     label: "Casilla",            icon: <CheckSquare className="w-4 h-4" /> },
-  { type: "url",          label: "URL",                icon: <Globe className="w-4 h-4" /> },
+  { type: "url",          label: "Link",               icon: <LinkIcon className="w-4 h-4" /> },
   { type: "email",        label: "Correo electrónico", icon: <Mail className="w-4 h-4" /> },
   { type: "phone",        label: "Teléfono",           icon: <Phone className="w-4 h-4" /> },
   { type: "created_at",   label: "Fecha de creación",  icon: <Clock className="w-4 h-4" /> },
@@ -592,20 +592,38 @@ function FieldRow({ icon, label, children, dragHandleProps }: { icon: React.Reac
 }
 
 function LinkInput({ value, onChange }: { value?: string; onChange: (v: string) => void }) {
+  const [isEditing, setIsEditing] = useState(false);
+
+  if (!isEditing && value) {
+    return (
+      <div 
+        className="flex items-center w-full group/link min-h-[32px] px-2 py-1.5 hover:bg-white/5 rounded transition-all cursor-text"
+        onClick={() => setIsEditing(true)}
+      >
+        <a 
+          href={value.startsWith("http") ? value : `https://${value}`} 
+          target="_blank" 
+          rel="noopener noreferrer" 
+          className="text-sm text-sky-400 hover:underline truncate block w-full"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {value}
+        </a>
+      </div>
+    );
+  }
+
   return (
     <div className="flex items-center gap-2 w-full group/link">
       <TextareaAutosize
         minRows={1}
+        autoFocus={isEditing}
         value={value || ""}
         onChange={e => onChange(e.target.value)}
+        onBlur={() => { if (value) setIsEditing(false); }}
         placeholder="Vacío"
         className="w-full bg-transparent border border-transparent focus:border-[#444] outline-none text-foreground placeholder:text-muted-foreground hover:bg-white/5 focus:bg-[#2a2a2a] px-2 py-1.5 rounded transition-all text-sm resize-none custom-scrollbar min-h-[32px]"
       />
-      {value && (
-        <a href={value.startsWith("http") ? value : `https://${value}`} target="_blank" rel="noopener noreferrer" className="opacity-0 group-hover/link:opacity-100 text-muted-foreground hover:text-sky-400 transition-all p-1">
-          <ExternalLink className="w-3 h-3" />
-        </a>
-      )}
     </div>
   );
 }

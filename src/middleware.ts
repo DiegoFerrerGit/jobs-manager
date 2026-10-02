@@ -28,11 +28,13 @@ export async function middleware(request: NextRequest) {
             const data = await res.json();
             if (data.success && data.accessToken) {
               // Modificamos el request actual para que los Server Components vean el nuevo access_token
-              request.cookies.set('access_token', data.accessToken);
+              const requestHeaders = new Headers(request.headers);
+              const oldCookie = request.headers.get('cookie') || '';
+              requestHeaders.set('cookie', `access_token=${data.accessToken}; ${oldCookie}`);
               
               const response = NextResponse.next({
                 request: {
-                  headers: request.headers,
+                  headers: requestHeaders,
                 }
               });
               

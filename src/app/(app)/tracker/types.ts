@@ -21,6 +21,7 @@ export interface TrackerJob {
   instanciaCierre?: string;
   categoriaCierre?: string;
   monedaSalario?: 'USD' | 'ARS';
+  score?: number;
   closedAt?: Date | null;
   customProps?: Record<string, CustomPropertyValue>;
   comments?: JobComment[];

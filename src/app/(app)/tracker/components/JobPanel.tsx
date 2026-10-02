@@ -199,7 +199,7 @@ export default function JobPanel({ job, columnId, config, columns, onClose, onUp
   };
 
   const DEFAULT_FIELD_ORDER = [
-    "linkEmpresa", "linkPosicion", "stage", "contactoRecruiter", "contactoLeader",
+    "linkEmpresa", "linkPosicion", "stage", "score", "contactoRecruiter", "contactoLeader",
     "role", "handsOn", "inglesRequerido", "idiomaPosicion", "location", "plataforma",
     "tipoContratacion", "formaPago", "salarioMensual", "salarioAnual", "beneficios",
     "contras", "motivoRechazo", "instanciaCierre", "categoriaCierre",
@@ -209,6 +209,7 @@ export default function JobPanel({ job, columnId, config, columns, onClose, onUp
     linkEmpresa:       { label: "Link Empresa",           icon: <LinkIcon className="w-4 h-4" />, render: () => <LinkInput value={data.linkEmpresa} onChange={v => handleChange("linkEmpresa", v)} /> },
     linkPosicion:      { label: "Link Posición",          icon: <LinkIcon className="w-4 h-4" />, render: () => <LinkInput value={data.linkPosicion} onChange={v => handleChange("linkPosicion", v)} /> },
     stage:             { label: "Stage",                  icon: <Target className="w-4 h-4" />,   render: () => <StageSelect value={columnId} columns={columns} onChange={handleStageChange} /> },
+    score:             { label: "Puntaje",                icon: <Hash className="w-4 h-4" />,     render: () => <NumberInput min={1} max={10} value={data.score} onChange={v => handleChange("score", v)} /> },
     contactoRecruiter: { label: "Contacto Recruiter",     icon: <LinkIcon className="w-4 h-4" />, render: () => <LinkInput value={data.contactoRecruiter} onChange={v => handleChange("contactoRecruiter", v)} /> },
     contactoLeader:    { label: "Contacto Leader",        icon: <LinkIcon className="w-4 h-4" />, render: () => <LinkInput value={data.contactoLeader} onChange={v => handleChange("contactoLeader", v)} /> },
     role:              { label: "Role",                   icon: <Target className="w-4 h-4" />,   render: () => <NotionSelect value={data.role} options={config.options.role} onChange={v => handleChange("role", v)} onAddOption={o => handleAddOption("role", o)} onEditOption={(ol, no) => handleEditOption("role", ol, no)} onDeleteOption={l => handleDeleteOption("role", l)} /> },
@@ -686,6 +687,23 @@ function TextInput({ value, onChange }: { value?: string; onChange: (v: string) 
       onChange={e => onChange(e.target.value)}
       placeholder="Vacío"
       className="w-full bg-transparent border border-transparent focus:border-[#444] outline-none text-foreground placeholder:text-muted-foreground hover:bg-white/5 focus:bg-[#2a2a2a] px-2 py-1.5 rounded transition-all text-sm resize-none custom-scrollbar min-h-[32px]"
+    />
+  );
+}
+
+function NumberInput({ value, min, max, onChange }: { value?: number; min?: number; max?: number; onChange: (v: number | undefined) => void }) {
+  return (
+    <input
+      type="number"
+      min={min}
+      max={max}
+      value={value ?? ""}
+      onChange={e => {
+        const val = e.target.value;
+        onChange(val === "" ? undefined : parseFloat(val));
+      }}
+      placeholder="Vacío"
+      className="bg-transparent border border-transparent focus:border-[#444] outline-none text-foreground placeholder:text-muted-foreground hover:bg-white/5 focus:bg-[#2a2a2a] px-2 py-1.5 rounded transition-all text-sm w-full"
     />
   );
 }

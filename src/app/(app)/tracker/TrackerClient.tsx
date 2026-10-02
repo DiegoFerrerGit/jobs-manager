@@ -209,7 +209,7 @@ export default function TrackerClient({ initialData }: { initialData: any }) {
   const [filterEmpresa, setFilterEmpresa] = useState<Record<string, string>>({});
   const [filterRole, setFilterRole] = useState<Record<string, string>>({});
   const [searchQuery, setSearchQuery] = useState<Record<string, string>>({});
-  const [sortOrder, setSortOrder] = useState<Record<string, 'recent' | 'salary'>>({});
+  const [sortOrder, setSortOrder] = useState<Record<string, 'recent' | 'salary' | 'score'>>({});
 
   const [finalizeCategory, setFinalizeCategory] = useState<string>("");
   const [finalizeCLevelSuccess, setFinalizeCLevelSuccess] = useState<boolean | null>(null);
@@ -273,6 +273,11 @@ export default function TrackerClient({ initialData }: { initialData: any }) {
         <h3 className="font-bold text-[15px] text-foreground pr-10">{job.name}</h3>
 
         <div className="flex flex-col gap-1.5 items-start">
+          {job.score ? (
+            <span className="inline-flex items-center px-2 py-0.5 rounded text-[12px] font-medium leading-tight bg-yellow-500/20 text-yellow-500">
+              ⭐ {job.score}/10
+            </span>
+          ) : null}
           {job.location && (
             <span className={`inline-flex items-center px-2 py-0.5 rounded text-[12px] font-medium leading-tight ${config?.options?.location?.find((o: any) => o.label === job.location)?.color || 'bg-white/10 text-white/80'}`}>
               {job.location}
@@ -346,11 +351,12 @@ export default function TrackerClient({ initialData }: { initialData: any }) {
         <div className="flex items-center gap-2 bg-[#202020] rounded-lg px-2 py-1 border border-white/5 transition-all">
           <select
             value={sort}
-            onChange={e => setSortOrder(prev => ({ ...prev, [colId]: e.target.value as 'recent' | 'salary' }))}
+            onChange={e => setSortOrder(prev => ({ ...prev, [colId]: e.target.value as 'recent' | 'salary' | 'score' }))}
             className="bg-transparent text-xs font-medium text-foreground outline-none cursor-pointer"
           >
             <option value="recent">Más recientes</option>
             <option value="salary">Mayor salario</option>
+            <option value="score">Mayor puntaje</option>
           </select>
         </div>
 
@@ -408,6 +414,8 @@ export default function TrackerClient({ initialData }: { initialData: any }) {
 
     if (sort === 'salary') {
       result = sortJobsLocal(result);
+    } else if (sort === 'score') {
+      result.sort((a, b) => (b.score || 0) - (a.score || 0));
     } else {
       result.sort((a, b) => {
         const da = a.closedAt ? new Date(a.closedAt).getTime() : 0;

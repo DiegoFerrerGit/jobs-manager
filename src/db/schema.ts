@@ -179,6 +179,9 @@ export const trackerJobs = pgTable("tracker_jobs", {
   salarioAnual: integer("salario_anual"),
   monedaSalario: text("moneda_salario").default('USD'),
   
+  // Score
+  score: smallint("score"),
+  
   // Details
   beneficios: text("beneficios"),
   contras: text("contras"),

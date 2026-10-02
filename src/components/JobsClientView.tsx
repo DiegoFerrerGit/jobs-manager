@@ -66,8 +66,8 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialCo
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [filterLatam, setFilterLatam] = useState<string>("all");
   const [filterPriority, setFilterPriority] = useState<"all" | "1" | "2" | "3">("all");
-  const [filterStatus, setFilterStatus] = useState<"unapplied" | "all" | "applied" | "hidden" | "closed">("unapplied");
-  const [filterCompany, setFilterCompany] = useState<string>("all");
+  const [filterStatus, setFilterStatus] = useState<"unapplied" | "all" | "applied" | "hidden" | "closed" | "config_hidden">("unapplied");
+  const [filterCompany, setFilterCompany] = useState<"all" | string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isPriorityInfoOpen, setIsPriorityInfoOpen] = useState(false);
@@ -280,29 +280,32 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialCo
     return 3;
   };
 
-  const { keywordHiddenCount, jobsAfterKeywords } = useMemo(() => {
+  const { keywordHiddenCount, jobsAfterKeywords, hiddenByKeywords } = useMemo(() => {
     if (!initialKeywords || initialKeywords.length === 0) {
-      return { keywordHiddenCount: 0, jobsAfterKeywords: jobs };
+      return { keywordHiddenCount: 0, jobsAfterKeywords: jobs, hiddenByKeywords: [] };
     }
     const lowerKeywords = initialKeywords.map(k => k.keyword.toLowerCase());
     const visible: typeof jobs = [];
+    const hidden: typeof jobs = [];
     let hiddenCount = 0;
     for (const j of jobs) {
       const titleLower = j.title.toLowerCase();
       if (lowerKeywords.some(kw => titleLower.includes(kw))) {
         hiddenCount++;
+        hidden.push(j);
       } else {
         visible.push(j);
       }
     }
     return { 
       keywordHiddenCount: hiddenCount, 
-      jobsAfterKeywords: showKeywordHidden ? jobs : visible 
+      jobsAfterKeywords: showKeywordHidden ? jobs : visible,
+      hiddenByKeywords: hidden
     };
   }, [jobs, initialKeywords, showKeywordHidden]);
 
   const processedJobs = useMemo(() => {
-    let result = [...jobsAfterKeywords];
+    let result = filterStatus === "config_hidden" ? [...hiddenByKeywords] : [...jobsAfterKeywords];
 
     // Resolve effective status: userStatus ?? 'SAVED'
     const getStatus = (j: JobWithUserState) => j.userStatus ?? 'SAVED';
@@ -336,6 +339,8 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialCo
       result = result.filter(j => getStatus(j) === "REJECTED");
     } else if (filterStatus === "closed") {
       result = result.filter(j => j.closedAt !== null);
+    } else if (filterStatus === "config_hidden") {
+      // already filtered by taking hiddenByKeywords as base
     }
 
     // Filter by Company
@@ -376,7 +381,7 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialCo
     });
 
     return result;
-  }, [jobsAfterKeywords, sortParam, sortOrder, filterLatam, filterPriority, filterStatus, filterCompany, searchQuery, favoriteCompanies]);
+  }, [jobsAfterKeywords, hiddenByKeywords, sortParam, sortOrder, filterLatam, filterPriority, filterStatus, filterCompany, searchQuery, favoriteCompanies]);
 
   const handleHeaderSort = (param: "date" | "salary" | "priority" | "latam" | "employees") => {
     if (sortParam === param) {
@@ -426,7 +431,8 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialCo
               <option value="unapplied">Por aplicar</option>
               <option value="all">Mostrar todas</option>
               <option value="applied">Aplicadas</option>
-              <option value="hidden">Ocultas</option>
+              <option value="hidden">Archivadas</option>
+              <option value="config_hidden">Ocultas (Config)</option>
               <option value="closed">Cerradas</option>
             </select>
           </div>
@@ -534,7 +540,7 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialCo
             >
               {showKeywordHidden ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
               <span>{keywordHiddenCount}</span>
-              <span className="font-medium text-[11px] opacity-80 uppercase tracking-wide">ocultos</span>
+              <span className="font-medium text-[11px] opacity-80 uppercase tracking-wide">ocultos por config</span>
             </button>
           )}
 
@@ -632,7 +638,7 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialCo
                       ? "text-primary bg-primary/10 hover:bg-primary/20 opacity-100"
                       : "text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-red-400 hover:bg-red-500/10"
                     }`}
-                  title={(job.userStatus ?? 'SAVED') === "REJECTED" ? "Mostrar oferta" : "Ocultar oferta"}
+                  title={(job.userStatus ?? 'SAVED') === "REJECTED" ? "Desarchivar oferta" : "Archivar oferta"}
                 >
                   {(job.userStatus ?? 'SAVED') === "REJECTED" ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
                 </button>

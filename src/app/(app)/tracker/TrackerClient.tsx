@@ -330,13 +330,13 @@ export default function TrackerClient({ initialData }: { initialData: any }) {
             {Boolean(job.salarioAnual) && (
               <span>
                 {job.monedaSalario === 'ARS' ? '$ ' : 'US$ '}{job.salarioAnual!.toLocaleString(job.monedaSalario === 'ARS' ? 'es-AR' : 'en-US')}
-                {job.monedaSalario === 'ARS' && dolarBlue && <span className="text-muted-foreground font-normal ml-1">- US$ {Math.round(job.salarioAnual! / dolarBlue).toLocaleString('en-US')}</span>}
+                {job.monedaSalario === 'ARS' && dolarBlue && <span className="text-emerald-500/90 font-medium ml-1">- US$ {Math.round(job.salarioAnual! / dolarBlue).toLocaleString('en-US')}</span>}
               </span>
             )}
             {Boolean(job.salarioMensual) && (
               <span>
                 {job.monedaSalario === 'ARS' ? '$ ' : 'US$ '}{job.salarioMensual!.toLocaleString(job.monedaSalario === 'ARS' ? 'es-AR' : 'en-US')}
-                {job.monedaSalario === 'ARS' && dolarBlue && <span className="text-muted-foreground font-normal ml-1">- US$ {Math.round(job.salarioMensual! / dolarBlue).toLocaleString('en-US')}</span>}
+                {job.monedaSalario === 'ARS' && dolarBlue && <span className="text-emerald-500/90 font-medium ml-1">- US$ {Math.round(job.salarioMensual! / dolarBlue).toLocaleString('en-US')}</span>}
               </span>
             )}
           </div>

@@ -209,7 +209,7 @@ export default function JobPanel({ job, columnId, config, columns, onClose, onUp
     linkEmpresa:       { label: "Link Empresa",           icon: <LinkIcon className="w-4 h-4" />, render: () => <LinkInput value={data.linkEmpresa} onChange={v => handleChange("linkEmpresa", v)} /> },
     linkPosicion:      { label: "Link Posición",          icon: <LinkIcon className="w-4 h-4" />, render: () => <LinkInput value={data.linkPosicion} onChange={v => handleChange("linkPosicion", v)} /> },
     stage:             { label: "Stage",                  icon: <Target className="w-4 h-4" />,   render: () => <StageSelect value={columnId} columns={columns} onChange={handleStageChange} /> },
-    score:             { label: "Puntaje",                icon: <Hash className="w-4 h-4" />,     render: () => <NumberInput min={1} max={10} value={data.score} onChange={v => handleChange("score", v)} /> },
+    score:             { label: "Puntaje",                icon: <Hash className="w-4 h-4" />,     render: () => <ScoreSelect value={data.score} onChange={v => handleChange("score", v)} /> },
     contactoRecruiter: { label: "Contacto Recruiter",     icon: <LinkIcon className="w-4 h-4" />, render: () => <LinkInput value={data.contactoRecruiter} onChange={v => handleChange("contactoRecruiter", v)} /> },
     contactoLeader:    { label: "Contacto Leader",        icon: <LinkIcon className="w-4 h-4" />, render: () => <LinkInput value={data.contactoLeader} onChange={v => handleChange("contactoLeader", v)} /> },
     role:              { label: "Role",                   icon: <Target className="w-4 h-4" />,   render: () => <NotionSelect value={data.role} options={config.options.role} onChange={v => handleChange("role", v)} onAddOption={o => handleAddOption("role", o)} onEditOption={(ol, no) => handleEditOption("role", ol, no)} onDeleteOption={l => handleDeleteOption("role", l)} /> },
@@ -708,20 +708,52 @@ function TextInput({ value, onChange }: { value?: string; onChange: (v: string) 
   );
 }
 
-function NumberInput({ value, min, max, onChange }: { value?: number; min?: number; max?: number; onChange: (v: number | undefined) => void }) {
+function ScoreSelect({ value, onChange }: { value?: number; onChange: (v: number | undefined) => void }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [openUpwards, setOpenUpwards] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) setIsOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const toggleOpen = () => {
+    if (!isOpen && containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      setOpenUpwards(window.innerHeight - rect.bottom < 250);
+    }
+    setIsOpen(!isOpen);
+  };
+
   return (
-    <input
-      type="number"
-      min={min}
-      max={max}
-      value={value ?? ""}
-      onChange={e => {
-        const val = e.target.value;
-        onChange(val === "" ? undefined : parseFloat(val));
-      }}
-      placeholder="Vacío"
-      className="bg-transparent border border-transparent focus:border-[#444] outline-none text-foreground placeholder:text-muted-foreground hover:bg-white/5 focus:bg-[#2a2a2a] px-2 py-1.5 rounded transition-all text-sm w-full"
-    />
+    <div className="relative w-full" ref={containerRef}>
+      <button 
+        type="button" 
+        onClick={toggleOpen} 
+        className={`w-full text-left bg-transparent border border-transparent focus:border-[#444] outline-none ${value ? 'text-foreground' : 'text-muted-foreground'} hover:bg-white/5 focus:bg-[#2a2a2a] px-2 py-1.5 rounded transition-all text-sm`}
+      >
+        {value ? value : "Vacío"}
+      </button>
+      {isOpen && (
+        <div className={`absolute left-0 ${openUpwards ? "bottom-full mb-1" : "top-full mt-1"} w-full bg-[#202020] border border-[#303030] rounded-xl shadow-2xl z-50 flex flex-col text-[13px] text-muted-foreground overflow-hidden py-1`}>
+          <div className="max-h-60 overflow-y-auto custom-scrollbar">
+            <button onClick={() => { onChange(undefined); setIsOpen(false); }} className="w-full text-left px-3 py-1.5 hover:bg-[#303030] transition-colors text-muted-foreground italic">
+              Vacío
+            </button>
+            {[10, 9, 8, 7, 6, 5, 4, 3, 2, 1].map(num => (
+              <button key={num} onClick={() => { onChange(num); setIsOpen(false); }} className="w-full text-left px-3 py-1.5 hover:bg-[#303030] flex items-center justify-between transition-colors">
+                <span className="text-foreground">{num}</span>
+                {value === num && <Check className="w-3.5 h-3.5 text-blue-400 shrink-0" />}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 

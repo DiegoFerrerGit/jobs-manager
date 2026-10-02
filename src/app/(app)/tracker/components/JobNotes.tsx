@@ -44,7 +44,7 @@ export default function JobNotes({ notes, onChange }: JobNotesProps) {
       <h3 className="text-[13px] font-semibold text-muted-foreground/60 uppercase tracking-wider mb-4 px-2">
         Notas
       </h3>
-      <div className="min-h-[400px] pb-32 hover:bg-white/5 rounded-lg transition-colors py-2">
+      <div className="min-h-[150px] hover:bg-white/5 rounded-lg transition-colors py-2">
         <BlockNoteView
           editor={editor}
           theme="dark"

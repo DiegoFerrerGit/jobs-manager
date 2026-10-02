@@ -3,6 +3,7 @@
 import { db } from "@/db";
 import { trackerColumns, trackerJobs, trackerConfig } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/auth";
 import { DEFAULT_SELECT_OPTIONS } from "./types";
 
@@ -117,6 +118,8 @@ export async function getTrackerData() {
         categoriaCierre: job.categoriaCierre || "",
         motivoRechazo: job.motivoRechazo || "",
         closedAt: job.closedAt || null,
+        notes: job.notes || "",
+        comments: (job.comments as any) || [],
         customProps: (job.customProps as Record<string, any>) ?? {},
       });
     }
@@ -193,6 +196,8 @@ export async function updateJobAction(jobId: string, columnId: string, jobData: 
     motivoRechazo: jobData.motivoRechazo,
     score: jobData.score,
     closedAt: jobData.closedAt,
+    notes: jobData.notes ?? null,
+    comments: jobData.comments ?? null,
     customProps: jobData.customProps ?? null,
     updatedAt: new Date(),
   };
@@ -202,6 +207,8 @@ export async function updateJobAction(jobId: string, columnId: string, jobData: 
   } else {
     await db.insert(trackerJobs).values({ id: jobId, ...payload });
   }
+  
+  revalidatePath("/tracker");
 }
 
 export async function updateJobColumnAction(jobId: string, newColumnId: string, instanciaCierre?: string) {
@@ -221,12 +228,15 @@ export async function updateJobColumnAction(jobId: string, newColumnId: string, 
   await db.update(trackerJobs)
     .set(payload)
     .where(eq(trackerJobs.id, jobId));
+    
+  revalidatePath("/tracker");
 }
 
 export async function deleteJobAction(jobId: string) {
   const user = await getCurrentUser();
   if (!user?.sub) throw new Error("Unauthorized");
   await db.delete(trackerJobs).where(eq(trackerJobs.id, jobId));
+  revalidatePath("/tracker");
 }
 
 export async function updateColumnsAction(columnsRecord: Record<string, any>, columnOrder?: string[]) {
@@ -262,6 +272,7 @@ export async function updateColumnsAction(columnsRecord: Record<string, any>, co
       await db.insert(trackerColumns).values({ id: colId, ...payload });
     }
   }
+  revalidatePath("/tracker");
 }
 
 export async function updateConfigAction(configObj: any) {
@@ -279,4 +290,6 @@ export async function updateConfigAction(configObj: any) {
   } else {
     await db.insert(trackerConfig).values({ userId, options, fieldOrder, customProperties });
   }
+  
+  revalidatePath("/tracker");
 }

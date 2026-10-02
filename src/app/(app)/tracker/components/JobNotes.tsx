@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useRef, useCallback } from "react";
 import { BlockNoteView } from "@blocknote/mantine";
 import { useCreateBlockNote } from "@blocknote/react";
 import "@blocknote/core/fonts/inter.css";
@@ -28,6 +28,15 @@ export default function JobNotes({ notes, onChange }: JobNotesProps) {
     initialContent: initialContent as any,
   });
 
+  const timeoutRef = useRef<NodeJS.Timeout>(null);
+
+  const handleEditorChange = useCallback(() => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    timeoutRef.current = setTimeout(() => {
+      onChange(JSON.stringify(editor.document));
+    }, 1500);
+  }, [editor, onChange]);
+
   return (
     <div className="mt-8 pt-6 border-t border-white/10 -mx-6 px-6">
       <h3 className="text-[13px] font-semibold text-muted-foreground/60 uppercase tracking-wider mb-4 px-2">
@@ -37,9 +46,7 @@ export default function JobNotes({ notes, onChange }: JobNotesProps) {
         <BlockNoteView
           editor={editor}
           theme="dark"
-          onChange={() => {
-            onChange(JSON.stringify(editor.document));
-          }}
+          onChange={handleEditorChange}
         />
       </div>
     </div>

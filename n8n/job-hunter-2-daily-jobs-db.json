@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-02T11:50:34.707Z",
+  "updatedAt": "2026-10-02T12:59:22.200Z",
   "createdAt": "2026-10-02T10:48:38.945Z",
   "id": "7wa7kY3r9tURPNqs",
   "name": "Job Hunter 2 - Daily jobs (DB)",
@@ -47,7 +47,7 @@
       "credentials": {
         "postgres": {
           "id": "5Ggn116ONj0zb4KN",
-          "name": "Jobs Manager Account"
+          "name": "Jobs Manager - PROD Neon"
         }
       }
     },
@@ -91,7 +91,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Arma una sola consulta con todas las ofertas.\n// Los datos viajan como parámetro JSON ($1), no dentro del texto SQL:\n// así los signos $ de los sueldos no rompen nada.\nconst userId = Number($('Get user').first().json.id);\nif (!userId) throw new Error('No se encontró el usuario');\n\nconst txt = v => (v === null || v === undefined || v === '' ? null : String(v));\nconst num = v => {\n  if (v === null || v === undefined || v === '') return null;\n  const x = Number(v);\n  return Number.isFinite(x) ? Math.round(x) : null;\n};\n\nconst ids = new Set();\nconst pairs = new Set();\nconst rows = [];\n\nfor (const item of $input.all()) {\n  const o = item.json;\n  if (!o.job_id || !o.apply_url) continue;\n  const pair = `${String(o.company).toLowerCase().trim()}|${String(o.title).toLowerCase().trim()}`;\n  if (ids.has(o.job_id) || pairs.has(pair)) continue; // duplicados dentro de esta corrida\n  ids.add(o.job_id);\n  pairs.add(pair);\n\n  rows.push({\n    user_id: userId,\n    external_id: txt(o.job_id),\n    title: txt(o.title),\n    apply_url: txt(o.apply_url),\n    locations: txt(o.locations),\n    published_at: txt(o.published_at),\n    priority: num(o.priority) ?? 3,\n    role_category: txt(o.role_category) || 'ic',\n    accepts_argentina: txt(o.accepts_argentina),\n    location_match: txt(o.location_match),\n    source: txt(o.source),\n    salary: txt(o.salary),\n    salary_max_k: num(o.salary_max_k),\n    company_id: num(o.company_id),\n    company: txt(o.company),\n    company_slug: txt(o.company_slug),\n    company_hq: txt(o.company_hq),\n    company_size: num(o.company_size),\n    company_stage: txt(o.company_stage),\n    company_linkedin: txt(o.company_linkedin),\n    linkedin_people_ar: txt(o.linkedin_people_ar),\n  });\n}\n\nconst sql = `\nINSERT INTO jobs (\n  user_id, external_id, title, apply_url, locations, published_at, priority,\n  role_category, accepts_argentina, location_match, source, salary, salary_max_k,\n  company_id, company, company_slug, company_hq, company_size, company_stage,\n  company_linkedin, linkedin_people_ar\n)\nSELECT v.user_id, v.external_id, v.title, v.apply_url, v.locations, v.published_at,\n       v.priority, v.role_category::role_category, v.accepts_argentina::argentina_fit,\n       v.location_match, v.source::job_source, v.salary, v.salary_max_k,\n       v.company_id, v.company, v.company_slug, v.company_hq, v.company_size,\n       v.company_stage, v.company_linkedin, v.linkedin_people_ar\nFROM jsonb_to_recordset($1::jsonb) AS v(\n  user_id int, external_id text, title text, apply_url text, locations text,\n  published_at date, priority smallint, role_category text, accepts_argentina text,\n  location_match text, source text, salary text, salary_max_k int,\n  company_id int, company text, company_slug text, company_hq text, company_size int,\n  company_stage text, company_linkedin text, linkedin_people_ar text\n)\nWHERE NOT EXISTS (\n  SELECT 1 FROM jobs j\n  WHERE j.user_id = v.user_id\n    AND lower(j.company) = lower(v.company)\n    AND lower(j.title) = lower(v.title)\n    AND j.external_id <> v.external_id\n)\nON CONFLICT (user_id, external_id) DO UPDATE SET\n  last_seen_at   = CURRENT_DATE,\n  closed_at = NULL,\n  republished_at = CASE WHEN EXCLUDED.published_at IS NOT NULL\n                         AND jobs.published_at IS NOT NULL\n                         AND EXCLUDED.published_at > jobs.published_at\n                        THEN CURRENT_DATE ELSE jobs.republished_at END,\n  published_at   = GREATEST(jobs.published_at, EXCLUDED.published_at),\n  locations      = EXCLUDED.locations,\n  salary         = COALESCE(EXCLUDED.salary, jobs.salary),\n  salary_max_k   = COALESCE(EXCLUDED.salary_max_k, jobs.salary_max_k),\n  company_hq     = COALESCE(EXCLUDED.company_hq, jobs.company_hq),\n  company_size   = COALESCE(EXCLUDED.company_size, jobs.company_size),\n  company_id     = COALESCE(EXCLUDED.company_id, jobs.company_id),\n  -- La clasificación se recalcula en cada corrida: si cambian las reglas,\n  -- las ofertas viejas se corrigen solas en vez de quedar con el veredicto viejo.\n  accepts_argentina = EXCLUDED.accepts_argentina,\n  location_match    = EXCLUDED.location_match,\n  priority          = EXCLUDED.priority,\n  role_category     = EXCLUDED.role_category\nRETURNING (xmax = 0) AS inserted, external_id, company, title`;\n\nreturn [{ json: { sql, params: JSON.stringify(rows), rows: rows.length } }];"
+        "jsCode": "// Arma una sola consulta con todas las ofertas.\n// Los datos viajan como parámetro JSON ($1), no dentro del texto SQL:\n// así los signos $ de los sueldos no rompen nada.\n//\n// El pipeline es comun a todos los usuarios: la tabla jobs ya no tiene user_id.\n// El estado por usuario (guardado, aplicado, notas, sueldo pretendido) vive en\n// user_jobs y lo escribe la app, no este nodo.\n\nconst txt = v => (v === null || v === undefined || v === '' ? null : String(v));\nconst num = v => {\n  if (v === null || v === undefined || v === '') return null;\n  const x = Number(v);\n  return Number.isFinite(x) ? Math.round(x) : null;\n};\n\nconst ids = new Set();\nconst pairs = new Set();\nconst rows = [];\n\nfor (const item of $input.all()) {\n  const o = item.json;\n  if (!o.job_id || !o.apply_url) continue;\n  const pair = `${String(o.company).toLowerCase().trim()}|${String(o.title).toLowerCase().trim()}`;\n  if (ids.has(o.job_id) || pairs.has(pair)) continue; // duplicados dentro de esta corrida\n  ids.add(o.job_id);\n  pairs.add(pair);\n\n  rows.push({\n    external_id: txt(o.job_id),\n    title: txt(o.title),\n    apply_url: txt(o.apply_url),\n    locations: txt(o.locations),\n    published_at: txt(o.published_at),\n    priority: num(o.priority) ?? 3,\n    role_category: txt(o.role_category) || 'ic',\n    accepts_argentina: txt(o.accepts_argentina),\n    location_match: txt(o.location_match),\n    source: txt(o.source),\n    salary: txt(o.salary),\n    salary_max_k: num(o.salary_max_k),\n    company_id: num(o.company_id),\n    company: txt(o.company),\n    company_slug: txt(o.company_slug),\n    company_hq: txt(o.company_hq),\n    company_size: num(o.company_size),\n    company_stage: txt(o.company_stage),\n    company_linkedin: txt(o.company_linkedin),\n    linkedin_people_ar: txt(o.linkedin_people_ar),\n  });\n}\n\nconst sql = `\nINSERT INTO jobs (\n  external_id, title, apply_url, locations, published_at, priority,\n  role_category, accepts_argentina, location_match, source, salary, salary_max_k,\n  company_id, company, company_slug, company_hq, company_size, company_stage,\n  company_linkedin, linkedin_people_ar\n)\nSELECT v.external_id, v.title, v.apply_url, v.locations, v.published_at,\n       v.priority, v.role_category::role_category, v.accepts_argentina::argentina_fit,\n       v.location_match, v.source::job_source, v.salary, v.salary_max_k,\n       v.company_id, v.company, v.company_slug, v.company_hq, v.company_size,\n       v.company_stage, v.company_linkedin, v.linkedin_people_ar\nFROM jsonb_to_recordset($1::jsonb) AS v(\n  external_id text, title text, apply_url text, locations text,\n  published_at date, priority smallint, role_category text, accepts_argentina text,\n  location_match text, source text, salary text, salary_max_k int,\n  company_id int, company text, company_slug text, company_hq text, company_size int,\n  company_stage text, company_linkedin text, linkedin_people_ar text\n)\nWHERE NOT EXISTS (\n  SELECT 1 FROM jobs j\n  WHERE lower(j.company) = lower(v.company)\n    AND lower(j.title) = lower(v.title)\n    AND j.external_id <> v.external_id\n)\nON CONFLICT (external_id) DO UPDATE SET\n  last_seen_at   = CURRENT_DATE,\n  closed_at = NULL,\n  republished_at = CASE WHEN EXCLUDED.published_at IS NOT NULL\n                         AND jobs.published_at IS NOT NULL\n                         AND EXCLUDED.published_at > jobs.published_at\n                        THEN CURRENT_DATE ELSE jobs.republished_at END,\n  published_at   = GREATEST(jobs.published_at, EXCLUDED.published_at),\n  locations      = EXCLUDED.locations,\n  salary         = COALESCE(EXCLUDED.salary, jobs.salary),\n  salary_max_k   = COALESCE(EXCLUDED.salary_max_k, jobs.salary_max_k),\n  company_hq     = COALESCE(EXCLUDED.company_hq, jobs.company_hq),\n  company_size   = COALESCE(EXCLUDED.company_size, jobs.company_size),\n  company_id     = COALESCE(EXCLUDED.company_id, jobs.company_id),\n  -- La clasificación se recalcula en cada corrida: si cambian las reglas,\n  -- las ofertas viejas se corrigen solas en vez de quedar con el veredicto viejo.\n  accepts_argentina = EXCLUDED.accepts_argentina,\n  location_match    = EXCLUDED.location_match,\n  priority          = EXCLUDED.priority,\n  role_category     = EXCLUDED.role_category\nRETURNING (xmax = 0) AS inserted, external_id, company, title`;\n\nreturn [{ json: { sql, params: JSON.stringify(rows), rows: rows.length } }];"
       },
       "name": "Build jobs SQL",
       "type": "n8n-nodes-base.code",
@@ -121,7 +121,7 @@
       "credentials": {
         "postgres": {
           "id": "5Ggn116ONj0zb4KN",
-          "name": "Jobs Manager Account"
+          "name": "Jobs Manager - PROD Neon"
         }
       }
     },
@@ -133,31 +133,10 @@
       "typeVersion": 2,
       "position": [
         416,
-        -32
+        -16
       ],
       "id": "5bc4843e-e6f0-4d0a-aa5e-352fa0c7faf3",
       "name": "Fetch Workday"
-    },
-    {
-      "parameters": {
-        "operation": "executeQuery",
-        "query": "SELECT (SELECT id FROM users ORDER BY id LIMIT 1) AS id,\n       COALESCE(array_agg(lower(keyword)), '{}') AS ignored_keywords\nFROM ignored_keywords",
-        "options": {}
-      },
-      "name": "Get user",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.6,
-      "position": [
-        -96,
-        -80
-      ],
-      "id": "08eb6758-9576-4ac5-930a-3c2afd638f50",
-      "credentials": {
-        "postgres": {
-          "id": "5Ggn116ONj0zb4KN",
-          "name": "Jobs Manager Account"
-        }
-      }
     },
     {
       "parameters": {
@@ -177,7 +156,7 @@
       "credentials": {
         "postgres": {
           "id": "5Ggn116ONj0zb4KN",
-          "name": "Jobs Manager Account"
+          "name": "Jobs Manager - PROD Neon"
         }
       }
     },
@@ -188,7 +167,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        368,
+        416,
         496
       ],
       "id": "86c4766f-8b39-4158-bebc-b0dcfe83454b",
@@ -210,7 +189,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// =====================================================================\n//  Classify & Filter\n//  Va entre \"Merge sources\" y \"Resolve GOB company\".\n//\n//  ESTE ES EL UNICO LUGAR DONDE SE TOCAN LAS REGLAS.\n//  Los cuatro nodos Normalize de arriba solo traducen el formato de su\n//  proveedor al formato comun; no filtran ni clasifican nada.\n//\n//  Formato comun que recibe de cada Normalize:\n//    job_id, source, title, department, locations, description,\n//    salary, salary_max_k, published_at, apply_url,\n//    company, company_slug, company_id, company_hq, company_size,\n//    company_stage, company_linkedin\n//  Campos opcionales:\n//    match_override   -> ['yes','fully_remote'] cuando el proveedor ya\n//                        sabe la respuesta mejor que nuestro texto (GOB)\n//    gob_company_id   -> lo usa \"Resolve GOB company\", mas abajo\n// =====================================================================\n\nconst MIN_SALARY_K = 60; // minimo anual en miles de USD (solo si publica salario)\n\n// Ingenieria por titulo. Incluye terminos en español porque Get on Board\n// publica en los dos idiomas.\nconst IS_ENGINEERING = /engineer|engineering|developer|desarrollador|desarrollo|programador|programmer|builder|full.?stack|front.?end|back.?end|ingenier|arquitect|\\bsre\\b|devops|architect|tech(nical)? lead|l[íi]der t[ée]cnico|forward deployed|machine learning|\\bml\\b|\\bcto\\b|head of eng|vp.*eng/i;\n\n// Ingenieria por departamento. Cada empresa lo nombra distinto:\n// \"Engineering\", \"Tech Team\", \"EN-Engineering\", \"R&D\"...\nconst IS_ENG_DEPT = /engineer|engineering|technolog|\\btech\\b|software|\\br&?d\\b|platform|infrastructur/i;\n\n// Se cuela por el titulo o por el departamento, pero no es ingenieria.\nconst EXCLUDE = /recruit|reclut|talent|sales(?! engineer)|ventas|account exec|marketing|designer|dise[ñn]ador|legal|finance|contador|intern|pasant|practicante|product manager|program manager|project manager|gerente de producto|jefe de producto|\\banalyst\\b|analista(?! programador)|data scientist|cient[íi]fico de datos|incident manager/i;\n\n// Formularios de banco de talento: dicen \"Engineering\" pero no hay busqueda\n// detras y nunca se cierran.\nconst EXCLUDE_EVERGREEN = /future .*(opportunit|role|position)|general interest|talent (pool|community|network)|open application|spontaneous/i;\n\nconst ARGENTINA = /argentin|buenos aires/i;\nconst LATAM = /latam|latin america|south america|\\bamericas\\b/i;\nconst GLOBAL = /\\b(anywhere|worldwide|global)\\b/i;\nconst REMOTE_ONLY = /^(remote|remoto|fully remote)$/i;\nconst US_ONLY = /(must|need to|required to)\\s+(be\\s+)?(based|located|live|reside)[^.]{0,40}(united states|u\\.s\\.|\\busa\\b)|(authorized|authorization|eligible)\\s+to\\s+work\\s+in\\s+the\\s+(united states|u\\.s\\.)|u\\.s\\.\\s+(citizen|work authorization)|citizen\\/visa only/i;\n\nconst MANAGER = /manager|gerente|jefe|head of|director|\\bvp\\b|vice president|\\bcto\\b/i;\nconst LEAD = /lead|l[íi]der|staff|principal|forward deployed|product engineer|founding/i;\nconst PRIORITY = { manager: 1, lead_staff: 2, ic: 3 };\n\n// Paises de LATAM, por nombre, por codigo ISO y por ciudad principal.\n// Con acentos, porque muchas ofertas escriben \"Mexico\" o \"Peru\".\nconst LATAM_COUNTRY = /\\b(argentin|brazil|brasil|colombia|chile|uruguay|per[úu]|paraguay|bolivia|ecuador|venezuela|(?<!new )m[ée]xico|costa rica|panam[áa]|guatemala)\\b|\\b(ARG|BRA|COL|CHL|URY|PER|MEX|CRI)\\b|\\b(bogot[áa]|medell[íi]n|barranquilla|cartagena|s[ãa]o paulo|rio de janeiro|porto alegre|belo horizonte|curitiba|florian[óo]polis|joinville|recife|montevideo|asunci[óo]n|guadalajara|monterrey|cdmx|quito|guayaquil|san salvador|tegucigalpa|managua)\\b/i;\n// \"AR\" tambien es Arkansas: solo cuenta como Argentina si hay otro pais de la region\nconst OTHER_LATAM_CODE = /\\b(BR|CO|CL|UY|PE|MX|EC|BO|PY|VE|CR)\\b/;\n// \"Avenue of the Americas\" es una calle de Nueva York, no la region\nconst NY_STREET = /ave(nue)?\\.?\\s+of\\s+(the\\s+)?americas/ig;\n\n// ---- Reglas que antes vivian en \"Filter ignored\" ----\n\n// Palabras que el usuario marco como ignoradas, desde su fila en la base\nlet raw = $('Get user').first().json.ignored_keywords || [];\n// Postgres puede devolver el array como texto: \"{qa,junior}\"\nif (typeof raw === 'string') raw = raw.replace(/^\\{|\\}$/g, '').split(',');\nconst words = raw.map(w => String(w).replace(/^\"|\"$/g, '').trim().toLowerCase()).filter(Boolean);\nconst esc = w => w.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&');\nconst IGNORED_WORDS = words.length\n  ? new RegExp(`(^|[^a-z0-9])(${words.map(esc).join('|')})([^a-z0-9]|$)`, 'i')\n  : null;\n\n// Lista negra de empresas, provisoria hasta que se pueda administrar desde la app.\n// OJO: los avisos de Get on Board llegan aca sin nombre de empresa, asi que esta\n// lista no les aplica. A esos los cubre la lista STAFFING de \"Resolve GOB company\".\nconst IGNORED_COMPANIES = ['canonical'];\n\n// Antiguedad maxima. Hay empresas que dejan avisos abiertos años para juntar CVs.\n// Si la oferta no trae fecha, no se descarta.\nconst MAX_AGE_DAYS = 180;\nconst CUTOFF = new Date(Date.now() - MAX_AGE_DAYS * 86400000).toISOString().slice(0, 10);\n\n// ---------------------------------------------------------------------\n\n// Devuelve [accepts_argentina, location_match]\n// title: muchas ofertas ponen \"(Remote LATAM)\" en el titulo y no en la ubicacion\nfunction classify(rawLoc, extra, title) {\n  const t = title || '';\n  const loc = String(rawLoc || '').replace(NY_STREET, '');\n\n  if (ARGENTINA.test(loc) || /\\bARG\\b/.test(loc)) return ['yes', 'argentina_in_location'];\n  if (/\\bAR\\b/.test(loc) && OTHER_LATAM_CODE.test(loc)) return ['yes', 'argentina_in_location'];\n  if (LATAM.test(loc)) return ['yes', 'latam_in_location'];\n  if (ARGENTINA.test(t)) return ['yes', 'argentina_in_title'];\n  if (LATAM.test(t)) return ['yes', 'latam_in_title'];\n\n  const restricted = US_ONLY.test(extra);\n  const parts = loc.split(/\\s*[|\\/;]\\s*/).map(p => p.trim()).filter(Boolean);\n  const remoteOnly = parts.length > 0 && parts.every(p => REMOTE_ONLY.test(p) || GLOBAL.test(p));\n\n  if (remoteOnly && !restricted) {\n    return /not required/i.test(extra)\n      ? ['maybe', 'remote_visa_not_required']\n      : ['maybe', 'remote_no_country'];\n  }\n\n  // Otro pais de LATAM + remoto: la empresa ya contrata fuera de EE.UU. en la region\n  if (LATAM_COUNTRY.test(loc) && /remote|remoto|híbrido|hybrid/i.test(loc) && !restricted) {\n    return ['maybe', 'latam_country_remote'];\n  }\n\n  // La descripcion solo decide cuando la ubicacion no nombra ningun lugar.\n  // Si la empresa listo lugares y ninguno es de LATAM, que el texto mencione\n  // la region suele significar que la empresa es de ahi, no que contrate ahi.\n  const hasCountryInfo = parts.some(p => !REMOTE_ONLY.test(p) && !GLOBAL.test(p));\n  if (!hasCountryInfo && (ARGENTINA.test(extra) || LATAM.test(extra)) && !restricted) {\n    return ['maybe', 'latam_in_description'];\n  }\n\n  return ['no', ''];\n}\n\n// Maximo anual en miles de USD. Los rangos chicos se interpretan como sueldo mensual.\nfunction salaryMaxK(s) {\n  const m = (s || '').match(/\\$([\\d.,]+)\\s*(K?)\\s*[-–]\\s*\\$([\\d.,]+)\\s*(K?)/i);\n  if (!m) return null;\n  let max = parseFloat(m[3].replace(/,/g, ''));\n  if (!m[4]) max = max / 1000;\n  return max < 20 ? Math.round(max * 12) : max;\n}\n\nfunction roleCategory(title) {\n  if (MANAGER.test(title)) return 'manager';\n  if (LEAD.test(title)) return 'lead_staff';\n  return 'ic';\n}\n\n// Sede aproximada: la ubicacion presencial mas repetida de la empresa.\n// Ahora se calcula sobre TODAS las fuentes juntas, no solo sobre una.\nfunction guessHq(locations) {\n  const count = {};\n  for (const raw of locations) {\n    for (const p of String(raw || '').split(/\\s*[|\\/;]\\s*/)) {\n      const v = p.trim();\n      if (!v || /remote|remoto|anywhere|worldwide|global|latam|latin america/i.test(v)) continue;\n      count[v] = (count[v] || 0) + 1;\n    }\n  }\n  const top = Object.entries(count).sort((a, b) => b[1] - a[1])[0];\n  return top ? top[0] : '';\n}\n\n// ---------------------------------------------------------------------\n\nconst items = $input.all().map(i => i.json || {});\n\n// Ubicaciones por empresa, para deducir la sede cuando no la tenemos cargada\nconst locsByCompany = {};\nfor (const o of items) {\n  if (!o.company_slug) continue;\n  (locsByCompany[o.company_slug] = locsByCompany[o.company_slug] || []).push(o.locations);\n}\n\nconst out = [];\nconst seen = new Set();\n\nfor (const o of items) {\n  if (!o.job_id || seen.has(o.job_id)) continue;\n  seen.add(o.job_id);\n\n  const title = String(o.title || '');\n  if (!title) continue;\n\n  // --- 1) Descartes por titulo ---\n  // Es ingenieria si lo dice el titulo o si lo dice el departamento.\n  // EXCLUDE siempre manda: un \"Technical Recruiter\" dentro de Engineering queda afuera.\n  const isEng = IS_ENGINEERING.test(title) || IS_ENG_DEPT.test(o.department || '');\n  if (!isEng) continue;\n  if (EXCLUDE.test(title) || EXCLUDE_EVERGREEN.test(title)) continue;\n  if (IGNORED_WORDS && IGNORED_WORDS.test(title)) continue;\n\n  // --- 2) Descartes por empresa ---\n  const companyLower = String(o.company || '').trim().toLowerCase();\n  if (companyLower && IGNORED_COMPANIES.some(c => companyLower.startsWith(c))) continue;\n\n  // --- 3) Descarte por antiguedad ---\n  const pub = String(o.published_at || '');\n  if (pub && pub < CUTOFF) continue;\n\n  // --- 4) Elegibilidad geografica ---\n  // match_override: el proveedor ya trae la respuesta estructurada y le creemos\n  // mas que a nuestro parseo de texto\n  const [accepts, match] = Array.isArray(o.match_override)\n    ? o.match_override\n    : classify(o.locations, o.description, title);\n  if (accepts === 'no') continue;\n\n  // --- 5) Minimo salarial, solo si el aviso publica salario ---\n  // salary_max_k puede venir ya calculado (GOB lo trae mensual en campos aparte)\n  const maxK = (o.salary_max_k === '' || o.salary_max_k === null || o.salary_max_k === undefined)\n    ? salaryMaxK(o.salary)\n    : Number(o.salary_max_k);\n  if (maxK !== null && !Number.isNaN(maxK) && maxK < MIN_SALARY_K) continue;\n\n  const role = roleCategory(title);\n  const li = o.company_linkedin || '';\n\n  out.push({ json: {\n    job_id: o.job_id,\n    company_id: o.company_id ?? '',\n    priority: PRIORITY[role],\n    role_category: role,\n    accepts_argentina: accepts,\n    location_match: match,\n    company: o.company || '',\n    company_slug: o.company_slug || '',\n    company_hq: o.company_hq || guessHq(locsByCompany[o.company_slug] || []),\n    company_size: o.company_size || '',\n    company_stage: o.company_stage || '',\n    title: title.trim(),\n    department: o.department || '',\n    salary: o.salary || '',\n    salary_max_k: (maxK === null || Number.isNaN(maxK)) ? '' : maxK,\n    locations: o.locations || '',\n    published_at: o.published_at || '',\n    apply_url: o.apply_url || '',\n    company_linkedin: li,\n    linkedin_people_ar: li ? `${li}/people/?facetGeoRegion=100446943` : '',\n    source: o.source || '',\n    // solo sobrevive para el nodo siguiente; ahi se borra\n    gob_company_id: o.gob_company_id || '',\n  }});\n}\n\nreturn out;"
+        "jsCode": "// =====================================================================\n//  Classify & Filter\n//  Va entre \"Merge sources\" y \"Resolve GOB company\".\n//\n//  ESTE ES EL UNICO LUGAR DONDE SE TOCAN LAS REGLAS.\n//  Los cuatro nodos Normalize de arriba solo traducen el formato de su\n//  proveedor al formato comun; no filtran ni clasifican nada.\n//\n//  Formato comun que recibe de cada Normalize:\n//    job_id, source, title, department, locations, description,\n//    salary, salary_max_k, published_at, apply_url,\n//    company, company_slug, company_id, company_hq, company_size,\n//    company_stage, company_linkedin\n//  Campos opcionales:\n//    match_override   -> ['yes','fully_remote'] cuando el proveedor ya\n//                        sabe la respuesta mejor que nuestro texto (GOB)\n//    gob_company_id   -> lo usa \"Resolve GOB company\", mas abajo\n// =====================================================================\n\nconst MIN_SALARY_K = 60; // minimo anual en miles de USD (solo si publica salario)\n\n// Ingenieria por titulo. Incluye terminos en español porque Get on Board\n// publica en los dos idiomas.\nconst IS_ENGINEERING = /engineer|engineering|developer|desarrollador|desarrollo|programador|programmer|builder|full.?stack|front.?end|back.?end|ingenier|arquitect|\\bsre\\b|devops|architect|tech(nical)? lead|l[íi]der t[ée]cnico|forward deployed|machine learning|\\bml\\b|\\bcto\\b|head of eng|vp.*eng/i;\n\n// Ingenieria por departamento. Cada empresa lo nombra distinto:\n// \"Engineering\", \"Tech Team\", \"EN-Engineering\", \"R&D\"...\nconst IS_ENG_DEPT = /engineer|engineering|technolog|\\btech\\b|software|\\br&?d\\b|platform|infrastructur/i;\n\n// Se cuela por el titulo o por el departamento, pero no es ingenieria.\nconst EXCLUDE = /recruit|reclut|talent|sales(?! engineer)|ventas|account exec|marketing|designer|dise[ñn]ador|legal|finance|contador|intern|pasant|practicante|product manager|program manager|project manager|gerente de producto|jefe de producto|\\banalyst\\b|analista(?! programador)|data scientist|cient[íi]fico de datos|incident manager/i;\n\n// Formularios de banco de talento: dicen \"Engineering\" pero no hay busqueda\n// detras y nunca se cierran.\nconst EXCLUDE_EVERGREEN = /future .*(opportunit|role|position)|general interest|talent (pool|community|network)|open application|spontaneous/i;\n\nconst ARGENTINA = /argentin|buenos aires/i;\nconst LATAM = /latam|latin america|south america|\\bamericas\\b/i;\nconst GLOBAL = /\\b(anywhere|worldwide|global)\\b/i;\nconst REMOTE_ONLY = /^(remote|remoto|fully remote)$/i;\nconst US_ONLY = /(must|need to|required to)\\s+(be\\s+)?(based|located|live|reside)[^.]{0,40}(united states|u\\.s\\.|\\busa\\b)|(authorized|authorization|eligible)\\s+to\\s+work\\s+in\\s+the\\s+(united states|u\\.s\\.)|u\\.s\\.\\s+(citizen|work authorization)|citizen\\/visa only/i;\n\nconst MANAGER = /manager|gerente|jefe|head of|director|\\bvp\\b|vice president|\\bcto\\b/i;\nconst LEAD = /lead|l[íi]der|staff|principal|forward deployed|product engineer|founding/i;\nconst PRIORITY = { manager: 1, lead_staff: 2, ic: 3 };\n\n// Paises de LATAM, por nombre, por codigo ISO y por ciudad principal.\n// Con acentos, porque muchas ofertas escriben \"Mexico\" o \"Peru\".\nconst LATAM_COUNTRY = /\\b(argentin|brazil|brasil|colombia|chile|uruguay|per[úu]|paraguay|bolivia|ecuador|venezuela|(?<!new )m[ée]xico|costa rica|panam[áa]|guatemala)\\b|\\b(ARG|BRA|COL|CHL|URY|PER|MEX|CRI)\\b|\\b(bogot[áa]|medell[íi]n|barranquilla|cartagena|s[ãa]o paulo|rio de janeiro|porto alegre|belo horizonte|curitiba|florian[óo]polis|joinville|recife|montevideo|asunci[óo]n|guadalajara|monterrey|cdmx|quito|guayaquil|san salvador|tegucigalpa|managua)\\b/i;\n// \"AR\" tambien es Arkansas: solo cuenta como Argentina si hay otro pais de la region\nconst OTHER_LATAM_CODE = /\\b(BR|CO|CL|UY|PE|MX|EC|BO|PY|VE|CR)\\b/;\n// \"Avenue of the Americas\" es una calle de Nueva York, no la region\nconst NY_STREET = /ave(nue)?\\.?\\s+of\\s+(the\\s+)?americas/ig;\n\n// Lista negra de empresas, provisoria hasta que se pueda administrar desde la app.\n// OJO: los avisos de Get on Board llegan aca sin nombre de empresa, asi que esta\n// lista no les aplica. A esos los cubre la lista STAFFING de \"Resolve GOB company\".\nconst IGNORED_COMPANIES = ['canonical'];\n\n// Antiguedad maxima. Hay empresas que dejan avisos abiertos años para juntar CVs.\n// Si la oferta no trae fecha, no se descarta.\nconst MAX_AGE_DAYS = 180;\nconst CUTOFF = new Date(Date.now() - MAX_AGE_DAYS * 86400000).toISOString().slice(0, 10);\n\n// ---------------------------------------------------------------------\n\n// Devuelve [accepts_argentina, location_match]\n// title: muchas ofertas ponen \"(Remote LATAM)\" en el titulo y no en la ubicacion\nfunction classify(rawLoc, extra, title) {\n  const t = title || '';\n  const loc = String(rawLoc || '').replace(NY_STREET, '');\n\n  if (ARGENTINA.test(loc) || /\\bARG\\b/.test(loc)) return ['yes', 'argentina_in_location'];\n  if (/\\bAR\\b/.test(loc) && OTHER_LATAM_CODE.test(loc)) return ['yes', 'argentina_in_location'];\n  if (LATAM.test(loc)) return ['yes', 'latam_in_location'];\n  if (ARGENTINA.test(t)) return ['yes', 'argentina_in_title'];\n  if (LATAM.test(t)) return ['yes', 'latam_in_title'];\n\n  const restricted = US_ONLY.test(extra);\n  const parts = loc.split(/\\s*[|\\/;]\\s*/).map(p => p.trim()).filter(Boolean);\n  const remoteOnly = parts.length > 0 && parts.every(p => REMOTE_ONLY.test(p) || GLOBAL.test(p));\n\n  if (remoteOnly && !restricted) {\n    return /not required/i.test(extra)\n      ? ['maybe', 'remote_visa_not_required']\n      : ['maybe', 'remote_no_country'];\n  }\n\n  // Otro pais de LATAM + remoto: la empresa ya contrata fuera de EE.UU. en la region\n  if (LATAM_COUNTRY.test(loc) && /remote|remoto|híbrido|hybrid/i.test(loc) && !restricted) {\n    return ['maybe', 'latam_country_remote'];\n  }\n\n  // La descripcion solo decide cuando la ubicacion no nombra ningun lugar.\n  // Si la empresa listo lugares y ninguno es de LATAM, que el texto mencione\n  // la region suele significar que la empresa es de ahi, no que contrate ahi.\n  const hasCountryInfo = parts.some(p => !REMOTE_ONLY.test(p) && !GLOBAL.test(p));\n  if (!hasCountryInfo && (ARGENTINA.test(extra) || LATAM.test(extra)) && !restricted) {\n    return ['maybe', 'latam_in_description'];\n  }\n\n  return ['no', ''];\n}\n\n// Maximo anual en miles de USD. Los rangos chicos se interpretan como sueldo mensual.\nfunction salaryMaxK(s) {\n  const m = (s || '').match(/\\$([\\d.,]+)\\s*(K?)\\s*[-–]\\s*\\$([\\d.,]+)\\s*(K?)/i);\n  if (!m) return null;\n  let max = parseFloat(m[3].replace(/,/g, ''));\n  if (!m[4]) max = max / 1000;\n  return max < 20 ? Math.round(max * 12) : max;\n}\n\nfunction roleCategory(title) {\n  if (MANAGER.test(title)) return 'manager';\n  if (LEAD.test(title)) return 'lead_staff';\n  return 'ic';\n}\n\n// Sede aproximada: la ubicacion presencial mas repetida de la empresa.\n// Ahora se calcula sobre TODAS las fuentes juntas, no solo sobre una.\nfunction guessHq(locations) {\n  const count = {};\n  for (const raw of locations) {\n    for (const p of String(raw || '').split(/\\s*[|\\/;]\\s*/)) {\n      const v = p.trim();\n      if (!v || /remote|remoto|anywhere|worldwide|global|latam|latin america/i.test(v)) continue;\n      count[v] = (count[v] || 0) + 1;\n    }\n  }\n  const top = Object.entries(count).sort((a, b) => b[1] - a[1])[0];\n  return top ? top[0] : '';\n}\n\n// ---------------------------------------------------------------------\n\nconst items = $input.all().map(i => i.json || {});\n\n// Ubicaciones por empresa, para deducir la sede cuando no la tenemos cargada\nconst locsByCompany = {};\nfor (const o of items) {\n  if (!o.company_slug) continue;\n  (locsByCompany[o.company_slug] = locsByCompany[o.company_slug] || []).push(o.locations);\n}\n\nconst out = [];\nconst seen = new Set();\n\nfor (const o of items) {\n  if (!o.job_id || seen.has(o.job_id)) continue;\n  seen.add(o.job_id);\n\n  const title = String(o.title || '');\n  if (!title) continue;\n\n  // --- 1) Descartes por titulo ---\n  // Es ingenieria si lo dice el titulo o si lo dice el departamento.\n  // EXCLUDE siempre manda: un \"Technical Recruiter\" dentro de Engineering queda afuera.\n  const isEng = IS_ENGINEERING.test(title) || IS_ENG_DEPT.test(o.department || '');\n  if (!isEng) continue;\n  if (EXCLUDE.test(title) || EXCLUDE_EVERGREEN.test(title)) continue;\n\n  // --- 2) Descartes por empresa ---\n  const companyLower = String(o.company || '').trim().toLowerCase();\n  if (companyLower && IGNORED_COMPANIES.some(c => companyLower.startsWith(c))) continue;\n\n  // --- 3) Descarte por antiguedad ---\n  const pub = String(o.published_at || '');\n  if (pub && pub < CUTOFF) continue;\n\n  // --- 4) Elegibilidad geografica ---\n  // match_override: el proveedor ya trae la respuesta estructurada y le creemos\n  // mas que a nuestro parseo de texto\n  const [accepts, match] = Array.isArray(o.match_override)\n    ? o.match_override\n    : classify(o.locations, o.description, title);\n  if (accepts === 'no') continue;\n\n  // --- 5) Minimo salarial, solo si el aviso publica salario ---\n  // salary_max_k puede venir ya calculado (GOB lo trae mensual en campos aparte)\n  const maxK = (o.salary_max_k === '' || o.salary_max_k === null || o.salary_max_k === undefined)\n    ? salaryMaxK(o.salary)\n    : Number(o.salary_max_k);\n  if (maxK !== null && !Number.isNaN(maxK) && maxK < MIN_SALARY_K) continue;\n\n  const role = roleCategory(title);\n  const li = o.company_linkedin || '';\n\n  out.push({ json: {\n    job_id: o.job_id,\n    company_id: o.company_id ?? '',\n    priority: PRIORITY[role],\n    role_category: role,\n    accepts_argentina: accepts,\n    location_match: match,\n    company: o.company || '',\n    company_slug: o.company_slug || '',\n    company_hq: o.company_hq || guessHq(locsByCompany[o.company_slug] || []),\n    company_size: o.company_size || '',\n    company_stage: o.company_stage || '',\n    title: title.trim(),\n    department: o.department || '',\n    salary: o.salary || '',\n    salary_max_k: (maxK === null || Number.isNaN(maxK)) ? '' : maxK,\n    locations: o.locations || '',\n    published_at: o.published_at || '',\n    apply_url: o.apply_url || '',\n    company_linkedin: li,\n    linkedin_people_ar: li ? `${li}/people/?facetGeoRegion=100446943` : '',\n    source: o.source || '',\n    // solo sobrevive para el nodo siguiente; ahi se borra\n    gob_company_id: o.gob_company_id || '',\n  }});\n}\n\nreturn out;"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -243,7 +222,7 @@
       "typeVersion": 2,
       "position": [
         640,
-        -32
+        -16
       ],
       "id": "72147613-18d7-47a6-8d88-c81e1c81608f",
       "name": "Normalize Workday"
@@ -295,7 +274,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1712,
+        1728,
         -96
       ],
       "id": "1b5f435e-a06e-4b00-b676-0f65bcd9698f",
@@ -325,7 +304,7 @@
       },
       "type": "n8n-nodes-base.stickyNote",
       "position": [
-        1360,
+        1344,
         64
       ],
       "typeVersion": 1,
@@ -434,7 +413,17 @@
       "main": [
         [
           {
-            "node": "Get user",
+            "node": "Fetch GOB",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Read Companies",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch YC",
             "type": "main",
             "index": 0
           }
@@ -495,27 +484,6 @@
         [
           {
             "node": "Normalize Workday",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Get user": {
-      "main": [
-        [
-          {
-            "node": "Fetch GOB",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Read Companies",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Fetch YC",
             "type": "main",
             "index": 0
           }
@@ -658,9 +626,9 @@
   },
   "nodeGroups": [],
   "pinData": {},
-  "versionId": "b6f51863-0627-4fd6-815e-522c46e89457",
+  "versionId": "2b95f763-cd04-4eae-b790-5aed281a5299",
   "activeVersionId": "b6f51863-0627-4fd6-815e-522c46e89457",
-  "versionCounter": 189,
+  "versionCounter": 209,
   "triggerCount": 1,
   "sourceWorkflowId": null,
   "tags": [],
@@ -685,7 +653,7 @@
     }
   ],
   "versionMetadata": {
-    "name": "Version b6f51863",
-    "description": ""
+    "name": null,
+    "description": null
   }
 }

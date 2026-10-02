@@ -58,6 +58,17 @@ export default function JobPanel({ job, columnId, config, columns, onClose, onUp
     return () => document.removeEventListener("mousedown", handler);
   }, [showAddProperty]);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
+
   const handleChange = (field: keyof TrackerJob, value: any) => {
     const updated = { ...data, [field]: value };
     if (field === "salarioMensual") {

@@ -225,11 +225,24 @@ export default function TrackerClient({ initialData }: { initialData: any }) {
   const [dolarBlue, setDolarBlue] = useState<number | null>(null);
 
   useEffect(() => {
-    fetch('https://dolarapi.com/v1/dolares/blue')
+    const cached = localStorage.getItem('dolarBlue');
+    const cachedTime = localStorage.getItem('dolarBlue_time');
+    const now = Date.now();
+
+    // Cache for 24 hours (86400000 ms)
+    if (cached && cachedTime && now - parseInt(cachedTime) < 86400000) {
+      setDolarBlue(parseFloat(cached));
+      return;
+    }
+
+    fetch('https://dolarapi.com/v1/dolares')
       .then(res => res.json())
-      .then(data => {
-        if (data && data.venta) {
-          setDolarBlue(data.venta);
+      .then((data: any[]) => {
+        const blue = data.find(d => d.casa === 'blue' || d.nombre === 'Blue');
+        if (blue && blue.venta) {
+          setDolarBlue(blue.venta);
+          localStorage.setItem('dolarBlue', blue.venta.toString());
+          localStorage.setItem('dolarBlue_time', now.toString());
         }
       })
       .catch(console.error);

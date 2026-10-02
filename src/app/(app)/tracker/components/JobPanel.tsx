@@ -367,8 +367,8 @@ export default function JobPanel({ job, columnId, config, columns, onClose, onUp
             </button>
           </div>
 
-          <JobComments comments={data.comments || []} onChange={v => handleChange("comments", v)} />
           <JobNotes notes={data.notes} onChange={v => handleChange("notes", v)} />
+          <JobComments comments={data.comments || []} onChange={v => handleChange("comments", v)} />
         </div>
       </motion.div>
 

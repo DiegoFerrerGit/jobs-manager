@@ -28,7 +28,8 @@ export async function getTrackerData() {
   if (cols.length === 0) {
     for (let i = 0; i < defaultCols.length; i++) {
       const col = defaultCols[i];
-      const payload = { ...col, userId, orderIndex: i };
+      const uniqueId = `${userId}_${col.id}`;
+      const payload = { ...col, id: uniqueId, userId, orderIndex: i };
       await db.insert(trackerColumns).values(payload);
       cols.push(payload as any);
     }

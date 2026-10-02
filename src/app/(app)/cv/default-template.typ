@@ -11,7 +11,7 @@
   contacts: (),
 )
 
-#let accent = rgb("#4A86C5")
+#let accent = rgb("#448361")
 #let dark = rgb("#111111")
 
 #v(-35pt)
@@ -23,21 +23,21 @@
     bottom-edge: "bounds",
   )
 
-  #text(size: 18pt, weight: "bold")[DIEGO FERRER]
+  #text(size: 18pt, weight: "bold")[BARRY ALLEN]
 
   #v(-3pt)
 
 #text(size: 12.2pt, weight: "bold", fill: accent)[Engineering Manager]
-#text(size: 10.5pt, weight: "bold", fill: accent)[ | FinTech/Startups | AWS Solutions Architect | Applied GenAI]
+#text(size: 10.5pt, weight: "bold", fill: accent)[ | Cloud Architecture | High-Performance Systems]
 
-  #link("https://www.linkedin.com/in/ferrerdiego1994/")[
-    #text(size: 10pt, fill: dark)[linkedin.com/in/ferrerdiego1994]
+  #link("https://www.linkedin.com/in/barryallen-speed/")[
+    #text(size: 10pt, fill: dark)[linkedin.com/in/barryallen-speed]
   ]
   #text(size: 10pt, fill: dark)[ | ]
-  #link("mailto:diegoferrer.jobs@gmail.com")[
-    #text(size: 10pt, fill: dark)[diegoferrer.jobs\@gmail.com]
+  #link("mailto:barry.allen.fast@gmail.com")[
+    #text(size: 10pt, fill: dark)[barry.allen.fast\@gmail.com]
   ]
-  #text(size: 10pt, fill: dark)[ | Argentina]
+  #text(size: 10pt, fill: dark)[ | Central City]
 ]
 
 #v(10pt)
@@ -46,14 +46,14 @@
 // Summary
 #section[Summary]
 #descript[
-Engineering Manager with #text(weight: "bold")[15+ years in software], #text(weight: "bold")[10+ in FinTech], and #text(weight: "bold")[6 years leading engineering teams]. Proven track record scaling #text(weight: "bold")[fintech and digital products] from #text(weight: "bold")[prototype to production] and improving #text(weight: "bold")[reliability, delivery predictability, and engineering standards] in high-growth companies. Strong background across #text(weight: "bold")[Angular, React, Node.js, Python, and AWS serverless]. Currently leading an #text(weight: "bold")[AI-native team] applying #text(weight: "bold")[LLMs and agentic workflows] to algorithmic trading.
+Engineering Manager with #text(weight: "bold")[12+ years of experience] building ultra-low latency systems and scaling high-performance engineering teams. Proven track record leading multidisciplinary teams to deliver #text(weight: "bold")[scalable microservices and robust cloud infrastructures]. Specialized in #text(weight: "bold")[Go, Rust, and distributed systems]. Passionate about mentoring developers and accelerating product delivery cycles while maintaining #text(weight: "bold")[99.999% uptime].
 ]
 
 #sectionsep
 
 // Languages
 #section("Languages")
-#text(weight: "bold", fill: accent)[Spanish] (Native) - #text(weight: "bold", fill: accent)[English] (Professional Working Proficiency - B2+)
+#text(weight: "bold", fill: accent)[English] (Native) - #text(weight: "bold", fill: accent)[Spanish] (Professional Working Proficiency)
 
 #sectionsep
 
@@ -62,8 +62,8 @@ Engineering Manager with #text(weight: "bold")[15+ years in software], #text(wei
 // Certifications (ATS-friendly: grouped, short)
 #section("Certifications")
 #oneline-title-item(
-    title: [#text(fill: accent)[AWS]],
-    content: [Solutions Architect Associate],
+    title: [#text(fill: accent)[GCP]],
+    content: [Professional Cloud Architect],
 )
 
 
@@ -75,31 +75,31 @@ Engineering Manager with #text(weight: "bold")[15+ years in software], #text(wei
 #section("Core Skills")
 #oneline-title-item(
   title: [#text(fill: accent)[Fullstack Development]],
-  content: [Angular, React, TypeScript, Next.js, JavaScript, Node.js, NestJS, Python, Golang],
+  content: [Go, Rust, React, TypeScript, C++, Python],
 )
 #oneline-title-item(
   title: [#text(fill: accent)[Architecture & Development]],
-  content: [Microservices, Event-driven Design, Scalable Cloud Solutions, API Integration, System Design, Modularization, Clean Architecture],
+  content: [Microservices, Distributed Systems, Event-Sourcing, CQRS, Real-Time Processing],
 )
 #oneline-title-item(
   title: [#text(fill: accent)[Infrastructure & DevOps]],
-  content: [AWS, Azure, Docker, CI/CD Pipelines (GitHub Actions, BitBucket), Observability, Monitoring],
+  content: [Kubernetes, GCP, AWS, Terraform, CI/CD, Prometheus, Docker],
 )
 #oneline-title-item(
   title: [#text(fill: accent)[AI & Data Science]],
-  content: [Generative AI (GenAI), LLM Integration, Prompt Design, Agentic Workflows, Machine Learning (ML) Integration, n8n Automation],
+  content: [Predictive Analytics, Time-Series Databases, ML Pipelines],
 )
 #oneline-title-item(
   title: [#text(fill: accent)[Methodologies]],
-  content: [Agile (Scrum, Kanban), Product Roadmap Planning, Release Management],
+  content: [Agile, Kanban, OKR Planning, Sprint Retrospectives],
 )
 #oneline-title-item(
   title: [#text(fill: accent)[Technical Leadership & Management]],
-  content: [Team Mentoring, Engineering Management, Cross-functional Collaboration, Stakeholder Alignment, KPI & Delivery Metrics],
+  content: [Cross-functional Management, KPI Metrics, Team Mentoring, Hiring & Onboarding],
 )
 #oneline-title-item(
   title: [#text(fill: accent)[Systems & Platforms]],
-  content: [AWS Cloud (Serverless, Lambda, DynamoDB, S3), FinTech Wallets, Algorithmic Trading Systems],
+  content: [High-Frequency Trading Systems, Real-Time Analytics, Multi-cloud Environments],
 )
 
 
@@ -114,52 +114,22 @@ Engineering Manager with #text(weight: "bold")[15+ years in software], #text(wei
   column-gutter: 12pt,
   align: top,
   [
-    #text(weight: "bold", fill: accent)[Head of Engineering] | #emph[Aiyra]
+    #text(weight: "bold", fill: accent)[Head of Engineering] | #emph[STAR Labs]
   ],
   [
     #align(right)[
-      #emph[Miami, FL (Remote) | Jul 2025 – Current]
+      #emph[Central City | Jan 2023 – Current]
     ]
   ],
 )
 
 #v(4pt)
 
-- #text(weight: "bold")[Team Leadership:] Built the engineering department from scratch; currently lead a team of 15, owning hiring, mentoring and development standards.
-- #text(weight: "bold")[AI-Native Engineering:] Built an AI-native team using coding assistants and agents across the development lifecycle to ship faster without compromising quality.
-- #text(weight: "bold")[Technical Strategy:] Define architecture and technical roadmap alongside the C-level for algorithmic trading bots and real-time market data pipelines.
-- #text(weight: "bold")[GenAI for Trading:] Lead the integration of LLMs and agentic workflows to automate financial decision-making and internal operations.
-- #text(weight: "bold")[Execution & Standards:] Took the first production prototype live in 4 months, with CI/CD on GitHub Actions and workflow automation via n8n.
-- #text(weight: "bold")[Stack:] Python, LLMs, Agentic Workflows, n8n, CI/CD, GitHub Actions.
-
-#v(10pt)
-#v(10pt)
-#v(10pt)
-#v(10pt)
-#v(4pt)
-#grid(
-  columns: (1fr, auto),
-  column-gutter: 12pt,
-  align: top,
-  [
-    #text(weight: "bold", fill: accent)[Engineering Manager] | #emph[Modak]
-  ],
-  [
-    #align(right)[
-      #emph[San Francisco, CA (Remote) | Apr 2022 – Jun 2025]
-    ]
-  ],
-)
-
-#v(4pt)
-
-- #text(weight: "bold")[0-to-1 Scaling:] Led engineering growth during the company's pivot to FinTech. Managed 2 cross-functional teams (13 engineers) and maintained #text(weight: "bold")[99.98% uptime] during hyper-growth.
-- #text(weight: "bold")[Cloud Architecture:] Architected the foundational #text(weight: "bold")[AWS Serverless] platform (Lambda, DynamoDB) alongside tech leads, successfully reducing system latency by #text(weight: "bold")[35%].
-- #text(weight: "bold")[Product Delivery:] Partnered directly with C-Level, Compliance, and Legal to launch 3 core financial products in under 6 months, driving a #text(weight: "bold")[40% increase in active users].
-- #text(weight: "bold")[Team & Talent Scaling:] Directed the technical hiring pipeline and established performance frameworks, successfully mentoring individual contributors into squad leadership roles.
-- #text(weight: "bold")[Operational Excellence:] Institutionalized engineering standards, implementing advanced CI/CD pipelines and #text(weight: "bold")[Observability] metrics that cut deployment incidents by #text(weight: "bold")[30%].
-- #text(weight: "bold")[Fullstack Evolution:] Joined as the foundational frontend hire, rapidly expanding scope to manage #text(weight: "bold")[Node.js] and #text(weight: "bold")[Golang] backend services and define the web stack.
-- #text(weight: "bold")[Stack:] AWS Lambda, DynamoDB, Angular, TypeScript, Node.js, NestJS, Golang, Serverless, Observability.
+- #text(weight: "bold")[Team Leadership:] Led a team of 20+ engineers building high-speed data processing pipelines. Mentored squad leads and grew the team by 40%.
+- #text(weight: "bold")[System Optimization:] Directed the migration from monolithic architecture to a distributed microservices ecosystem, reducing system latency by #text(weight: "bold")[85%].
+- #text(weight: "bold")[Cloud Architecture:] Architected an event-driven architecture using Kafka and Kubernetes, successfully scaling to handle 50k+ transactions per second.
+- #text(weight: "bold")[Agile Delivery:] Implemented agile practices and OKR planning, increasing release frequency by 3x with zero downtime.
+- #text(weight: "bold")[Stack:] Go, Rust, Kubernetes, GCP, Terraform, Kafka, React.
 
 #v(10pt)
 
@@ -168,58 +138,92 @@ Engineering Manager with #text(weight: "bold")[15+ years in software], #text(wei
   column-gutter: 12pt,
   align: top,
   [
-    #text(weight: "bold", fill: accent)[Engineering Manager - Tech Lead (Full Stack)] | #emph[UNX Digital]
+    #text(weight: "bold", fill: accent)[Engineering Manager] | #emph[Wayne Enterprises]
   ],
   [
     #align(right)[
-      #emph[United States (Remote) | Oct 2020 – Apr 2022]
+      #emph[Gotham | Feb 2019 – Dec 2022]
     ]
   ],
 )
 
 #v(4pt)
 
-- #text(weight: "bold")[Project Management:] Led a team of 7 developers in the creation of a #text(weight: "bold")[Virtual Wallet] (FinTech), improving delivery predictability and team performance metrics.
-- #text(weight: "bold")[Fullstack Implementation:] Directed the development of end-to-end solutions using #text(weight: "bold")[Angular], #text(weight: "bold")[NestJS/Node.js], and #text(weight: "bold")[SQL Server].
-- #text(weight: "bold")[DevOps & Infrastructure:] Drove #text(weight: "bold")[Containerization] strategies with #text(weight: "bold")[Docker] and automated deployment workflows on #text(weight: "bold")[Azure].
-- #text(weight: "bold")[Quality Assurance:] Integrated #text(weight: "bold")[Unit Testing] (Karma, Jasmine) and mentored the team in high-quality code standards under Scrum.
-- #text(weight: "bold")[Stack:] Angular, NestJS, Node.js, SQL Server, Docker, Azure, Scrum.
+- #text(weight: "bold")[0-to-1 Scaling:] Scaled the backend engineering team from 4 to 15 engineers. Established coding standards and code review protocols.
+- #text(weight: "bold")[Platform Development:] Architected a global distributed event-streaming platform processing millions of telemetry points daily.
+- #text(weight: "bold")[DevOps Excellence:] Improved deployment frequency by #text(weight: "bold")[200%] by implementing advanced CI/CD pipelines and infrastructure as code.
+- #text(weight: "bold")[Product Delivery:] Partnered with product owners to deliver key features for enterprise logistics software ahead of schedule.
+- #text(weight: "bold")[Stack:] C++, Python, AWS, Docker, Jenkins, PostgreSQL, Redis.
 
 #v(10pt)
 
-
-#text(fill: accent, weight: "bold")[Prior Experience | 2010–2020]
+#grid(
+  columns: (1fr, auto),
+  column-gutter: 12pt,
+  align: top,
+  [
+    #text(weight: "bold", fill: accent)[Senior Software Engineer] | #emph[Queen Consolidated]
+  ],
+  [
+    #align(right)[
+      #emph[Star City | Mar 2015 – Jan 2019]
+    ]
+  ],
+)
 
 #v(4pt)
 
-#oneline-title-item(
-  title: [#text(fill: accent, weight: "bold")[Enterprise & FinTech Experience]],
-  content: [
-    #text(weight: "bold")[Globant], #text(weight: "bold")[Accenture], and #text(weight: "bold")[IBM] — Frontend engineering experience across enterprise and banking-related projects using Angular and modern web technologies, with additional AI-related project exposure at IBM (IBM-Watson).
-  ],
-)
-
-#oneline-title-item(
-  title: [#text(fill: accent, weight: "bold")[Frontend & Fullstack Development]],
-  content: [
-    #text(weight: "bold")[Apperto] and #text(weight: "bold")[Sunset] — Frontend/fullstack development experience building web applications with Angular, Dart, SQL, JavaScript, and related technologies.
-  ],
-)
+- #text(weight: "bold")[Microservices Implementation:] Developed scalable Go microservices for real-time tracking systems and IoT integration.
+- #text(weight: "bold")[Cloud Migration:] Acted as the technical lead for migrating legacy applications to Kubernetes, decreasing cloud computing costs by #text(weight: "bold")[40%].
+- #text(weight: "bold")[Mentorship:] Mentored junior developers and led knowledge-sharing sessions on distributed systems design.
+- #text(weight: "bold")[Stack:] Go, Node.js, Kubernetes, MongoDB, RabbitMQ.
 
 #v(10pt)
+
+#grid(
+  columns: (1fr, auto),
+  column-gutter: 12pt,
+  align: top,
+  [
+    #text(weight: "bold", fill: accent)[Software Engineer] | #emph[Kord Industries]
+  ],
+  [
+    #align(right)[
+      #emph[Keystone City | Jun 2010 – Feb 2015]
+    ]
+  ],
+)
+
+#v(4pt)
+
+- #text(weight: "bold")[Core Development:] Built low-level C++ drivers and embedded systems for industrial automation and advanced robotics platforms.
+- #text(weight: "bold")[Algorithm Optimization:] Optimized collision detection algorithms, improving processing speeds by 45% for real-time robotic arms.
+- #text(weight: "bold")[Test Automation:] Designed and implemented a comprehensive unit and integration testing suite in Google Test (gtest), reducing production bugs by 30%.
+- #text(weight: "bold")[Hardware Integration:] Worked closely with hardware engineers to ensure seamless communication between software layers and proprietary sensors.
+- #text(weight: "bold")[Stack:] C++, Python, Embedded Linux, RTOS, Google Test, CMake.
+
+#v(10pt)
+
+#grid(
+  columns: (1fr, auto),
+  column-gutter: 12pt,
+  align: top,
+  [
+    #text(weight: "bold", fill: accent)[Junior Developer] | #emph[LexCorp]
+  ],
+  [
+    #align(right)[
+      #emph[Metropolis | Jan 2008 – May 2010]
+    ]
+  ],
+)
+
+#v(4pt)
+
+- #text(weight: "bold")[Backend Maintenance:] Maintained legacy Java backend services for enterprise data management.
+- #text(weight: "bold")[Data Migration:] Wrote SQL scripts to safely migrate over 10 million records across relational databases with zero data loss.
+- #text(weight: "bold")[Stack:] Java, SQL, Oracle DB.
 
 #sectionsep
 
-/* 
-#section("Education")
-#education(
-  institution: [UP | University of Palermo],
-  major: [Engineering Degree in Artificial Intelligence (In progress)],
-  date: "In progress",
-  location: "Argentina",
-)
-*/
-
-
-#set document(author: "Diego Ferrer", title: "Diego Ferrer - ATS Resume")
-
+#set document(author: "Barry Allen", title: "Barry Allen - ATS Resume")

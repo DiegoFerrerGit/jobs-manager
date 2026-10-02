@@ -719,7 +719,7 @@ export default function TrackerClient({ initialData }: { initialData: any }) {
                                     {providedDrop.placeholder}
 
                                     {/* Add new button */}
-                                    {columnId === 'people' && (
+                                    {column.title === 'People / Screening' && (
                                       <button
                                         className="flex items-center gap-2 text-sm p-2 rounded-lg transition-colors w-full mt-1 text-muted-foreground/60 hover:bg-white/5 hover:text-muted-foreground"
                                         onClick={() => {

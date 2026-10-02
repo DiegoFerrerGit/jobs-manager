@@ -216,7 +216,15 @@ export function CvClient({ initialCode }: { initialCode: string }) {
                 <strong className="text-white">¿Cómo funciona?</strong> Solo edita tu información en el código de la izquierda. El sistema compilará y actualizará tu PDF a la derecha automáticamente y se guardará en tu cuenta (Autosave cada 2 segundos).
               </p>
             </div>
-            <div className="p-4 bg-[#1e1e1e] border-t border-white/10 flex justify-end">
+            <div className="p-4 bg-[#1e1e1e] border-t border-white/10 flex justify-between items-center">
+              <a 
+                href="https://typst.app/universe/search/?category=cv" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-emerald-400 hover:text-emerald-300 text-sm font-medium underline underline-offset-2 transition-colors"
+              >
+                Ver más templates de Typst
+              </a>
               <button 
                 onClick={() => setShowInfo(false)}
                 className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md font-medium transition-colors"

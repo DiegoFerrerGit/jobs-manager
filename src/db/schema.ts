@@ -207,6 +207,8 @@ export const trackerJobs = pgTable("tracker_jobs", {
   motivoRechazo: text("motivo_rechazo"),
   closedAt: timestamp('closed_at', { withTimezone: true }),
   customProps: jsonb('custom_props'),
+  notes: text('notes'),
+  comments: jsonb('comments'),
 
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),

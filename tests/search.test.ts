@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert";
 import { filterJobsBySearch } from "../src/utils/search";
-import { Job } from "../src/db/schema";
+import { JobWithUserState } from "../src/db/schema";
 
 const mockJobs = [
   { id: 1, title: "Engineering Manager", company: "Tech Corp" },
@@ -9,7 +9,7 @@ const mockJobs = [
   { id: 3, title: "Teacher of Spanish", company: "Education Inc" },
   { id: 4, title: "Spanish Translator", company: "Global Lingo" },
   { id: 5, title: "Engine Mechanic", company: "Auto Corp" },
-] as Job[];
+] as JobWithUserState[];
 
 test("Search logic matches by exact company name first", () => {
   // "span" should only return jobs from the company "Span", ignoring "Spanish Translator"
@@ -45,7 +45,7 @@ test("Search logic normalizes accents", () => {
   const jobsWithAccents = [
     { id: 1, title: "Ingeniero de Software", company: "Telefónica" },
     { id: 2, title: "Mánager", company: "Tech" }
-  ] as Job[];
+  ] as JobWithUserState[];
 
   // "telefonica" without accents should match "Telefónica"
   const resultCompany = filterJobsBySearch(jobsWithAccents, "telefonica");

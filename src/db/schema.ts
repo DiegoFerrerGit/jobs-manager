@@ -1,6 +1,6 @@
 import {
   pgTable, pgEnum, serial, integer, smallint, text, char, date,
-  timestamp, uniqueIndex, index, uuid, jsonb
+  timestamp, uniqueIndex, index, uuid, jsonb, primaryKey
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
@@ -66,7 +66,6 @@ export const companies = pgTable('companies', {
 // ---------- Ofertas ----------
 export const jobs = pgTable('jobs', {
   id: serial('id').primaryKey(),
-  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   externalId: text('external_id').notNull(),
 
   // Puesto
@@ -102,22 +101,28 @@ export const jobs = pgTable('jobs', {
   companyLinkedin: text('company_linkedin'),
   linkedinPeopleAr: text('linkedin_people_ar'),
 
-  // Estado del usuario
-  status: jobStatus('status').notNull().default('SAVED'),
-  notes: text('notes'),
-  appliedAt: timestamp('applied_at', { withTimezone: true }),
-  expectedSalary: text('expected_salary'),
-
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 }, (t) => ({
-  userExternal: uniqueIndex('jobs_user_external_key').on(t.userId, t.externalId),
-  userCompanyTitle: uniqueIndex('jobs_user_company_title_key')
-    .on(t.userId, sql`lower(${t.company})`, sql`lower(${t.title})`),
-  byStatus: index('jobs_user_status_idx').on(t.userId, t.status),
-  byPriority: index('jobs_user_priority_idx').on(t.userId, t.priority, t.salaryMaxK),
-  byDetected: index('jobs_detected_idx').on(t.userId, t.detectedAt),
+  externalIdKey: uniqueIndex('jobs_external_id_key').on(t.externalId),
+  byPriority: index('jobs_priority_idx').on(t.priority, t.salaryMaxK),
+  byDetected: index('jobs_detected_at_idx').on(t.detectedAt),
   byCompany: index('jobs_company_idx').on(t.companyId),
+}));
+
+// ---------- Estado del usuario por aviso ----------
+export const userJobs = pgTable('user_jobs', {
+  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  jobId: integer('job_id').notNull().references(() => jobs.id, { onDelete: 'cascade' }),
+  status: jobStatus('status').notNull(),
+  notes: text('notes'),
+  appliedAt: timestamp('applied_at', { withTimezone: true }),
+  expectedSalary: text('expected_salary'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+}, (t) => ({
+  pk: primaryKey({ columns: [t.userId, t.jobId] }),
+  byUser: index('user_jobs_user_id_idx').on(t.userId),
 }));
 
 // ---------- Palabras clave a ignorar ----------
@@ -214,6 +219,17 @@ export const trackerConfig = pgTable("tracker_config", {
 
 export type Job = typeof jobs.$inferSelect;
 export type NewJob = typeof jobs.$inferInsert;
+export type UserJob = typeof userJobs.$inferSelect;
+export type NewUserJob = typeof userJobs.$inferInsert;
+
+/** Job row joined with per-user state (status, notes, etc.). */
+export type JobWithUserState = Job & {
+  userStatus: UserJob['status'] | null;
+  userNotes: UserJob['notes'] | null;
+  userAppliedAt: UserJob['appliedAt'] | null;
+  userExpectedSalary: UserJob['expectedSalary'] | null;
+};
+
 export type Company = typeof companies.$inferSelect;
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;

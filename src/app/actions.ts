@@ -1,17 +1,27 @@
 "use server";
 
 import { db } from "@/db";
-import { jobs, ignoredKeywords, companies, favoriteCompanies } from "@/db/schema";
+import { jobs, userJobs, ignoredKeywords, companies, favoriteCompanies } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
-export async function toggleJobStatus(id: number, currentStatus: string, expectedSalary?: string | null) {
+export async function toggleJobStatus(userId: number, jobId: number, currentStatus: string, expectedSalary?: string | null) {
   const newStatus = currentStatus === "APPLIED" ? "SAVED" : "APPLIED";
-  if (newStatus === "APPLIED") {
-    await db.update(jobs).set({ status: newStatus, expectedSalary }).where(eq(jobs.id, id));
-  } else {
-    await db.update(jobs).set({ status: newStatus, expectedSalary: null }).where(eq(jobs.id, id));
-  }
+  await db.insert(userJobs).values({
+    userId,
+    jobId,
+    status: newStatus,
+    expectedSalary: newStatus === "APPLIED" ? (expectedSalary ?? null) : null,
+    appliedAt: newStatus === "APPLIED" ? new Date() : null,
+  }).onConflictDoUpdate({
+    target: [userJobs.userId, userJobs.jobId],
+    set: {
+      status: newStatus,
+      expectedSalary: newStatus === "APPLIED" ? (expectedSalary ?? null) : null,
+      appliedAt: newStatus === "APPLIED" ? new Date() : null,
+      updatedAt: new Date(),
+    },
+  });
   revalidatePath("/");
 }
 export async function deleteJob(id: number) {
@@ -19,8 +29,18 @@ export async function deleteJob(id: number) {
   revalidatePath("/");
 }
 
-export async function hideJob(id: number, newStatus: string) {
-  await db.update(jobs).set({ status: newStatus as any }).where(eq(jobs.id, id));
+export async function hideJob(userId: number, jobId: number, newStatus: string) {
+  await db.insert(userJobs).values({
+    userId,
+    jobId,
+    status: newStatus as any,
+  }).onConflictDoUpdate({
+    target: [userJobs.userId, userJobs.jobId],
+    set: {
+      status: newStatus as any,
+      updatedAt: new Date(),
+    },
+  });
   revalidatePath("/");
 }
 

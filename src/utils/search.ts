@@ -1,6 +1,6 @@
-import { Job } from "@/db/schema";
+import { JobWithUserState } from "@/db/schema";
 
-export function filterJobsBySearch(jobs: Job[], searchQuery: string): Job[] {
+export function filterJobsBySearch(jobs: JobWithUserState[], searchQuery: string): JobWithUserState[] {
   if (searchQuery.trim() === "") return jobs;
   
   const normalize = (str: string) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();

@@ -1,7 +1,7 @@
 import * as dotenv from "dotenv";
 dotenv.config({ path: ".env.local" });
 import { db } from "./index";
-import { jobs, users, jobSource, roleCategory, argentinaFit, jobStatus } from "./schema";
+import { jobs, userJobs, users, jobSource, roleCategory, argentinaFit, jobStatus } from "./schema";
 import fs from "fs";
 
 async function main() {
@@ -10,6 +10,7 @@ async function main() {
 
   console.log(`Inserting ${parsed.length} jobs...`);
   
+  await db.delete(userJobs);
   await db.delete(jobs);
   await db.delete(users);
 
@@ -36,8 +37,7 @@ async function main() {
       ];
       const randomHq = fakeHqs[Math.floor(Math.random() * fakeHqs.length)];
 
-      await db.insert(jobs).values({
-        userId: user.id,
+      const [insertedJob] = await db.insert(jobs).values({
         externalId: item.id || Math.random().toString(36).substring(7),
         title: item.titulo || "Untitled",
         company: item.empresa || "Unknown",
@@ -54,7 +54,15 @@ async function main() {
         source: item.id?.startsWith("yc:") ? "yc" : item.id?.startsWith("ashby:") ? "ashby" : "manual",
         companyLinkedin: item.linkedin_empresa,
         linkedinPeopleAr: item.linkedin_people_ar,
-      });
+      }).onConflictDoNothing().returning();
+
+      if (insertedJob) {
+        await db.insert(userJobs).values({
+          userId: user.id,
+          jobId: insertedJob.id,
+          status: "SAVED",
+        }).onConflictDoNothing();
+      }
     } catch (e) {
       console.error("Error inserting job", item.id, e);
     }
@@ -64,4 +72,3 @@ async function main() {
 }
 
 main().catch(console.error);
-

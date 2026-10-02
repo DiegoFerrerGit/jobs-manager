@@ -52,11 +52,11 @@ export default function KeywordManager({ keywords, userId }: { keywords: Ignored
       <div className="p-4 sm:p-6">
         <div className="mb-6">
           <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
-            Filtros para N8N (Excluir Roles)
+            Palabras Ignoradas
           </h2>
           <p className="text-sm text-muted-foreground mt-1">
             Añade palabras clave o roles que no te interesan (por ejemplo: <span className="text-primary font-mono bg-primary/10 px-1 rounded">Staff QA</span>, <span className="text-primary font-mono bg-primary/10 px-1 rounded">Junior</span>).
-            Estas reglas serán utilizadas por el flujo de automatización (n8n) para filtrar automáticamente las nuevas posiciones antes de llegar a esta base de datos.
+            Los avisos cuyo título contenga alguna de estas palabras se ocultan de la lista. Podés ver cuántos se están ocultando y revelarlos con un clic.
           </p>
         </div>
 

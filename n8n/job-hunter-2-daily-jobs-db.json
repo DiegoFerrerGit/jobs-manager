@@ -1,7 +1,7 @@
 {
-  "updatedAt": "2026-10-01T11:49:10.545Z",
-  "createdAt": "2026-09-26T19:42:16.898Z",
-  "id": "fy5nReKHsAB0hPiF",
+  "updatedAt": "2026-10-02T11:50:34.707Z",
+  "createdAt": "2026-10-02T10:48:38.945Z",
+  "id": "7wa7kY3r9tURPNqs",
   "name": "Job Hunter 2 - Daily jobs (DB)",
   "description": null,
   "active": true,
@@ -24,10 +24,10 @@
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
       "position": [
-        -96,
+        -320,
         -80
       ],
-      "id": "15ae2f3a-8e4d-400e-91fe-be6ce5aa074c"
+      "id": "c45c2404-a9cf-4c78-a9e5-430a037fa2f8"
     },
     {
       "parameters": {
@@ -39,11 +39,11 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        320,
+        96,
         -224
       ],
       "alwaysOutputData": true,
-      "id": "51f8632f-9ed6-496e-aae8-06644dbe21ee",
+      "id": "132fef99-1412-4197-a56b-4f16475d70d2",
       "credentials": {
         "postgres": {
           "id": "5Ggn116ONj0zb4KN",
@@ -71,38 +71,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        656,
+        416,
         -384
       ],
-      "id": "abb81915-9fae-4879-a61c-b5db057b4b1b"
-    },
-    {
-      "parameters": {
-        "jsCode": "// ---- Reglas compartidas ----\nconst MIN_SALARY_K = 60; // mínimo anual en miles de USD (solo si la oferta publica salario)\n\nconst IS_ENGINEERING = /engineer|engineering|developer|programmer|builder|full.?stack|front.?end|back.?end|\\bsre\\b|devops|architect|tech(nical)? lead|forward deployed|machine learning|\\bml\\b|\\bcto\\b|head of eng|vp.*eng/i;\n// Departamentos de ingeniería. Cada empresa los nombra distinto:\n// \"Engineering\", \"Tech Team\", \"EN-Engineering\", \"R&D\"...\nconst IS_ENG_DEPT = /engineer|engineering|technolog|\\btech\\b|software|\\br&?d\\b|platform|infrastructur/i;\nconst EXCLUDE = /recruit|talent|sales(?! engineer)|account exec|marketing|designer|legal|finance|intern|product manager|program manager|project manager|\\banalyst\\b|data scientist|incident manager/i;\nconst ARGENTINA = /argentin|buenos aires/i;\nconst LATAM = /latam|latin america|south america|\\bamericas\\b/i;\nconst GLOBAL = /\\b(anywhere|worldwide|global)\\b/i;\nconst REMOTE_ONLY = /^(remote|remoto|fully remote)$/i;\nconst US_ONLY = /(must|need to|required to)\\s+(be\\s+)?(based|located|live|reside)[^.]{0,40}(united states|u\\.s\\.|\\busa\\b)|(authorized|authorization|eligible)\\s+to\\s+work\\s+in\\s+the\\s+(united states|u\\.s\\.)|u\\.s\\.\\s+(citizen|work authorization)|citizen\\/visa only/i;\n\nconst MANAGER = /manager|head of|director|\\bvp\\b|vice president|\\bcto\\b/i;\nconst LEAD = /lead|staff|principal|forward deployed|product engineer|founding/i;\n\n// Países de LATAM, por nombre, por código ISO y por ciudad principal.\n// Con acentos, porque muchas ofertas escriben \"México\" o \"Perú\".\nconst LATAM_COUNTRY = /\\b(argentin|brazil|brasil|colombia|chile|uruguay|per[úu]|paraguay|bolivia|ecuador|(?<!new )m[ée]xico|costa rica|panam[áa]|guatemala)\\b|\\b(ARG|BRA|COL|CHL|URY|PER|MEX|CRI)\\b|\\b(bogot[áa]|medell[íi]n|barranquilla|cartagena|s[ãa]o paulo|rio de janeiro|porto alegre|belo horizonte|curitiba|florian[óo]polis|joinville|recife|montevideo|asunci[óo]n|guadalajara|monterrey|cdmx|quito|guayaquil|san salvador|tegucigalpa|managua)\\b/i;\n// \"AR\" también es Arkansas: solo cuenta como Argentina si hay otro país de la región\nconst OTHER_LATAM_CODE = /\\b(BR|CO|CL|UY|PE|MX|EC|BO|PY|VE|CR)\\b/;\n// \"Avenue of the Americas\" es una calle de Nueva York, no la región\nconst NY_STREET = /ave(nue)?\\.?\\s+of\\s+(the\\s+)?americas/ig;\n\n// Devuelve [accepts_argentina, location_match]\n// title: muchas ofertas ponen \"(Remote LATAM)\" en el título y no en la ubicación\n// Devuelve [accepts_argentina, location_match]\n// title: muchas ofertas ponen \"(Remote LATAM)\" en el título y no en la ubicación\nfunction classify(rawLoc, extra, title) {\n  const t = title || '';\n  const loc = String(rawLoc || '').replace(NY_STREET, '');\n\n  if (ARGENTINA.test(loc) || /\\bARG\\b/.test(loc)) return ['yes', 'argentina_in_location'];\n  if (/\\bAR\\b/.test(loc) && OTHER_LATAM_CODE.test(loc)) return ['yes', 'argentina_in_location'];\n  if (LATAM.test(loc)) return ['yes', 'latam_in_location'];\n  if (ARGENTINA.test(t)) return ['yes', 'argentina_in_title'];\n  if (LATAM.test(t)) return ['yes', 'latam_in_title'];\n\n  const restricted = US_ONLY.test(extra);\n  const parts = loc.split(/\\s*[|\\/;]\\s*/).map(p => p.trim()).filter(Boolean);\n  const remoteOnly = parts.length > 0 && parts.every(p => REMOTE_ONLY.test(p) || GLOBAL.test(p));\n\n  if (remoteOnly && !restricted) {\n    return /not required/i.test(extra)\n      ? ['maybe', 'remote_visa_not_required']\n      : ['maybe', 'remote_no_country'];\n  }\n\n  // Otro país de LATAM + remoto: la empresa ya contrata fuera de EE.UU. en la región\n  if (LATAM_COUNTRY.test(loc) && /remote|remoto|híbrido|hybrid/i.test(loc) && !restricted) {\n    return ['maybe', 'latam_country_remote'];\n  }\n\n  // La descripción solo decide cuando la ubicación no nombra ningún lugar.\n  // Si la empresa listó lugares y ninguno es de LATAM, que el texto mencione\n  // la región suele significar que la empresa es de ahí, no que contrate ahí.\n  const hasCountryInfo = parts.some(p => !REMOTE_ONLY.test(p) && !GLOBAL.test(p));\n  if (!hasCountryInfo && (ARGENTINA.test(extra) || LATAM.test(extra)) && !restricted) {\n    return ['maybe', 'latam_in_description'];\n  }\n\n  return ['no', ''];\n}\n// Máximo anual en miles de USD. Los rangos chicos se interpretan como sueldo mensual.\nfunction salaryMaxK(s) {\n  const m = (s || '').match(/\\$([\\d.,]+)\\s*(K?)\\s*[-–]\\s*\\$([\\d.,]+)\\s*(K?)/i);\n  if (!m) return null;\n  let max = parseFloat(m[3].replace(/,/g, ''));\n  if (!m[4]) max = max / 1000;\n  return max < 20 ? Math.round(max * 12) : max;\n}\n\nfunction roleCategory(title) {\n  if (MANAGER.test(title)) return 'manager';\n  if (LEAD.test(title)) return 'lead_staff';\n  return 'ic';\n}\nconst PRIORITY = { manager: 1, lead_staff: 2, ic: 3 };\n\n// Sede aproximada: la ubicación presencial más repetida de la empresa\nfunction guessHq(locations) {\n  const count = {};\n  for (const raw of locations) {\n    for (const p of String(raw || '').split(/\\s*[|\\/;]\\s*/)) {\n      const v = p.trim();\n      if (!v || /remote|remoto|anywhere|worldwide|global|latam|latin america/i.test(v)) continue;\n      count[v] = (count[v] || 0) + 1;\n    }\n  }\n  const top = Object.entries(count).sort((a, b) => b[1] - a[1])[0];\n  return top ? top[0] : '';\n}\n\n// Teamtailor: ubicación estructurada dentro de _jobposting\nfunction ttLocations(jp) {\n  const out = [];\n  for (const p of jp?.jobLocation || []) {\n    const a = p.address || {};\n    const v = [a.addressLocality, a.addressRegion, a.addressCountry].filter(Boolean).join(', ');\n    if (v) out.push(v);\n  }\n  return out.join(' | ');\n}\n\nfunction stripHtml(h) {\n  return String(h || '')\n    .replace(/<[^>]+>/g, ' ')\n    .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&#39;/g, \"'\").replace(/&quot;/g, '\"')\n    .replace(/\\s+/g, ' ').trim();\n}\n\n// Greenhouse devuelve el content con las etiquetas escapadas (&lt;p&gt;).\n// Se corta a 6000 caracteres: alcanza para detectar LATAM o residencia en US\n// y evita que la ejecución se vuelva gigante.\nfunction ghContent(s) {\n  const decoded = String(s || '')\n    .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');\n  return stripHtml(decoded).slice(0, 6000);\n}\n\n// El departamento viene con forma distinta en cada plataforma:\n// texto, objeto con name, o array\nfunction deptOf(v) {\n  if (!v) return '';\n  if (typeof v === 'string') return v.trim();\n  if (Array.isArray(v)) return deptOf(v[0]);\n  return String(v.name || v.title || '').trim();\n}\n\n// Plataforma según la forma de la oferta, no según el índice del item\nfunction detectAts(j) {\n  if (j && j.shortcode && (j.url || j.shortlink)) return 'workable';\n  if (j && j._jobposting) return 'teamtailor';\n  if (j && j.absolute_url) return 'greenhouse';\n  if (j && j.hostedUrl) return 'lever';\n  return 'ashby';\n}\n\n// Slug de la empresa según la URL de la oferta\nfunction slugFromUrl(u) {\n  const s = String(u || '');\n  let m;\n  if ((m = s.match(/jobs\\.ashbyhq\\.com\\/([^\\/?#]+)/i))) return m[1];\n  if ((m = s.match(/greenhouse\\.io\\/([^\\/?#]+)/i))) return m[1];\n  if ((m = s.match(/jobs\\.lever\\.co\\/([^\\/?#]+)/i))) return m[1];\n  if ((m = s.match(/apply\\.workable\\.com\\/([^\\/?#]+)/i))) return m[1];\n  if ((m = s.match(/https?:\\/\\/([^.\\/]+)\\.(?:[a-z]{2}\\.)?teamtailor\\.com/i))) return m[1];\n  return '';\n}\n\n// Convierte una oferta de cualquier plataforma al mismo formato\nfunction normalize(ats, j) {\n  if (ats === 'workable') {\n    const locs = (j.locations || [])\n      .map(l => [l.city, l.region, l.country].filter(Boolean).join(', '))\n      .filter(Boolean);\n    const base = locs.length ? locs.join(' | ') : [j.city, j.state, j.country].filter(Boolean).join(', ');\n    return {\n      job_id: `wk:${j.shortcode}`,\n      title: j.title || '',\n      department: deptOf(j.department) || deptOf(j.departments),\n      locations: [j.telecommuting ? 'Remote' : null, base].filter(Boolean).join(' | '),\n      description: j.description || '',\n      salary: '',\n      published_at: String(j.published_on || j.created_at || '').slice(0, 10),\n      apply_url: j.url || j.shortlink,\n    };\n  }\n  if (ats === 'teamtailor') {\n    const jp = j._jobposting || {};\n    return {\n      job_id: `tt:${jp.identifier?.value || j.id}`,\n      title: j.title || jp.title || '',\n      department: deptOf(j.department) || deptOf(jp.department),\n      locations: ttLocations(jp),\n      description: stripHtml(j.content_html),\n      salary: '',\n      published_at: String(j.date_published || jp.datePosted || '').slice(0, 10),\n      apply_url: j.url,\n    };\n  }\n  if (ats === 'greenhouse') return {\n    job_id: `gh:${j.id}`,\n    title: j.title || '',\n    department: deptOf(j.departments) || deptOf(j.department),\n    locations: j.location?.name || '',\n    description: ghContent(j.content),\n    salary: '',\n    published_at: (j.first_published || j.updated_at || '').slice(0, 10),\n    apply_url: j.absolute_url,\n  };\n  if (ats === 'lever') {\n    const sr = j.salaryRange;\n    return {\n      job_id: `lever:${j.id}`,\n      title: j.text || '',\n      department: deptOf(j.categories?.department) || deptOf(j.categories?.team),\n      locations: [...new Set([j.categories?.location, ...(j.categories?.allLocations || [])].filter(Boolean))].join(' | '),\n      description: j.descriptionPlain || '',\n      salary: sr && sr.max ? `$${Math.round(sr.min / 1000)}K - $${Math.round(sr.max / 1000)}K` : '',\n      published_at: j.createdAt ? new Date(j.createdAt).toISOString().slice(0, 10) : '',\n      apply_url: j.hostedUrl,\n    };\n  }\n  // Ashby: el país principal va en location, el resto en secondaryLocations\n  return {\n    job_id: `ashby:${j.id}`,\n    title: j.title || '',\n    department: deptOf(j.department) || deptOf(j.team),\n    locations: [\n      (j.isRemote || j.workplaceType === 'Remote') ? 'Remote' : null,\n      j.location,\n      ...(j.secondaryLocations || []).map(\n        l => l && (l.location || l.address?.postalAddress?.addressCountry)\n      ),\n    ].filter(Boolean).join(' | '),\n    description: j.descriptionPlain || '',\n    salary: j.compensation?.scrapeableCompensationSalarySummary || j.compensation?.compensationTierSummary || '',\n    published_at: (j.publishedAt || '').slice(0, 10),\n    apply_url: j.jobUrl,\n  };\n}\n\n// ---- 1) Normalizar y resolver la empresa por la URL ----\nconst companies = $('Read Companies').all();\nconst bySlug = new Map();\ncompanies.forEach(it => {\n  const c = it.json || {};\n  if (c.slug) bySlug.set(String(c.slug).toLowerCase(), c);\n});\n\nconst rows = [];\n\n$input.all().forEach((item, i) => {\n  // Algunas plataformas devuelven el JSON como texto: lo parseamos\n  let body = item.json;\n  if (typeof body?.data === 'string') {\n    try { body = JSON.parse(body.data); } catch (e) { body = {}; }\n  }\n\n  // Ashby, Greenhouse y Workable devuelven { jobs: [...] }; Teamtailor, { items: [...] };\n  // Lever devuelve un array que n8n ya partió en un item por oferta\n  let raws = [];\n  if (Array.isArray(body?.jobs)) raws = body.jobs;\n  else if (Array.isArray(body?.items)) raws = body.items;\n  else if (body?.hostedUrl || body?.absolute_url || body?.jobUrl) raws = [body];\n  if (!raws.length) return;\n\n  // Empresa de respaldo, solo si la URL no dice el slug\n  const p = Array.isArray(item.pairedItem) ? item.pairedItem[0] : item.pairedItem;\n  const fallback = companies[p?.item ?? i]?.json || {};\n\n  for (const r of raws) {\n    const ats = detectAts(r);\n    const o = normalize(ats, r);\n    if (!o.apply_url) continue;\n    const c = bySlug.get(slugFromUrl(o.apply_url).toLowerCase()) || fallback;\n    if (!c.slug) continue;\n    rows.push({ o, c, ats });\n  }\n});\n\n// ---- 2) Sede aproximada, con todas las ofertas de cada empresa ----\nconst locsByCompany = {};\nfor (const r of rows) {\n  (locsByCompany[r.c.slug] = locsByCompany[r.c.slug] || []).push(r.o.locations);\n}\n\n// ---- 3) Filtrar ----\nconst out = [];\nconst seen = new Set();\n\nfor (const { o, c, ats } of rows) {\n  if (seen.has(o.job_id)) continue;\n  seen.add(o.job_id);\n\n  // Es ingeniería si lo dice el título o si lo dice el departamento.\n  // EXCLUDE siempre manda: un \"Technical Recruiter\" dentro de Engineering queda afuera.\n  const isEng = IS_ENGINEERING.test(o.title) || IS_ENG_DEPT.test(o.department || '');\n  if (!isEng || EXCLUDE.test(o.title)) continue;\n\n  const [accepts, match] = classify(o.locations, o.description, o.title);\n  if (accepts === 'no') continue;\n\n  const maxK = salaryMaxK(o.salary);\n  if (maxK !== null && maxK < MIN_SALARY_K) continue;\n\n  const role = roleCategory(o.title);\n  const li = c.linkedin_slug ? `https://www.linkedin.com/company/${c.linkedin_slug}` : '';\n\n  out.push({ json: {\n    job_id: o.job_id,\n    company_id: c.company_id || '',\n    priority: PRIORITY[role],\n    role_category: role,\n    accepts_argentina: accepts,\n    location_match: match,\n    company: c.company,\n    company_slug: c.slug,\n    company_hq: c.hq || guessHq(locsByCompany[c.slug] || []),\n    company_size: c.size || '',\n    company_stage: c.stage || '',\n    title: o.title.trim(),\n    department: o.department || '',\n    salary: o.salary,\n    salary_max_k: maxK ?? '',\n    locations: o.locations,\n    published_at: o.published_at,\n    apply_url: o.apply_url,\n    company_linkedin: li,\n    linkedin_people_ar: li ? `${li}/people/?facetGeoRegion=100446943` : '',\n    source: ats,\n  }});\n}\n\nreturn out;"
-      },
-      "name": "Filter ATS",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        880,
-        -384
-      ],
-      "alwaysOutputData": true,
-      "id": "147e1a93-9aac-4971-92c2-c0ba6b903156"
-    },
-    {
-      "parameters": {
-        "jsCode": "// ---- Reglas compartidas ----\nconst MIN_SALARY_K = 60; // mínimo anual en miles de USD (solo si la oferta publica salario)\n\nconst IS_ENGINEERING = /engineer|engineering|developer|programmer|builder|full.?stack|front.?end|back.?end|\\bsre\\b|devops|architect|tech(nical)? lead|forward deployed|machine learning|\\bml\\b|\\bcto\\b|head of eng|vp.*eng/i;\nconst EXCLUDE = /recruit|talent|sales(?! engineer)|account exec|marketing|designer|legal|finance|intern|product manager|program manager|project manager|\\banalyst\\b|data scientist|incident manager/i;\nconst ARGENTINA = /argentin|buenos aires/i;\nconst LATAM = /latam|latin america|south america|\\bamericas\\b/i;\nconst GLOBAL = /\\b(anywhere|worldwide|global)\\b/i;\nconst REMOTE_ONLY = /^(remote|remoto|fully remote)$/i;\nconst US_ONLY = /(must|need to|required to)\\s+(be\\s+)?(based|located|live|reside)[^.]{0,40}(united states|u\\.s\\.|\\busa\\b)|(authorized|authorization|eligible)\\s+to\\s+work\\s+in\\s+the\\s+(united states|u\\.s\\.)|u\\.s\\.\\s+(citizen|work authorization)|citizen\\/visa only/i;\n\nconst MANAGER = /manager|head of|director|\\bvp\\b|vice president|\\bcto\\b/i;\nconst LEAD = /lead|staff|principal|forward deployed|product engineer|founding/i;\n\n// Países de LATAM, por nombre, por código ISO y por ciudad principal.\n// Con acentos, porque muchas ofertas escriben \"México\" o \"Perú\".\nconst LATAM_COUNTRY = /\\b(argentin|brazil|brasil|colombia|chile|uruguay|per[úu]|paraguay|bolivia|ecuador|(?<!new )m[ée]xico|costa rica|panam[áa]|guatemala)\\b|\\b(ARG|BRA|COL|CHL|URY|PER|MEX|CRI)\\b|\\b(bogot[áa]|medell[íi]n|barranquilla|cartagena|s[ãa]o paulo|rio de janeiro|porto alegre|belo horizonte|curitiba|florian[óo]polis|joinville|recife|montevideo|asunci[óo]n|guadalajara|monterrey|cdmx|quito|guayaquil|san salvador|tegucigalpa|managua)\\b/i;\n// \"AR\" también es Arkansas: solo cuenta como Argentina si hay otro país de la región\nconst OTHER_LATAM_CODE = /\\b(BR|CO|CL|UY|PE|MX|EC|BO|PY|VE|CR)\\b/;\n// \"Avenue of the Americas\" es una calle de Nueva York, no la región\nconst NY_STREET = /ave(nue)?\\.?\\s+of\\s+(the\\s+)?americas/ig;\n\n// Devuelve [accepts_argentina, location_match]\n// title: muchas ofertas ponen \"(Remote LATAM)\" en el título y no en la ubicación\nfunction classify(rawLoc, extra, title) {\n  const t = title || '';\n  const loc = String(rawLoc || '').replace(NY_STREET, '');\n\n  if (ARGENTINA.test(loc) || /\\bARG\\b/.test(loc)) return ['yes', 'argentina_in_location'];\n  if (/\\bAR\\b/.test(loc) && OTHER_LATAM_CODE.test(loc)) return ['yes', 'argentina_in_location'];\n  if (LATAM.test(loc)) return ['yes', 'latam_in_location'];\n  if (ARGENTINA.test(t)) return ['yes', 'argentina_in_title'];\n  if (LATAM.test(t)) return ['yes', 'latam_in_title'];\n\n  const restricted = US_ONLY.test(extra);\n  const parts = loc.split(/\\s*[|\\/;]\\s*/).map(p => p.trim()).filter(Boolean);\n  const remoteOnly = parts.length > 0 && parts.every(p => REMOTE_ONLY.test(p) || GLOBAL.test(p));\n\n  if (remoteOnly && !restricted) {\n    return /not required/i.test(extra)\n      ? ['maybe', 'remote_visa_not_required']\n      : ['maybe', 'remote_no_country'];\n  }\n\n  // Otro país de LATAM + remoto: la empresa ya contrata fuera de EE.UU. en la región\n  if (LATAM_COUNTRY.test(loc) && /remote|remoto|híbrido|hybrid/i.test(loc) && !restricted) {\n    return ['maybe', 'latam_country_remote'];\n  }\n\n  // La descripción solo decide cuando la ubicación no nombra ningún lugar.\n  // Si la empresa listó lugares y ninguno es de LATAM, que el texto mencione\n  // la región suele significar que la empresa es de ahí, no que contrate ahí.\n  const hasCountryInfo = parts.some(p => !REMOTE_ONLY.test(p) && !GLOBAL.test(p));\n  if (!hasCountryInfo && (ARGENTINA.test(extra) || LATAM.test(extra)) && !restricted) {\n    return ['maybe', 'latam_in_description'];\n  }\n\n  return ['no', ''];\n}\n\n// Máximo anual en miles de USD. Los rangos chicos se interpretan como sueldo mensual.\nfunction salaryMaxK(s) {\n  const m = (s || '').match(/\\$([\\d.,]+)\\s*(K?)\\s*[-–]\\s*\\$([\\d.,]+)\\s*(K?)/i);\n  if (!m) return null;\n  let max = parseFloat(m[3].replace(/,/g, ''));\n  if (!m[4]) max = max / 1000;\n  return max < 20 ? Math.round(max * 12) : max;\n}\n\nfunction roleCategory(title) {\n  if (MANAGER.test(title)) return 'manager';\n  if (LEAD.test(title)) return 'lead_staff';\n  return 'ic';\n}\nconst PRIORITY = { manager: 1, lead_staff: 2, ic: 3 };\n\n// Sede aproximada: la ubicación presencial más repetida de la empresa\nfunction guessHq(locations) {\n  const count = {};\n  for (const raw of locations) {\n    for (const p of String(raw || '').split(/\\s*[|\\/;]\\s*/)) {\n      const v = p.trim();\n      if (!v || /remote|remoto|anywhere|worldwide|global|latam|latin america/i.test(v)) continue;\n      count[v] = (count[v] || 0) + 1;\n    }\n  }\n  const top = Object.entries(count).sort((a, b) => b[1] - a[1])[0];\n  return top ? top[0] : '';\n}\n\nconst out = [];\n\nfor (const item of $input.all()) {\n  const c = item.json;\n  if (c.status !== 'Active') continue;\n\n  const li = (c.linkedin_url || '').replace(/\\/+$/, '');\n\n  for (const j of c.jobs || []) {\n    const title = j.title || '';\n    const isEng = j.role === 'Engineering' || IS_ENGINEERING.test(title);\n    if (!isEng || EXCLUDE.test(title) || j.type === 'Internship') continue;\n\n    const [accepts, match] = classify(j.location || '', j.visa || '', title);\n    if (accepts === 'no') continue;\n\n    const maxK = salaryMaxK(j.salary_range);\n    if (maxK !== null && maxK < MIN_SALARY_K) continue;\n\n    const role = roleCategory(title);\n    out.push({ json: {\n      job_id: `yc:${j.id}`,\n      priority: PRIORITY[role],\n      role_category: role,\n      accepts_argentina: accepts,\n      location_match: match,\n      company: c.name,\n      company_slug: c.slug,\n      company_hq: c.all_locations || '',\n      company_size: c.team_size || '',\n      company_stage: c.batch || '',\n      title: title.trim(),\n      salary: j.salary_range || '',\n      salary_max_k: maxK ?? '',\n      locations: j.location || '',\n      published_at: '',\n      apply_url: j.url,\n      company_linkedin: li,\n      linkedin_people_ar: li ? `${li}/people/?facetGeoRegion=100446943` : '',\n      source: 'yc',\n    }});\n  }\n}\n\nreturn out;"
-      },
-      "name": "Filter YC",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        864,
-        176
-      ],
-      "alwaysOutputData": true,
-      "id": "42a4f95c-ec59-4fc1-aae5-ccc2934eee5f"
+      "id": "d2828249-556a-4611-83ef-77ecbf5ee8e4"
     },
     {
       "parameters": {
@@ -112,10 +84,10 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3,
       "position": [
-        1216,
+        976,
         -128
       ],
-      "id": "9c7534a5-a700-4b7a-8978-e8a94495a248"
+      "id": "a88d73da-8a61-4f20-a847-d8193c91cace"
     },
     {
       "parameters": {
@@ -125,10 +97,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1568,
+        1984,
         -96
       ],
-      "id": "edbe92da-43fc-431b-bf69-6be9e0b4650d"
+      "id": "9cf70c53-c68e-4dfc-a73d-e8f0526407a8"
     },
     {
       "parameters": {
@@ -142,10 +114,10 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        1760,
+        2160,
         -96
       ],
-      "id": "3495d189-a5b4-4568-b4c3-3e6f1d7d7f99",
+      "id": "d79c666e-9a29-4b20-b928-2e3a0ad0447a",
       "credentials": {
         "postgres": {
           "id": "5Ggn116ONj0zb4KN",
@@ -155,28 +127,15 @@
     },
     {
       "parameters": {
-        "jsCode": "// Descarta las ofertas cuyo título contenga alguna palabra de ignored_keywords\nlet raw = $('Get user').first().json.ignored_keywords || [];\n// Postgres puede devolver el array como texto: \"{qa,junior}\"\nif (typeof raw === 'string') raw = raw.replace(/^\\{|\\}$/g, '').split(',');\n\nconst words = raw.map(w => String(w).replace(/^\"|\"$/g, '').trim().toLowerCase()).filter(Boolean);\n\n// Lista negra de empresas, provisoria hasta que se pueda administrar desde la app\nconst IGNORED_COMPANIES = ['canonical'];\n\n// Antigüedad máxima. Hay empresas que dejan avisos abiertos años para juntar CVs.\n// Si la oferta no trae fecha, no se descarta.\nconst MAX_AGE_DAYS = 180;\nconst cutoff = new Date(Date.now() - MAX_AGE_DAYS * 86400000).toISOString().slice(0, 10);\n\nconst esc = w => w.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&');\nconst re = words.length\n  ? new RegExp(`(^|[^a-z0-9])(${words.map(esc).join('|')})([^a-z0-9]|$)`, 'i')\n  : null;\n\nreturn $input.all().filter(item => {\n  const company = String(item.json.company || '').trim().toLowerCase();\n  if (IGNORED_COMPANIES.some(c => company.startsWith(c))) return false;\n\n  const pub = String(item.json.published_at || '');\n  if (pub && pub < cutoff) return false;\n\n  return !re || !re.test(String(item.json.title || ''));\n});"
-      },
-      "name": "Filter ignored",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        1392,
-        -96
-      ],
-      "id": "13f76506-d74e-4813-ad68-c9e5f94110ae"
-    },
-    {
-      "parameters": {
         "jsCode": "// Trae las ofertas crudas de las empresas que publican en Workday.\n// Su API es POST y pagina de a 20, por eso no entra en el nodo HTTP común.\n// Las empresas se consultan en paralelo, de a tandas, para que no tarde tanto.\nconst SEARCH_TERMS = ['engineer', 'developer', 'architect'];\nconst PAGE_SIZE = 20;      // Workday devuelve vacío si se pide más de 20\nconst MAX_PAGES = 3;       // tope por término: 60 ofertas\nconst CONCURRENCY = 6;     // empresas en paralelo\n\nconst http = (opts) => this.helpers.httpRequest(opts);\n\n// teladoc.wd503.myworkdayjobs.com/teladochealth_is_hiring\n//   → https://teladoc.wd503.myworkdayjobs.com/wday/cxs/teladoc/teladochealth_is_hiring/jobs\nfunction wdEndpoint(careersUrl) {\n  const clean = String(careersUrl || '').replace(/^https?:\\/\\//, '').replace(/\\/+$/, '');\n  const parts = clean.split('/');\n  const host = parts.shift();\n  if (!host || !parts.length) return null;\n  const tenant = host.split('.')[0];\n  const site = parts[parts.length - 1];\n  if (!tenant || !site) return null;\n  return {\n    api: `https://${host}/wday/cxs/${tenant}/${site}/jobs`,\n    jobBase: `https://${host}/${parts.join('/')}`,\n  };\n}\n\nasync function pagesFor(api, term) {\n  const found = [];\n  for (let page = 0; page < MAX_PAGES; page++) {\n    let res;\n    try {\n      res = await http({\n        method: 'POST',\n        url: api,\n        json: true,\n        headers: { Accept: 'application/json', 'Content-Type': 'application/json' },\n        body: { appliedFacets: {}, limit: PAGE_SIZE, offset: page * PAGE_SIZE, searchText: term },\n      });\n    } catch (e) {\n      break; // empresa que no responde: se saltea\n    }\n    const list = res?.jobPostings || [];\n    found.push(...list);\n    if (list.length < PAGE_SIZE) break;\n  }\n  return found;\n}\n\nasync function fetchCompany(c) {\n  const ep = wdEndpoint(c.careers_url);\n  if (!ep) return [];\n  const porTermino = await Promise.all(SEARCH_TERMS.map(t => pagesFor(ep.api, t)));\n  const vistos = new Map();\n  for (const lista of porTermino) {\n    for (const j of lista) if (j.externalPath) vistos.set(j.externalPath, j);\n  }\n  return [...vistos.values()].map(j => ({ json: { company: c, jobBase: ep.jobBase, job: j } }));\n}\n\nconst empresas = $('Read Companies').all()\n  .map(i => i.json)\n  .filter(c => (c.ats || '').toLowerCase() === 'workday' && c.careers_url);\n\nconst out = [];\nfor (let i = 0; i < empresas.length; i += CONCURRENCY) {\n  const tanda = await Promise.all(empresas.slice(i, i + CONCURRENCY).map(fetchCompany));\n  for (const r of tanda) out.push(...r);\n}\n\nreturn out;"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        656,
+        416,
         -32
       ],
-      "id": "1fc921dd-de34-42cb-826b-f00904a20171",
+      "id": "5bc4843e-e6f0-4d0a-aa5e-352fa0c7faf3",
       "name": "Fetch Workday"
     },
     {
@@ -189,10 +148,10 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        128,
+        -96,
         -80
       ],
-      "id": "6c04b95a-da7c-44f4-bf60-11cdcff21d70",
+      "id": "08eb6758-9576-4ac5-930a-3c2afd638f50",
       "credentials": {
         "postgres": {
           "id": "5Ggn116ONj0zb4KN",
@@ -209,10 +168,10 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.7,
       "position": [
-        1952,
+        2352,
         -96
       ],
-      "id": "799dfef6-e958-4fe9-874e-551f9558788e",
+      "id": "30608480-0acb-40fb-8cf1-482a62e710c1",
       "name": "Mark Closed",
       "executeOnce": true,
       "credentials": {
@@ -224,106 +183,16 @@
     },
     {
       "parameters": {
-        "content": "## Get engineering Jobs from YCombinator with API",
-        "height": 208,
-        "width": 464,
-        "color": "#73530C"
-      },
-      "type": "n8n-nodes-base.stickyNote",
-      "position": [
-        576,
-        128
-      ],
-      "typeVersion": 1,
-      "id": "261abe55-ae4f-4a68-a87c-f6b321276275",
-      "name": "Sticky Note"
-    },
-    {
-      "parameters": {
         "jsCode": "// Get on Board: portal de empleo de LATAM, API pública y gratuita.\nconst http = (opts) => this.helpers.httpRequest(opts);\n\nconst CATEGORIES = [\n  'programming',\n  'data-science-analytics',\n  'machine-learning-ai',\n  'sysadmin-devops-qa',\n  'mobile-developer',\n];\nconst PER_PAGE = 100;\nconst MAX_PAGES = 6;\n\nconst out = [];\n\nfor (const cat of CATEGORIES) {\n  for (let page = 1; page <= MAX_PAGES; page++) {\n    let res;\n    try {\n      res = await http({\n        method: 'GET',\n        url: `https://www.getonbrd.com/api/v0/categories/${cat}/jobs`,\n        qs: { per_page: PER_PAGE, page },\n        json: true,\n      });\n    } catch (e) {\n      break;\n    }\n    const data = res?.data || [];\n    for (const job of data) out.push({ json: { job } });\n    const total = res?.meta?.total_pages || 1;\n    if (!data.length || page >= total) break;\n  }\n}\n\nreturn out;"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        640,
-        416
+        368,
+        496
       ],
-      "id": "55d153dc-3292-4cce-ad4f-8864d110cd54",
+      "id": "86c4766f-8b39-4158-bebc-b0dcfe83454b",
       "name": "Fetch GOB"
-    },
-    {
-      "parameters": {
-        "jsCode": "const http = (opts) => this.helpers.httpRequest(opts);\n\n// ---- Reglas ----\nconst MIN_SALARY_K = 60; // anual en miles de USD\n\n// Get on Board publica en español y en inglés\nconst IS_ENGINEERING = /engineer|engineering|developer|desarrollador|desarrollo|programador|programmer|builder|full.?stack|front.?end|back.?end|ingenier|arquitect|\\bsre\\b|devops|tech(nical)? lead|l[íi]der t[ée]cnico|machine learning|\\bml\\b|\\bcto\\b/i;\nconst EXCLUDE = /recruit|reclut|talent|sales(?! engineer)|ventas|account exec|marketing|designer|dise[ñn]ador|legal|finance|contador|\\bintern\\b|pasant|practicante|product manager|program manager|project manager|gerente de producto|jefe de producto|\\banalyst\\b|analista(?! programador)|data scientist|cient[íi]fico de datos|incident manager/i;\n\n// Consultoras y outsourcing: contratan para terceros, no son producto.\n// Get on Board está lleno de estas, hay que ir sumándolas a mano.\nconst STAFFING = /^(bc tecnolog|i2b|rapidseedbox|2brains|kibernum|sonda|everis|globant|ntt data|accenture|tcs|infosys|sophos solutions|apiux|coasin|nisum|itsoft|zentyalabs|factor it|zaelot|improving|lisit|witi|lead gen team|we built it|one click technology)/i;\n\nconst MANAGER = /manager|gerente|jefe|head of|director|\\bvp\\b|vice president|\\bcto\\b/i;\nconst LEAD = /lead|l[íi]der|staff|principal|founding/i;\nconst PRIORITY = { manager: 1, lead_staff: 2, ic: 3 };\n\nconst LATAM_COUNTRY = /brazil|brasil|colombia|chile|uruguay|per[úu]|paraguay|bolivia|ecuador|m[ée]xico|mexico|costa rica|panam[áa]|guatemala|venezuela/i;\n\nfunction roleCategory(t) {\n  if (MANAGER.test(t)) return 'manager';\n  if (LEAD.test(t)) return 'lead_staff';\n  return 'ic';\n}\n\n// remote_modality: fully_remote | remote_local | hybrid | no_remote\n// remote_local = remoto pero con residencia en el país que lista\nfunction classify(a) {\n  const countries = (a.countries || []).map(String);\n  if (countries.some(c => /argentin/i.test(c))) return ['yes', 'argentina_in_location'];\n  if (a.remote_modality === 'fully_remote') return ['yes', 'fully_remote'];\n  if (a.remote && countries.some(c => LATAM_COUNTRY.test(c))) return ['maybe', 'latam_country_remote'];\n  return ['no', ''];\n}\n\n// Los sueldos vienen mensuales en USD\nfunction salaryInfo(a) {\n  const min = Number(a.min_salary) || 0;\n  const max = Number(a.max_salary) || 0;\n  if (!max) return { text: '', maxK: null };\n  return {\n    text: `$${min} - $${max} USD/mes`,\n    maxK: Math.round((max * 12) / 1000),\n  };\n}\n\n// El aviso trae solo el id de la empresa: hay que pedir el nombre aparte\nconst nameCache = new Map();\nasync function companyName(id) {\n  if (!id) return '';\n  if (nameCache.has(id)) return nameCache.get(id);\n  let n = '';\n  try {\n    const r = await http({\n      method: 'GET',\n      url: `https://www.getonbrd.com/api/v0/companies/${id}`,\n      json: true,\n    });\n    n = r?.data?.attributes?.name || '';\n  } catch (e) {\n    n = '';\n  }\n  nameCache.set(id, n);\n  return n;\n}\n\nconst out = [];\nconst seen = new Set();\n\nfor (const item of $input.all()) {\n  const j = item.json.job || {};\n  const a = j.attributes || {};\n  const title = a.title || '';\n  if (!title || !j.id || seen.has(j.id)) continue;\n  seen.add(j.id);\n\n  if (!IS_ENGINEERING.test(title) || EXCLUDE.test(title)) continue;\n\n  const [accepts, match] = classify(a);\n  if (accepts === 'no') continue;\n\n  const sal = salaryInfo(a);\n  if (sal.maxK !== null && sal.maxK < MIN_SALARY_K) continue;\n\n  // El nombre se pide recién acá, solo para las que pasaron todos los filtros\n  const company = await companyName(a.company?.data?.id);\n  if (!company || STAFFING.test(company)) continue;\n\n  const role = roleCategory(title);\n  const countries = (a.countries || []).map(String);\n\n  out.push({ json: {\n    job_id: `gob:${j.id}`,\n    company_id: null,\n    priority: PRIORITY[role],\n    role_category: role,\n    accepts_argentina: accepts,\n    location_match: match,\n    company,\n    company_slug: '',\n    company_hq: countries.filter(c => !/^remote$/i.test(c)).join(', '),\n    company_size: '',\n    company_stage: '',\n    title: title.trim(),\n    salary: sal.text,\n    salary_max_k: sal.maxK ?? '',\n    locations: [...new Set([a.remote ? 'Remote' : null, ...countries].filter(Boolean))].join(' | '),\n    published_at: a.published_at\n      ? new Date(a.published_at * 1000).toISOString().slice(0, 10)\n      : '',\n    apply_url: j.links?.public_url || '',\n    company_linkedin: '',\n    linkedin_people_ar: '',\n    source: 'getonbrd',\n  }});\n}\n\nreturn out;"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        864,
-        416
-      ],
-      "id": "9eb1e671-1a69-4955-8777-372ae8d4bc57",
-      "name": "Filter GOB"
-    },
-    {
-      "parameters": {
-        "content": "## Ofertas de Workday\n\nEmpresas activas con `ats = 'workday'`.\n\nVa aparte porque no es un GET simple: POST con body,\npaginado de a 20 y una búsqueda por término\n(engineer · developer · architect).",
-        "height": 336,
-        "width": 464,
-        "color": 2
-      },
-      "type": "n8n-nodes-base.stickyNote",
-      "position": [
-        576,
-        -224
-      ],
-      "typeVersion": 1,
-      "id": "b8146366-231e-4207-8858-dec6eb8ef2da",
-      "name": "Sticky Note1"
-    },
-    {
-      "parameters": {
-        "jsCode": "// ---- Reglas compartidas (iguales a Filter ATS) ----\nconst IS_ENGINEERING = /engineer|engineering|developer|\\bsre\\b|devops|architect|tech lead|forward deployed|machine learning|\\bml\\b|\\bcto\\b|head of eng|vp.*eng/i;\nconst EXCLUDE = /recruit|talent|sales(?! engineer)|account exec|marketing|designer|legal|finance|intern|product manager|program manager|project manager|\\banalyst\\b|data scientist|incident manager/i;\nconst ARGENTINA = /argentin|buenos aires/i;\nconst LATAM = /latam|latin america|south america|\\bamericas\\b/i;\nconst GLOBAL = /\\b(anywhere|worldwide|global)\\b/i;\nconst REMOTE_ONLY = /^(remote|remoto|fully remote)$/i;\nconst US_ONLY = /(must|need to|required to)\\s+(be\\s+)?(based|located|live|reside)[^.]{0,40}(united states|u\\.s\\.|\\busa\\b)|(authorized|authorization|eligible)\\s+to\\s+work\\s+in\\s+the\\s+(united states|u\\.s\\.)|u\\.s\\.\\s+(citizen|work authorization)|citizen\\/visa only/i;\nconst MANAGER = /manager|head of|director|\\bvp\\b|vice president|\\bcto\\b/i;\nconst LEAD = /lead|staff|principal|forward deployed|product engineer|founding/i;\n// Países de LATAM, por nombre, por código ISO y por ciudad principal.\n// Con acentos, porque muchas ofertas escriben \"México\" o \"Perú\".\nconst LATAM_COUNTRY = /\\b(argentin|brazil|brasil|colombia|chile|uruguay|per[úu]|paraguay|bolivia|ecuador|(?<!new )m[ée]xico|costa rica|panam[áa]|guatemala)\\b|\\b(ARG|BRA|COL|CHL|URY|PER|MEX|CRI)\\b|\\b(bogot[áa]|medell[íi]n|barranquilla|cartagena|s[ãa]o paulo|rio de janeiro|porto alegre|belo horizonte|curitiba|florian[óo]polis|joinville|recife|montevideo|asunci[óo]n|guadalajara|monterrey|cdmx|quito|guayaquil|san salvador|tegucigalpa|managua)\\b/i;\n// \"AR\" también es Arkansas: solo cuenta como Argentina si hay otro país de la región\nconst OTHER_LATAM_CODE = /\\b(BR|CO|CL|UY|PE|MX|EC|BO|PY|VE|CR)\\b/;\n// \"Avenue of the Americas\" es una calle de Nueva York, no la región\nconst NY_STREET = /ave(nue)?\\.?\\s+of\\s+(the\\s+)?americas/ig;\n\n\n// Devuelve [accepts_argentina, location_match]\n// title: muchas ofertas ponen \"(Remote LATAM)\" en el título y no en la ubicación\nfunction classify(rawLoc, extra, title) {\n  const t = title || '';\n  const loc = String(rawLoc || '').replace(NY_STREET, '');\n\n  if (ARGENTINA.test(loc) || /\\bARG\\b/.test(loc)) return ['yes', 'argentina_in_location'];\n  if (/\\bAR\\b/.test(loc) && OTHER_LATAM_CODE.test(loc)) return ['yes', 'argentina_in_location'];\n  if (LATAM.test(loc)) return ['yes', 'latam_in_location'];\n  if (ARGENTINA.test(t)) return ['yes', 'argentina_in_title'];\n  if (LATAM.test(t)) return ['yes', 'latam_in_title'];\n\n  const restricted = US_ONLY.test(extra);\n  const parts = loc.split(/\\s*[|\\/;]\\s*/).map(p => p.trim()).filter(Boolean);\n  const remoteOnly = parts.length > 0 && parts.every(p => REMOTE_ONLY.test(p) || GLOBAL.test(p));\n\n  if (remoteOnly && !restricted) {\n    return /not required/i.test(extra)\n      ? ['maybe', 'remote_visa_not_required']\n      : ['maybe', 'remote_no_country'];\n  }\n\n  // Otro país de LATAM + remoto: la empresa ya contrata fuera de EE.UU. en la región\n  if (LATAM_COUNTRY.test(loc) && /remote|remoto|híbrido|hybrid/i.test(loc) && !restricted) {\n    return ['maybe', 'latam_country_remote'];\n  }\n\n  // La descripción solo decide cuando la ubicación no nombra ningún lugar.\n  // Si la empresa listó lugares y ninguno es de LATAM, que el texto mencione\n  // la región suele significar que la empresa es de ahí, no que contrate ahí.\n  const hasCountryInfo = parts.some(p => !REMOTE_ONLY.test(p) && !GLOBAL.test(p));\n  if (!hasCountryInfo && (ARGENTINA.test(extra) || LATAM.test(extra)) && !restricted) {\n    return ['maybe', 'latam_in_description'];\n  }\n\n  return ['no', ''];\n}\n\nfunction roleCategory(title) {\n  if (MANAGER.test(title)) return 'manager';\n  if (LEAD.test(title)) return 'lead_staff';\n  return 'ic';\n}\nconst PRIORITY = { manager: 1, lead_staff: 2, ic: 3 };\n\n// \"Posted 24 Days Ago\" → fecha. Workday no publica la fecha real.\nfunction wdPosted(s) {\n  const t = String(s || '');\n  let days = null;\n  if (/today/i.test(t)) days = 0;\n  else if (/yesterday/i.test(t)) days = 1;\n  else {\n    const m = t.match(/(\\d+)\\+?\\s*days?/i);\n    if (m) days = parseInt(m[1], 10);\n  }\n  if (days === null) return '';\n  return new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);\n}\n\nconst out = [];\nconst seen = new Set();\n\nfor (const item of $input.all()) {\n  const { company: c, jobBase, job: j } = item.json;\n  if (!c || !j) continue;\n\n  const title = j.title || '';\n  if (!IS_ENGINEERING.test(title) || EXCLUDE.test(title)) continue;\n\n  const locations = j.locationsText || '';\n  const [accepts, match] = classify(locations, '', title);\n  if (accepts === 'no') continue;\n\n  const id = (String(j.externalPath).match(/_([A-Z0-9]+)$/) || [])[1] || j.externalPath;\n  const job_id = `wd:${c.slug}:${id}`;\n  if (seen.has(job_id)) continue;\n  seen.add(job_id);\n\n  const role = roleCategory(title);\n  const li = c.linkedin_slug ? `https://www.linkedin.com/company/${c.linkedin_slug}` : '';\n\n  out.push({ json: {\n    job_id,\n    company_id: c.company_id || '',\n    priority: PRIORITY[role],\n    role_category: role,\n    accepts_argentina: accepts,\n    location_match: match,\n    company: c.company,\n    company_slug: c.slug,\n    company_hq: c.hq || '',\n    company_size: c.size || '',\n    company_stage: c.stage || '',\n    title: title.trim(),\n    salary: '',\n    salary_max_k: '',\n    locations,\n    published_at: wdPosted(j.postedOn),\n    apply_url: jobBase + j.externalPath,\n    company_linkedin: li,\n    linkedin_people_ar: li ? `${li}/people/?facetGeoRegion=100446943` : '',\n    source: 'workday',\n  }});\n}\n\nreturn out;"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        864,
-        -32
-      ],
-      "id": "d0a4eb52-f822-439b-9e8f-526086007eee",
-      "name": "Filter Workday"
-    },
-    {
-      "parameters": {
-        "content": "## Get engineering Jobs from GetOnBoard with API",
-        "height": 192,
-        "width": 464,
-        "color": 5
-      },
-      "type": "n8n-nodes-base.stickyNote",
-      "position": [
-        576,
-        368
-      ],
-      "typeVersion": 1,
-      "id": "de9ca7ad-8b68-457d-9711-a8263e1c8793",
-      "name": "Sticky Note2"
-    },
-    {
-      "parameters": {
-        "content": "## Ofertas de ATS\n\nEmpresas activas de la tabla `companies`.\n\nAshby · Greenhouse · Lever · Teamtailor · Workable\n\nAPIs públicas, GET sin auth. Workday va aparte.",
-        "height": 336,
-        "width": 464,
-        "color": 4
-      },
-      "type": "n8n-nodes-base.stickyNote",
-      "position": [
-        576,
-        -576
-      ],
-      "typeVersion": 1,
-      "id": "5dc5beb2-0060-4ebd-918d-0b886761bd42",
-      "name": "Sticky Note3"
     },
     {
       "parameters": {
@@ -334,10 +203,230 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        640,
-        176
+        416,
+        240
       ],
-      "id": "28a3cd50-bc87-4f0e-93c2-d1ccb9f4ff3e"
+      "id": "170a154a-5ef1-4f9b-b209-dac838f0831c"
+    },
+    {
+      "parameters": {
+        "jsCode": "// =====================================================================\n//  Classify & Filter\n//  Va entre \"Merge sources\" y \"Resolve GOB company\".\n//\n//  ESTE ES EL UNICO LUGAR DONDE SE TOCAN LAS REGLAS.\n//  Los cuatro nodos Normalize de arriba solo traducen el formato de su\n//  proveedor al formato comun; no filtran ni clasifican nada.\n//\n//  Formato comun que recibe de cada Normalize:\n//    job_id, source, title, department, locations, description,\n//    salary, salary_max_k, published_at, apply_url,\n//    company, company_slug, company_id, company_hq, company_size,\n//    company_stage, company_linkedin\n//  Campos opcionales:\n//    match_override   -> ['yes','fully_remote'] cuando el proveedor ya\n//                        sabe la respuesta mejor que nuestro texto (GOB)\n//    gob_company_id   -> lo usa \"Resolve GOB company\", mas abajo\n// =====================================================================\n\nconst MIN_SALARY_K = 60; // minimo anual en miles de USD (solo si publica salario)\n\n// Ingenieria por titulo. Incluye terminos en español porque Get on Board\n// publica en los dos idiomas.\nconst IS_ENGINEERING = /engineer|engineering|developer|desarrollador|desarrollo|programador|programmer|builder|full.?stack|front.?end|back.?end|ingenier|arquitect|\\bsre\\b|devops|architect|tech(nical)? lead|l[íi]der t[ée]cnico|forward deployed|machine learning|\\bml\\b|\\bcto\\b|head of eng|vp.*eng/i;\n\n// Ingenieria por departamento. Cada empresa lo nombra distinto:\n// \"Engineering\", \"Tech Team\", \"EN-Engineering\", \"R&D\"...\nconst IS_ENG_DEPT = /engineer|engineering|technolog|\\btech\\b|software|\\br&?d\\b|platform|infrastructur/i;\n\n// Se cuela por el titulo o por el departamento, pero no es ingenieria.\nconst EXCLUDE = /recruit|reclut|talent|sales(?! engineer)|ventas|account exec|marketing|designer|dise[ñn]ador|legal|finance|contador|intern|pasant|practicante|product manager|program manager|project manager|gerente de producto|jefe de producto|\\banalyst\\b|analista(?! programador)|data scientist|cient[íi]fico de datos|incident manager/i;\n\n// Formularios de banco de talento: dicen \"Engineering\" pero no hay busqueda\n// detras y nunca se cierran.\nconst EXCLUDE_EVERGREEN = /future .*(opportunit|role|position)|general interest|talent (pool|community|network)|open application|spontaneous/i;\n\nconst ARGENTINA = /argentin|buenos aires/i;\nconst LATAM = /latam|latin america|south america|\\bamericas\\b/i;\nconst GLOBAL = /\\b(anywhere|worldwide|global)\\b/i;\nconst REMOTE_ONLY = /^(remote|remoto|fully remote)$/i;\nconst US_ONLY = /(must|need to|required to)\\s+(be\\s+)?(based|located|live|reside)[^.]{0,40}(united states|u\\.s\\.|\\busa\\b)|(authorized|authorization|eligible)\\s+to\\s+work\\s+in\\s+the\\s+(united states|u\\.s\\.)|u\\.s\\.\\s+(citizen|work authorization)|citizen\\/visa only/i;\n\nconst MANAGER = /manager|gerente|jefe|head of|director|\\bvp\\b|vice president|\\bcto\\b/i;\nconst LEAD = /lead|l[íi]der|staff|principal|forward deployed|product engineer|founding/i;\nconst PRIORITY = { manager: 1, lead_staff: 2, ic: 3 };\n\n// Paises de LATAM, por nombre, por codigo ISO y por ciudad principal.\n// Con acentos, porque muchas ofertas escriben \"Mexico\" o \"Peru\".\nconst LATAM_COUNTRY = /\\b(argentin|brazil|brasil|colombia|chile|uruguay|per[úu]|paraguay|bolivia|ecuador|venezuela|(?<!new )m[ée]xico|costa rica|panam[áa]|guatemala)\\b|\\b(ARG|BRA|COL|CHL|URY|PER|MEX|CRI)\\b|\\b(bogot[áa]|medell[íi]n|barranquilla|cartagena|s[ãa]o paulo|rio de janeiro|porto alegre|belo horizonte|curitiba|florian[óo]polis|joinville|recife|montevideo|asunci[óo]n|guadalajara|monterrey|cdmx|quito|guayaquil|san salvador|tegucigalpa|managua)\\b/i;\n// \"AR\" tambien es Arkansas: solo cuenta como Argentina si hay otro pais de la region\nconst OTHER_LATAM_CODE = /\\b(BR|CO|CL|UY|PE|MX|EC|BO|PY|VE|CR)\\b/;\n// \"Avenue of the Americas\" es una calle de Nueva York, no la region\nconst NY_STREET = /ave(nue)?\\.?\\s+of\\s+(the\\s+)?americas/ig;\n\n// ---- Reglas que antes vivian en \"Filter ignored\" ----\n\n// Palabras que el usuario marco como ignoradas, desde su fila en la base\nlet raw = $('Get user').first().json.ignored_keywords || [];\n// Postgres puede devolver el array como texto: \"{qa,junior}\"\nif (typeof raw === 'string') raw = raw.replace(/^\\{|\\}$/g, '').split(',');\nconst words = raw.map(w => String(w).replace(/^\"|\"$/g, '').trim().toLowerCase()).filter(Boolean);\nconst esc = w => w.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&');\nconst IGNORED_WORDS = words.length\n  ? new RegExp(`(^|[^a-z0-9])(${words.map(esc).join('|')})([^a-z0-9]|$)`, 'i')\n  : null;\n\n// Lista negra de empresas, provisoria hasta que se pueda administrar desde la app.\n// OJO: los avisos de Get on Board llegan aca sin nombre de empresa, asi que esta\n// lista no les aplica. A esos los cubre la lista STAFFING de \"Resolve GOB company\".\nconst IGNORED_COMPANIES = ['canonical'];\n\n// Antiguedad maxima. Hay empresas que dejan avisos abiertos años para juntar CVs.\n// Si la oferta no trae fecha, no se descarta.\nconst MAX_AGE_DAYS = 180;\nconst CUTOFF = new Date(Date.now() - MAX_AGE_DAYS * 86400000).toISOString().slice(0, 10);\n\n// ---------------------------------------------------------------------\n\n// Devuelve [accepts_argentina, location_match]\n// title: muchas ofertas ponen \"(Remote LATAM)\" en el titulo y no en la ubicacion\nfunction classify(rawLoc, extra, title) {\n  const t = title || '';\n  const loc = String(rawLoc || '').replace(NY_STREET, '');\n\n  if (ARGENTINA.test(loc) || /\\bARG\\b/.test(loc)) return ['yes', 'argentina_in_location'];\n  if (/\\bAR\\b/.test(loc) && OTHER_LATAM_CODE.test(loc)) return ['yes', 'argentina_in_location'];\n  if (LATAM.test(loc)) return ['yes', 'latam_in_location'];\n  if (ARGENTINA.test(t)) return ['yes', 'argentina_in_title'];\n  if (LATAM.test(t)) return ['yes', 'latam_in_title'];\n\n  const restricted = US_ONLY.test(extra);\n  const parts = loc.split(/\\s*[|\\/;]\\s*/).map(p => p.trim()).filter(Boolean);\n  const remoteOnly = parts.length > 0 && parts.every(p => REMOTE_ONLY.test(p) || GLOBAL.test(p));\n\n  if (remoteOnly && !restricted) {\n    return /not required/i.test(extra)\n      ? ['maybe', 'remote_visa_not_required']\n      : ['maybe', 'remote_no_country'];\n  }\n\n  // Otro pais de LATAM + remoto: la empresa ya contrata fuera de EE.UU. en la region\n  if (LATAM_COUNTRY.test(loc) && /remote|remoto|híbrido|hybrid/i.test(loc) && !restricted) {\n    return ['maybe', 'latam_country_remote'];\n  }\n\n  // La descripcion solo decide cuando la ubicacion no nombra ningun lugar.\n  // Si la empresa listo lugares y ninguno es de LATAM, que el texto mencione\n  // la region suele significar que la empresa es de ahi, no que contrate ahi.\n  const hasCountryInfo = parts.some(p => !REMOTE_ONLY.test(p) && !GLOBAL.test(p));\n  if (!hasCountryInfo && (ARGENTINA.test(extra) || LATAM.test(extra)) && !restricted) {\n    return ['maybe', 'latam_in_description'];\n  }\n\n  return ['no', ''];\n}\n\n// Maximo anual en miles de USD. Los rangos chicos se interpretan como sueldo mensual.\nfunction salaryMaxK(s) {\n  const m = (s || '').match(/\\$([\\d.,]+)\\s*(K?)\\s*[-–]\\s*\\$([\\d.,]+)\\s*(K?)/i);\n  if (!m) return null;\n  let max = parseFloat(m[3].replace(/,/g, ''));\n  if (!m[4]) max = max / 1000;\n  return max < 20 ? Math.round(max * 12) : max;\n}\n\nfunction roleCategory(title) {\n  if (MANAGER.test(title)) return 'manager';\n  if (LEAD.test(title)) return 'lead_staff';\n  return 'ic';\n}\n\n// Sede aproximada: la ubicacion presencial mas repetida de la empresa.\n// Ahora se calcula sobre TODAS las fuentes juntas, no solo sobre una.\nfunction guessHq(locations) {\n  const count = {};\n  for (const raw of locations) {\n    for (const p of String(raw || '').split(/\\s*[|\\/;]\\s*/)) {\n      const v = p.trim();\n      if (!v || /remote|remoto|anywhere|worldwide|global|latam|latin america/i.test(v)) continue;\n      count[v] = (count[v] || 0) + 1;\n    }\n  }\n  const top = Object.entries(count).sort((a, b) => b[1] - a[1])[0];\n  return top ? top[0] : '';\n}\n\n// ---------------------------------------------------------------------\n\nconst items = $input.all().map(i => i.json || {});\n\n// Ubicaciones por empresa, para deducir la sede cuando no la tenemos cargada\nconst locsByCompany = {};\nfor (const o of items) {\n  if (!o.company_slug) continue;\n  (locsByCompany[o.company_slug] = locsByCompany[o.company_slug] || []).push(o.locations);\n}\n\nconst out = [];\nconst seen = new Set();\n\nfor (const o of items) {\n  if (!o.job_id || seen.has(o.job_id)) continue;\n  seen.add(o.job_id);\n\n  const title = String(o.title || '');\n  if (!title) continue;\n\n  // --- 1) Descartes por titulo ---\n  // Es ingenieria si lo dice el titulo o si lo dice el departamento.\n  // EXCLUDE siempre manda: un \"Technical Recruiter\" dentro de Engineering queda afuera.\n  const isEng = IS_ENGINEERING.test(title) || IS_ENG_DEPT.test(o.department || '');\n  if (!isEng) continue;\n  if (EXCLUDE.test(title) || EXCLUDE_EVERGREEN.test(title)) continue;\n  if (IGNORED_WORDS && IGNORED_WORDS.test(title)) continue;\n\n  // --- 2) Descartes por empresa ---\n  const companyLower = String(o.company || '').trim().toLowerCase();\n  if (companyLower && IGNORED_COMPANIES.some(c => companyLower.startsWith(c))) continue;\n\n  // --- 3) Descarte por antiguedad ---\n  const pub = String(o.published_at || '');\n  if (pub && pub < CUTOFF) continue;\n\n  // --- 4) Elegibilidad geografica ---\n  // match_override: el proveedor ya trae la respuesta estructurada y le creemos\n  // mas que a nuestro parseo de texto\n  const [accepts, match] = Array.isArray(o.match_override)\n    ? o.match_override\n    : classify(o.locations, o.description, title);\n  if (accepts === 'no') continue;\n\n  // --- 5) Minimo salarial, solo si el aviso publica salario ---\n  // salary_max_k puede venir ya calculado (GOB lo trae mensual en campos aparte)\n  const maxK = (o.salary_max_k === '' || o.salary_max_k === null || o.salary_max_k === undefined)\n    ? salaryMaxK(o.salary)\n    : Number(o.salary_max_k);\n  if (maxK !== null && !Number.isNaN(maxK) && maxK < MIN_SALARY_K) continue;\n\n  const role = roleCategory(title);\n  const li = o.company_linkedin || '';\n\n  out.push({ json: {\n    job_id: o.job_id,\n    company_id: o.company_id ?? '',\n    priority: PRIORITY[role],\n    role_category: role,\n    accepts_argentina: accepts,\n    location_match: match,\n    company: o.company || '',\n    company_slug: o.company_slug || '',\n    company_hq: o.company_hq || guessHq(locsByCompany[o.company_slug] || []),\n    company_size: o.company_size || '',\n    company_stage: o.company_stage || '',\n    title: title.trim(),\n    department: o.department || '',\n    salary: o.salary || '',\n    salary_max_k: (maxK === null || Number.isNaN(maxK)) ? '' : maxK,\n    locations: o.locations || '',\n    published_at: o.published_at || '',\n    apply_url: o.apply_url || '',\n    company_linkedin: li,\n    linkedin_people_ar: li ? `${li}/people/?facetGeoRegion=100446943` : '',\n    source: o.source || '',\n    // solo sobrevive para el nodo siguiente; ahi se borra\n    gob_company_id: o.gob_company_id || '',\n  }});\n}\n\nreturn out;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1168,
+        -96
+      ],
+      "id": "eb9c2de5-f287-4227-9efa-3a83413e3231",
+      "name": "Classify & Filter"
+    },
+    {
+      "parameters": {
+        "jsCode": "// =====================================================================\n//  Normalize ATS  — \n//\n//  Solo traduce Ashby / Greenhouse / Lever / Workable / Teamtailor al\n//  formato comun y resuelve a que empresa pertenece cada aviso.\n// =====================================================================\n\n// Teamtailor: ubicacion estructurada dentro de _jobposting\nfunction ttLocations(jp) {\n  const out = [];\n  for (const p of jp?.jobLocation || []) {\n    const a = p.address || {};\n    const v = [a.addressLocality, a.addressRegion, a.addressCountry].filter(Boolean).join(', ');\n    if (v) out.push(v);\n  }\n  return out.join(' | ');\n}\n\nfunction stripHtml(h) {\n  return String(h || '')\n    .replace(/<[^>]+>/g, ' ')\n    .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&#39;/g, \"'\").replace(/&quot;/g, '\"')\n    .replace(/\\s+/g, ' ').trim();\n}\n\n// Greenhouse devuelve el content con las etiquetas escapadas (&lt;p&gt;).\n// Se corta a 6000 caracteres: alcanza para detectar LATAM o residencia en US\n// y evita que la ejecucion se vuelva gigante.\nfunction ghContent(s) {\n  const decoded = String(s || '')\n    .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');\n  return stripHtml(decoded).slice(0, 6000);\n}\n\n// El departamento viene con forma distinta en cada plataforma:\n// texto, objeto con name, o array\nfunction deptOf(v) {\n  if (!v) return '';\n  if (typeof v === 'string') return v.trim();\n  if (Array.isArray(v)) return deptOf(v[0]);\n  return String(v.name || v.title || '').trim();\n}\n\n// Plataforma segun la forma de la oferta, no segun el indice del item\nfunction detectAts(j) {\n  if (j && j.shortcode && (j.url || j.shortlink)) return 'workable';\n  if (j && j._jobposting) return 'teamtailor';\n  if (j && j.absolute_url) return 'greenhouse';\n  if (j && j.hostedUrl) return 'lever';\n  return 'ashby';\n}\n\n// Slug de la empresa segun la URL de la oferta\nfunction slugFromUrl(u) {\n  const s = String(u || '');\n  let m;\n  if ((m = s.match(/jobs\\.ashbyhq\\.com\\/([^\\/?#]+)/i))) return m[1];\n  if ((m = s.match(/greenhouse\\.io\\/([^\\/?#]+)/i))) return m[1];\n  if ((m = s.match(/jobs\\.lever\\.co\\/([^\\/?#]+)/i))) return m[1];\n  if ((m = s.match(/apply\\.workable\\.com\\/([^\\/?#]+)/i))) return m[1];\n  if ((m = s.match(/https?:\\/\\/([^.\\/]+)\\.(?:[a-z]{2}\\.)?teamtailor\\.com/i))) return m[1];\n  return '';\n}\n\n// Dominio de una URL, sin \"www.\".\n// Hace falta porque algunas empresas configuran su board para redirigir a su\n// propio sitio: Twindo publica en Greenhouse pero sus ofertas quedan en\n// https://www.twindo.com/careers/?gh_jid=123, donde no aparece \"greenhouse.io\".\nfunction hostOf(u) {\n  const m = String(u || '').match(/^https?:\\/\\/([^\\/?#]+)/i);\n  return m ? m[1].toLowerCase().replace(/^www\\./, '') : '';\n}\n\n// Convierte una oferta de cualquier plataforma al mismo formato\nfunction normalize(ats, j) {\n  if (ats === 'workable') {\n    const locs = (j.locations || [])\n      .map(l => [l.city, l.region, l.country].filter(Boolean).join(', '))\n      .filter(Boolean);\n    const base = locs.length ? locs.join(' | ') : [j.city, j.state, j.country].filter(Boolean).join(', ');\n    return {\n      job_id: `wk:${j.shortcode}`,\n      title: j.title || '',\n      department: deptOf(j.department) || deptOf(j.departments),\n      locations: [j.telecommuting ? 'Remote' : null, base].filter(Boolean).join(' | '),\n      description: j.description || '',\n      salary: '',\n      published_at: String(j.published_on || j.created_at || '').slice(0, 10),\n      apply_url: j.url || j.shortlink,\n    };\n  }\n  if (ats === 'teamtailor') {\n    const jp = j._jobposting || {};\n    return {\n      job_id: `tt:${jp.identifier?.value || j.id}`,\n      title: j.title || jp.title || '',\n      department: deptOf(j.department) || deptOf(jp.department),\n      locations: ttLocations(jp),\n      description: stripHtml(j.content_html),\n      salary: '',\n      published_at: String(j.date_published || jp.datePosted || '').slice(0, 10),\n      apply_url: j.url,\n    };\n  }\n  if (ats === 'greenhouse') return {\n    job_id: `gh:${j.id}`,\n    title: j.title || '',\n    department: deptOf(j.departments) || deptOf(j.department),\n    locations: j.location?.name || '',\n    description: ghContent(j.content),\n    salary: '',\n    published_at: (j.first_published || j.updated_at || '').slice(0, 10),\n    apply_url: j.absolute_url,\n  };\n  if (ats === 'lever') {\n    const sr = j.salaryRange;\n    return {\n      job_id: `lever:${j.id}`,\n      title: j.text || '',\n      department: deptOf(j.categories?.department) || deptOf(j.categories?.team),\n      locations: [...new Set([j.categories?.location, ...(j.categories?.allLocations || [])].filter(Boolean))].join(' | '),\n      description: j.descriptionPlain || '',\n      salary: sr && sr.max ? `$${Math.round(sr.min / 1000)}K - $${Math.round(sr.max / 1000)}K` : '',\n      published_at: j.createdAt ? new Date(j.createdAt).toISOString().slice(0, 10) : '',\n      apply_url: j.hostedUrl,\n    };\n  }\n  // Ashby: el pais principal va en location, el resto en secondaryLocations\n  return {\n    job_id: `ashby:${j.id}`,\n    title: j.title || '',\n    department: deptOf(j.department) || deptOf(j.team),\n    locations: [\n      (j.isRemote || j.workplaceType === 'Remote') ? 'Remote' : null,\n      j.location,\n      ...(j.secondaryLocations || []).map(\n        l => l && (l.location || l.address?.postalAddress?.addressCountry)\n      ),\n    ].filter(Boolean).join(' | '),\n    description: j.descriptionPlain || '',\n    salary: j.compensation?.scrapeableCompensationSalarySummary || j.compensation?.compensationTierSummary || '',\n    published_at: (j.publishedAt || '').slice(0, 10),\n    apply_url: j.jobUrl,\n  };\n}\n\n// ---- Indices de empresas ----\nconst companies = $('Read Companies').all();\n\nconst bySlug = new Map();\ncompanies.forEach(it => {\n  const c = it.json || {};\n  if (c.slug) bySlug.set(String(c.slug).toLowerCase(), c);\n});\n\n// Segundo indice, por dominio propio de la empresa. Los dominios de los\n// propios ATS quedan afuera a proposito: si no, cien empresas se mapearian\n// al mismo host.\nconst ATS_HOSTS = /greenhouse\\.io|lever\\.co|ashbyhq\\.com|workable\\.com|teamtailor\\.com|myworkdayjobs\\.com|workday/i;\nconst byHost = new Map();\ncompanies.forEach(it => {\n  const c = it.json || {};\n  const h = hostOf(c.careers_url);\n  if (h && !ATS_HOSTS.test(h) && !byHost.has(h)) byHost.set(h, c);\n});\n\nconst out = [];\n\n$input.all().forEach((item, i) => {\n  // Algunas plataformas devuelven el JSON como texto: lo parseamos\n  let body = item.json;\n  if (typeof body?.data === 'string') {\n    try { body = JSON.parse(body.data); } catch (e) { body = {}; }\n  }\n\n  // Ashby, Greenhouse y Workable devuelven { jobs: [...] }; Teamtailor, { items: [...] };\n  // Lever devuelve un array que n8n ya partio en un item por oferta\n  let raws = [];\n  if (Array.isArray(body?.jobs)) raws = body.jobs;\n  else if (Array.isArray(body?.items)) raws = body.items;\n  else if (body?.hostedUrl || body?.absolute_url || body?.jobUrl) raws = [body];\n  if (!raws.length) return;\n\n  // Empresa de respaldo, solo si no se puede resolver por URL ni por dominio\n  const p = Array.isArray(item.pairedItem) ? item.pairedItem[0] : item.pairedItem;\n  const fallback = companies[p?.item ?? i]?.json || {};\n\n  for (const r of raws) {\n    const ats = detectAts(r);\n    const o = normalize(ats, r);\n    if (!o.apply_url) continue;\n\n    // Tres escalones: slug en la URL del ATS, dominio propio, respaldo\n    const c = bySlug.get(slugFromUrl(o.apply_url).toLowerCase())\n           || byHost.get(hostOf(o.apply_url))\n           || fallback;\n    if (!c.slug) continue;\n\n    out.push({ json: {\n      job_id: o.job_id,\n      source: ats,\n      title: o.title,\n      department: o.department || '',\n      locations: o.locations,\n      description: o.description,\n      salary: o.salary,\n      salary_max_k: '',\n      published_at: o.published_at,\n      apply_url: o.apply_url,\n      company: c.company,\n      company_slug: c.slug,\n      company_id: c.company_id || '',\n      company_hq: c.hq || '',\n      company_size: c.size || '',\n      company_stage: c.stage || '',\n      company_linkedin: c.linkedin_slug ? `https://www.linkedin.com/company/${c.linkedin_slug}` : '',\n    }});\n  }\n});\n\nreturn out;"
+      },
+      "name": "Normalize ATS",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        640,
+        -384
+      ],
+      "alwaysOutputData": true,
+      "id": "8005047b-24f5-48e6-90be-11ccf13b5b11"
+    },
+    {
+      "parameters": {
+        "jsCode": "// =====================================================================\n//  Normalize Workday  —  reemplaza el contenido de \"Filter Workday\"\n//\n//  Solo traduce el formato de Workday al formato comun.\n//  NO filtra ni clasifica: eso lo hace \"Classify & Filter\".\n// =====================================================================\n\n// \"Posted 24 Days Ago\" -> fecha. Workday no publica la fecha real.\nfunction wdPosted(s) {\n  const t = String(s || '');\n  let days = null;\n  if (/today/i.test(t)) days = 0;\n  else if (/yesterday/i.test(t)) days = 1;\n  else {\n    const m = t.match(/(\\d+)\\+?\\s*days?/i);\n    if (m) days = parseInt(m[1], 10);\n  }\n  if (days === null) return '';\n  return new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);\n}\n\nconst out = [];\n\nfor (const item of $input.all()) {\n  const { company: c, jobBase, job: j } = item.json;\n  if (!c || !j) continue;\n\n  const id = (String(j.externalPath).match(/_([A-Z0-9]+)$/) || [])[1] || j.externalPath;\n\n  out.push({ json: {\n    job_id: `wd:${c.slug}:${id}`,\n    source: 'workday',\n    title: j.title || '',\n    department: '',\n    locations: j.locationsText || '',\n    description: '',\n    salary: '',\n    salary_max_k: '',\n    published_at: wdPosted(j.postedOn),\n    apply_url: jobBase + j.externalPath,\n    company: c.company,\n    company_slug: c.slug,\n    company_id: c.company_id || '',\n    company_hq: c.hq || '',\n    company_size: c.size || '',\n    company_stage: c.stage || '',\n    company_linkedin: c.linkedin_slug ? `https://www.linkedin.com/company/${c.linkedin_slug}` : '',\n  }});\n}\n\nreturn out;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        640,
+        -32
+      ],
+      "id": "72147613-18d7-47a6-8d88-c81e1c81608f",
+      "name": "Normalize Workday"
+    },
+    {
+      "parameters": {
+        "jsCode": "// =====================================================================\n//  Normalize YC  —  reemplaza el contenido de \"Filter YC\"\n//\n//  Solo traduce el formato de Work at a Startup al formato comun.\n//  NO filtra ni clasifica, salvo dos cosas que son propias de YC:\n//    - empresas que no estan activas\n//    - avisos marcados como pasantia, que YC trae en un campo estructurado\n//      (mas confiable que buscar \"intern\" en el titulo)\n// =====================================================================\n\nconst out = [];\n\nfor (const item of $input.all()) {\n  const c = item.json;\n  if (c.status !== 'Active') continue;\n\n  const li = (c.linkedin_url || '').replace(/\\/+$/, '');\n\n  for (const j of c.jobs || []) {\n    if (j.type === 'Internship') continue;\n\n    out.push({ json: {\n      job_id: `yc:${j.id}`,\n      source: 'yc',\n      title: j.title || '',\n      // YC trae el area como campo estructurado: vale como departamento\n      department: j.role || '',\n      locations: j.location || '',\n      // lo unico que YC dice sobre elegibilidad esta en visa\n      description: j.visa || '',\n      salary: j.salary_range || '',\n      salary_max_k: '',\n      published_at: '',\n      apply_url: j.url,\n      company: c.name,\n      company_slug: c.slug,\n      company_id: '',\n      company_hq: c.all_locations || '',\n      company_size: c.team_size || '',\n      company_stage: c.batch || '',\n      company_linkedin: li,\n    }});\n  }\n}\n\nreturn out;"
+      },
+      "name": "Normalize YC",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        640,
+        240
+      ],
+      "alwaysOutputData": true,
+      "id": "59df2750-b8a2-437b-9e3e-152e48a055d3"
+    },
+    {
+      "parameters": {
+        "jsCode": "// =====================================================================\n//  Normalize GOB  —  reemplaza el contenido de \"Filter GOB\"\n//\n//  Solo traduce el formato de Get on Board al formato comun.\n//  NO filtra ni clasifica.\n//\n//  OJO con dos cosas propias de esta fuente:\n//\n//  1) El aviso no trae el nombre de la empresa, solo su id. Antes se pedia\n//     aca, despues de filtrar, para no gastar llamadas. Ahora se pide en el\n//     nodo \"Resolve GOB company\", que corre DESPUES de Classify & Filter:\n//     se siguen haciendo pocas llamadas, y ademas quedan menos que antes.\n//\n//  2) Get on Board trae la elegibilidad estructurada en remote_modality.\n//     Cuando dice fully_remote le creemos a ese campo y no a nuestro parseo\n//     del texto: va en match_override.\n// =====================================================================\n\n// Los sueldos vienen mensuales en USD\nfunction salaryInfo(a) {\n  const min = Number(a.min_salary) || 0;\n  const max = Number(a.max_salary) || 0;\n  if (!max) return { text: '', maxK: '' };\n  return {\n    text: `$${min} - $${max} USD/mes`,\n    maxK: Math.round((max * 12) / 1000),\n  };\n}\n\nconst out = [];\nconst seen = new Set();\n\nfor (const item of $input.all()) {\n  const j = item.json.job || {};\n  const a = j.attributes || {};\n  const title = a.title || '';\n  if (!title || !j.id || seen.has(j.id)) continue;\n  seen.add(j.id);\n\n  const countries = (a.countries || []).map(String);\n  const sal = salaryInfo(a);\n\n  out.push({ json: {\n    job_id: `gob:${j.id}`,\n    source: 'getonbrd',\n    title,\n    department: '',\n    locations: [...new Set([a.remote ? 'Remote' : null, ...countries].filter(Boolean))].join(' | '),\n    description: '',\n    salary: sal.text,\n    salary_max_k: sal.maxK,\n    published_at: a.published_at\n      ? new Date(a.published_at * 1000).toISOString().slice(0, 10)\n      : '',\n    apply_url: j.links?.public_url || '',\n    company: '',                 // se completa en \"Resolve GOB company\"\n    company_slug: '',\n    company_id: null,\n    company_hq: countries.filter(c => !/^remote$/i.test(c)).join(', '),\n    company_size: '',\n    company_stage: '',\n    company_linkedin: '',\n    // propios de esta fuente\n    gob_company_id: a.company?.data?.id || '',\n    match_override: a.remote_modality === 'fully_remote' ? ['yes', 'fully_remote'] : null,\n  }});\n}\n\nreturn out;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        640,
+        496
+      ],
+      "id": "b914bb18-cab6-4a7d-aeae-2a70e2e93e21",
+      "name": "Normalize GOB"
+    },
+    {
+      "parameters": {
+        "jsCode": "// =====================================================================\n//  Resolve GOB company  —  NODO NUEVO\n//  Va entre \"Classify & Filter\" y \"Filter ignored\".\n//\n//  Get on Board no trae el nombre de la empresa en el aviso, solo su id.\n//  Este nodo lo resuelve con una llamada por empresa, y de paso descarta\n//  consultoras y outsourcing.\n//\n//  Corre DESPUES del filtrado a proposito: solo se piden los nombres de los\n//  avisos que sobrevivieron, que son unos pocos. Los items de las otras\n//  fuentes pasan de largo sin tocarse.\n// =====================================================================\n\nconst http = (opts) => this.helpers.httpRequest(opts);\n\n// Consultoras y outsourcing: contratan para terceros, no son producto.\n// Get on Board esta lleno de estas, hay que ir sumandolas a mano.\nconst STAFFING = /^(bc tecnolog|i2b|rapidseedbox|2brains|kibernum|sonda|everis|globant|ntt data|accenture|tcs|infosys|sophos solutions|apiux|coasin|nisum|itsoft|zentyalabs|factor it|zaelot|improving|lisit|witi|lead gen team|we built it|one click technology)/i;\n\nconst nameCache = new Map();\n\nasync function companyName(id) {\n  if (!id) return '';\n  if (nameCache.has(id)) return nameCache.get(id);\n  let n = '';\n  try {\n    const r = await http({\n      method: 'GET',\n      url: `https://www.getonbrd.com/api/v0/companies/${id}`,\n      json: true,\n    });\n    n = r?.data?.attributes?.name || '';\n  } catch (e) {\n    n = '';\n  }\n  nameCache.set(id, n);\n  return n;\n}\n\nconst out = [];\n\nfor (const item of $input.all()) {\n  const o = { ...item.json };\n\n  // Las demas fuentes pasan de largo; solo se limpia el campo auxiliar\n  if (o.source !== 'getonbrd') {\n    delete o.gob_company_id;\n    out.push({ json: o });\n    continue;\n  }\n\n  const name = await companyName(o.gob_company_id);\n  if (!name || STAFFING.test(name)) continue;\n\n  o.company = name;\n  delete o.gob_company_id;\n  out.push({ json: o });\n}\n\nreturn out;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1424,
+        -96
+      ],
+      "id": "dabe0e27-a44a-4064-ae81-efc88ae9b0f5",
+      "name": "Resolve GOB company"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Deduplica por empresa + titulo. El mismo puesto puede llegar por el ATS\n// de la empresa y ademas por YC o Get on Board, con ids distintos. Y hay\n// empresas que publican el mismo puesto una vez por pais.\n// Gana la mejor fuente, no la primera, y se le completan los campos vacios\n// con los datos de los otros.\n\n// Cuanto mas bajo, mejor fuente. El criterio es el valor para el candidato:\n// un link que va derecho al board de la empresa vale mas que uno que pasa\n// por un intermediario o que exige crearse una cuenta.\nconst SOURCE_RANK = {\n  ashby: 1,\n  greenhouse: 1,\n  lever: 1,\n  workable: 2,\n  teamtailor: 2,\n  workday: 3,     // directo, pero con datos mas pobres\n  getonbrd: 4,    // trae sueldo, pero el link pasa por su sitio\n  yc: 5,          // para postularte necesitas cuenta de Work at a Startup\n};\nconst rankOf = s => SOURCE_RANK[String(s || '').toLowerCase()] ?? 9;\n\n// Campos que se completan desde el perdedor cuando el ganador los tiene vacios\nconst FILLABLE = [\n  'salary', 'salary_max_k', 'published_at', 'department',\n  'company_id', 'company_slug', 'company_hq', 'company_size', 'company_stage',\n  'company_linkedin', 'linkedin_people_ar',\n];\n\nconst isEmpty = v => v === '' || v === null || v === undefined;\nconst filledScore = o => FILLABLE.reduce((n, f) => n + (isEmpty(o[f]) ? 0 : 1), 0);\n\n// Cuanto mas bajo, mas fuerte la señal geografica\nconst MATCH_RANK = {\n  argentina_in_location: 1,\n  argentina_in_title: 2,\n  latam_in_location: 3,\n  latam_in_title: 4,\n  latam_country_remote: 5,\n  fully_remote: 6,\n  remote_visa_not_required: 7,\n  remote_no_country: 8,\n  latam_in_description: 9,\n};\nconst matchRank = o =>\n  (o.accepts_argentina === 'yes' ? 0 : 100) + (MATCH_RANK[o.location_match] ?? 50);\n\n// ---- Agrupar por empresa + titulo ----\nconst norm = s => String(s || '').toLowerCase().trim().replace(/\\s+/g, ' ');\nconst groups = new Map();\n\nfor (const item of $input.all()) {\n  const o = { ...item.json };\n  delete o.gob_company_id;\n\n  const key = `${norm(o.company)}|${norm(o.title)}`;\n  if (!key.replace('|', '')) continue;\n\n  const g = groups.get(key);\n  if (g) g.push(o);\n  else groups.set(key, [o]);\n}\n\n// ---- Elegir ganador, unir ubicaciones y completar huecos ----\nconst out = [];\n\nfor (const group of groups.values()) {\n  if (group.length === 1) {\n    out.push({ json: group[0] });\n    continue;\n  }\n\n  // Mejor fuente; a igual fuente, el que trae mas datos\n  const ordered = [...group].sort((a, b) => {\n    const r = rankOf(a.source) - rankOf(b.source);\n    if (r !== 0) return r;\n    return filledScore(b) - filledScore(a);\n  });\n\n  const winner = { ...ordered[0] };\n\n  for (const l of ordered.slice(1)) {\n    for (const f of FILLABLE) {\n      if (isEmpty(winner[f]) && !isEmpty(l[f])) winner[f] = l[f];\n    }\n    // Quedarse con la señal geografica mas fuerte: si una fuente dice\n    // Argentina explicitamente y la otra solo dice \"Remote\", vale la primera\n    if (matchRank(l) < matchRank(winner)) {\n      winner.accepts_argentina = l.accepts_argentina;\n      winner.location_match = l.location_match;\n    }\n  }\n\n  // Unir las ubicaciones de todo el grupo, sin repetir.\n  // Sezzle publica el mismo puesto una vez por pais: asi queda uno solo\n  // que dice Argentina, Brasil, Chile, Mexico y Colombia a la vez.\n  const parts = [];\n  for (const o of ordered) {\n    for (const p of String(o.locations || '').split(/\\s*[|\\/;]\\s*/)) {\n      const v = p.trim();\n      if (v && !parts.includes(v)) parts.push(v);\n    }\n  }\n  if (parts.length) winner.locations = parts.join(' | ');\n\n  winner.dedup_count = `dedup:${group.length}`;\n  out.push({ json: winner });\n}\n\nreturn out;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1712,
+        -96
+      ],
+      "id": "1b5f435e-a06e-4b00-b676-0f65bcd9698f",
+      "name": "Deduplicate and complete"
+    },
+    {
+      "parameters": {
+        "content": "## Preparar y Guardar en DB\n\n\n",
+        "height": 288,
+        "width": 592,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1936,
+        -192
+      ],
+      "typeVersion": 1,
+      "id": "943c2867-4068-4900-8ebb-b47d2bc4a4ee",
+      "name": "Sticky Note6"
+    },
+    {
+      "parameters": {
+        "content": "Get on Board manda el aviso con el **id** de la empresa, no con el nombre.\n\n- Pide el nombre a su API\n- Descarta consultoras y outsourcing\n\n\nVa *después* del filtro: así pide solo los nombres de los avisos que sobrevivieron",
+        "height": 272,
+        "width": 256
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1360,
+        64
+      ],
+      "typeVersion": 1,
+      "id": "a92f392c-d1cb-412a-a3c4-2cec25e3cd35",
+      "name": "Sticky Note7"
+    },
+    {
+      "parameters": {
+        "content": "Deduplica por **empresa + título**. El mismo puesto puede venir por varios sitios \n\n**Gana la mejor fuente, no la primera:**\n\n1. ATS directos — Ashby, Greenhouse, Lever, Workable, Teamtailor\n2. Workday\n3. Get on Board\n4. YC\n\nAl ganador se le completan los campos vacíos con los datos de los otros:\nqueda el mejor link **sin perder el sueldo**.",
+        "height": 464,
+        "width": 256,
+        "color": 2
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1648,
+        64
+      ],
+      "typeVersion": 1,
+      "id": "ce462ef6-6e6d-4e02-9f15-6618087ba8e5",
+      "name": "Sticky Note8"
+    },
+    {
+      "parameters": {
+        "content": "## GET JOBS WORKER\n",
+        "height": 1312,
+        "width": 656,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        240,
+        -640
+      ],
+      "typeVersion": 1,
+      "id": "0c74fd47-b55e-4d4a-8640-b9e3db6dedd8",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "content": "## Ofertas de ATS\n\nEmpresas activas de la tabla `companies`.\n\nAshby · Greenhouse · Lever · Teamtailor · Workable\n\nAPIs públicas, GET sin auth. Workday va aparte.",
+        "height": 336,
+        "width": 592,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        272,
+        -576
+      ],
+      "typeVersion": 1,
+      "id": "6bd53445-6bed-4586-afbe-391ee8a3fed9",
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {
+        "content": "## Ofertas de Workday\n\nEmpresas activas con `ats = 'workday'`.\n\nVa aparte porque no es un GET simple: POST con body,\npaginado de a 20 y una búsqueda por término\n(engineer · developer · architect).",
+        "height": 336,
+        "width": 592,
+        "color": 2
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        272,
+        -208
+      ],
+      "typeVersion": 1,
+      "id": "10fac7cd-63b7-4908-882b-3023491d89d9",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "## Get engineering Jobs from YCombinator with API",
+        "height": 240,
+        "width": 592,
+        "color": "#975326"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        272,
+        160
+      ],
+      "typeVersion": 1,
+      "id": "e44870cc-7520-45f7-aafa-3e8144cc2fe1",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "## Get engineering Jobs from GetOnBoard with API",
+        "height": 208,
+        "width": 592,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        272,
+        432
+      ],
+      "typeVersion": 1,
+      "id": "1deaf2fb-0df5-4919-8538-bc1a387fbae2",
+      "name": "Sticky Note"
     }
   ],
   "connections": {
@@ -372,31 +461,9 @@
       "main": [
         [
           {
-            "node": "Filter ATS",
+            "node": "Normalize ATS",
             "type": "main",
             "index": 0
-          }
-        ]
-      ]
-    },
-    "Filter ATS": {
-      "main": [
-        [
-          {
-            "node": "Merge sources",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Filter YC": {
-      "main": [
-        [
-          {
-            "node": "Merge sources",
-            "type": "main",
-            "index": 2
           }
         ]
       ]
@@ -405,7 +472,7 @@
       "main": [
         [
           {
-            "node": "Filter ignored",
+            "node": "Classify & Filter",
             "type": "main",
             "index": 0
           }
@@ -423,22 +490,11 @@
         ]
       ]
     },
-    "Filter ignored": {
-      "main": [
-        [
-          {
-            "node": "Build jobs SQL",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "Fetch Workday": {
       "main": [
         [
           {
-            "node": "Filter Workday",
+            "node": "Normalize Workday",
             "type": "main",
             "index": 0
           }
@@ -481,25 +537,36 @@
       "main": [
         [
           {
-            "node": "Filter GOB",
+            "node": "Normalize GOB",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Filter GOB": {
+    "Fetch YC": {
+      "main": [
+        [
+          {
+            "node": "Normalize YC",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize ATS": {
       "main": [
         [
           {
             "node": "Merge sources",
             "type": "main",
-            "index": 3
+            "index": 0
           }
         ]
       ]
     },
-    "Filter Workday": {
+    "Normalize Workday": {
       "main": [
         [
           {
@@ -510,11 +577,55 @@
         ]
       ]
     },
-    "Fetch YC": {
+    "Normalize YC": {
       "main": [
         [
           {
-            "node": "Filter YC",
+            "node": "Merge sources",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Normalize GOB": {
+      "main": [
+        [
+          {
+            "node": "Merge sources",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Classify & Filter": {
+      "main": [
+        [
+          {
+            "node": "Resolve GOB company",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resolve GOB company": {
+      "main": [
+        [
+          {
+            "node": "Deduplicate and complete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Deduplicate and complete": {
+      "main": [
+        [
+          {
+            "node": "Build jobs SQL",
             "type": "main",
             "index": 0
           }
@@ -547,18 +658,18 @@
   },
   "nodeGroups": [],
   "pinData": {},
-  "versionId": "a689a476-1ed2-47c3-93a8-594008827f21",
-  "activeVersionId": "a689a476-1ed2-47c3-93a8-594008827f21",
-  "versionCounter": 250,
+  "versionId": "b6f51863-0627-4fd6-815e-522c46e89457",
+  "activeVersionId": "b6f51863-0627-4fd6-815e-522c46e89457",
+  "versionCounter": 189,
   "triggerCount": 1,
   "sourceWorkflowId": null,
   "tags": [],
   "shared": [
     {
-      "updatedAt": "2026-09-26T19:42:16.900Z",
-      "createdAt": "2026-09-26T19:42:16.900Z",
+      "updatedAt": "2026-10-02T10:48:38.950Z",
+      "createdAt": "2026-10-02T10:48:38.950Z",
       "role": "workflow:owner",
-      "workflowId": "fy5nReKHsAB0hPiF",
+      "workflowId": "7wa7kY3r9tURPNqs",
       "projectId": "iNXI5R7gWjOyxfvE",
       "project": {
         "updatedAt": "2026-08-30T21:59:52.951Z",
@@ -574,7 +685,7 @@
     }
   ],
   "versionMetadata": {
-    "name": "Version a689a476",
+    "name": "Version b6f51863",
     "description": ""
   }
 }

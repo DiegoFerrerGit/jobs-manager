@@ -37,6 +37,7 @@ export interface JobComment {
 
 export type CustomPropertyType =
   | 'text'
+  | 'text_long'
   | 'number'
   | 'select'
   | 'multi_select'

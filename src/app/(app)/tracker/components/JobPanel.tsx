@@ -20,6 +20,7 @@ interface JobPanelProps {
 
 const PROPERTY_TYPES: { type: CustomPropertyType; label: string; icon: React.ReactNode }[] = [
   { type: "text",         label: "Texto",              icon: <AlignLeft className="w-4 h-4" /> },
+  { type: "text_long",    label: "Texto (Ancho Completo)", icon: <AlignLeft className="w-4 h-4" /> },
   { type: "number",       label: "Número",             icon: <Hash className="w-4 h-4" /> },
   { type: "select",       label: "Seleccionar",        icon: <List className="w-4 h-4" /> },
   { type: "multi_select", label: "Selección múltiple", icon: <List className="w-4 h-4" /> },
@@ -210,7 +211,7 @@ export default function JobPanel({ job, columnId, config, columns, onClose, onUp
     "contras", "motivoRechazo", "instanciaCierre", "categoriaCierre",
   ];
 
-  const FIELD_DEFINITIONS: Record<string, { label: string; icon: React.ReactNode; render: () => React.ReactNode }> = {
+  const FIELD_DEFINITIONS: Record<string, { label: string; icon: React.ReactNode; render: () => React.ReactNode; fullWidth?: boolean }> = {
     linkEmpresa:       { label: "Link Empresa",           icon: <LinkIcon className="w-4 h-4" />, render: () => <LinkInput value={data.linkEmpresa} onChange={v => handleChange("linkEmpresa", v)} /> },
     linkPosicion:      { label: "Link Posición",          icon: <LinkIcon className="w-4 h-4" />, render: () => <LinkInput value={data.linkPosicion} onChange={v => handleChange("linkPosicion", v)} /> },
     stage:             { label: "Stage",                  icon: <Target className="w-4 h-4" />,   render: () => <StageSelect value={columnId} columns={columns} onChange={handleStageChange} /> },
@@ -227,8 +228,8 @@ export default function JobPanel({ job, columnId, config, columns, onClose, onUp
     formaPago:         { label: "Forma de pago",          icon: <AlignLeft className="w-4 h-4" />, render: () => <TextInput value={data.formaPago} onChange={v => handleChange("formaPago", v)} /> },
     salarioMensual:    { label: "Salario Mensual",        icon: <Hash className="w-4 h-4" />,     render: () => <CurrencyInput value={data.salarioMensual} currency={data.monedaSalario || "USD"} onChange={v => handleChange("salarioMensual", v)} onCurrencyChange={c => handleChange("monedaSalario", c)} /> },
     salarioAnual:      { label: "Salario Anual",          icon: <Hash className="w-4 h-4" />,     render: () => <CurrencyInput value={data.salarioAnual} currency={data.monedaSalario || "USD"} onChange={v => handleChange("salarioAnual", v)} onCurrencyChange={c => handleChange("monedaSalario", c)} /> },
-    beneficios:        { label: "Beneficios",             icon: <AlignLeft className="w-4 h-4" />, render: () => <TextareaAutosize minRows={1} value={data.beneficios || ""} onChange={e => handleChange("beneficios", e.target.value)} placeholder="Vacío" className="bg-transparent border border-transparent focus:border-[#444] outline-none text-foreground placeholder:text-muted-foreground w-full text-sm resize-none custom-scrollbar min-h-[32px] px-2 py-1.5 rounded transition-all hover:bg-white/5 focus:bg-[#2a2a2a]" /> },
-    contras:           { label: "Contras",                icon: <AlignLeft className="w-4 h-4" />, render: () => <TextareaAutosize minRows={1} value={data.contras || ""} onChange={e => handleChange("contras", e.target.value)} placeholder="Vacío" className="bg-transparent border border-transparent focus:border-[#444] outline-none text-foreground placeholder:text-muted-foreground w-full text-sm resize-none custom-scrollbar min-h-[32px] px-2 py-1.5 rounded transition-all hover:bg-white/5 focus:bg-[#2a2a2a]" /> },
+    beneficios:        { label: "Beneficios",             icon: <AlignLeft className="w-4 h-4" />, fullWidth: true, render: () => <TextareaAutosize minRows={1} value={data.beneficios || ""} onChange={e => handleChange("beneficios", e.target.value)} placeholder="Vacío" className="bg-transparent border border-transparent focus:border-[#444] outline-none text-foreground placeholder:text-muted-foreground w-full text-sm resize-none custom-scrollbar min-h-[32px] px-2 py-1.5 rounded transition-all hover:bg-white/5 focus:bg-[#2a2a2a]" /> },
+    contras:           { label: "Contras",                icon: <AlignLeft className="w-4 h-4" />, fullWidth: true, render: () => <TextareaAutosize minRows={1} value={data.contras || ""} onChange={e => handleChange("contras", e.target.value)} placeholder="Vacío" className="bg-transparent border border-transparent focus:border-[#444] outline-none text-foreground placeholder:text-muted-foreground w-full text-sm resize-none custom-scrollbar min-h-[32px] px-2 py-1.5 rounded transition-all hover:bg-white/5 focus:bg-[#2a2a2a]" /> },
     motivoRechazo:     { label: "Motivo Rechazo",         icon: <AlignLeft className="w-4 h-4" />, render: () => <TextInput value={data.motivoRechazo} onChange={v => handleChange("motivoRechazo", v)} /> },
     instanciaCierre:   { label: "Instancia de Cierre",    icon: <Target className="w-4 h-4" />,   render: () => <NotionSelect value={data.instanciaCierre} options={config.options.instanciaCierre} onChange={v => handleChange("instanciaCierre", v)} onAddOption={o => handleAddOption("instanciaCierre", o)} onEditOption={(ol, no) => handleEditOption("instanciaCierre", ol, no)} onDeleteOption={l => handleDeleteOption("instanciaCierre", l)} /> },
     categoriaCierre:   { label: "Categoria de Cierre",    icon: <Target className="w-4 h-4" />,   render: () => <NotionSelect value={data.categoriaCierre} options={config.options.categoriaCierre} onChange={v => handleChange("categoriaCierre", v)} onAddOption={o => handleAddOption("categoriaCierre", o)} onEditOption={(ol, no) => handleEditOption("categoriaCierre", ol, no)} onDeleteOption={l => handleDeleteOption("categoriaCierre", l)} /> },
@@ -326,7 +327,7 @@ export default function JobPanel({ job, columnId, config, columns, onClose, onUp
                             className={snapshot.isDragging ? "opacity-90 bg-[#1a1a1a] rounded shadow-2xl z-50" : ""}
                           >
                             {fieldDef ? (
-                              <FieldRow icon={fieldDef.icon} label={fieldDef.label} dragHandleProps={provided.dragHandleProps}>
+                              <FieldRow icon={fieldDef.icon} label={fieldDef.label} dragHandleProps={provided.dragHandleProps} fullWidth={fieldDef.fullWidth}>
                                 {fieldDef.render()}
                               </FieldRow>
                             ) : customProp ? (
@@ -449,6 +450,7 @@ function CustomPropertyRow({ prop, value, job, onChange, onDelete, onRename, onA
 
   const renderInput = () => {
     switch (prop.type) {
+      case "text_long":
       case "text":
         return (
           <TextareaAutosize
@@ -542,6 +544,49 @@ function CustomPropertyRow({ prop, value, job, onChange, onDelete, onRename, onA
         return <TextInput value={value as string | undefined} onChange={v => onChange(v)} />;
     }
   };
+
+  if (prop.type === "text_long") {
+    return (
+      <div className="flex flex-col gap-2 group/customrow w-full pt-4">
+        <div 
+          {...dragHandleProps}
+          className={`flex items-center justify-center gap-2 text-muted-foreground w-full shrink-0 pt-1.5 pb-1.5 px-1.5 uppercase tracking-wider text-[11px] font-semibold ${dragHandleProps ? "cursor-grab active:cursor-grabbing hover:bg-white/5 rounded-md transition-colors" : ""}`}
+        >
+          <span className="text-muted-foreground/60 shrink-0">{getTypeIcon(prop.type)}</span>
+          {isEditingName ? (
+            <input
+              autoFocus
+              type="text"
+              value={editName}
+              onChange={e => setEditName(e.target.value)}
+              onBlur={handleRenameSubmit}
+              onKeyDown={e => e.key === 'Enter' && handleRenameSubmit()}
+              className="bg-[#2a2a2a] border border-[#555] rounded px-1.5 py-0.5 text-[11px] text-foreground outline-none text-center"
+              style={{ width: `${Math.max(editName.length + 2, 5)}ch` }}
+            />
+          ) : (
+            <span 
+              className="truncate cursor-pointer hover:bg-white/5 rounded px-1 transition-colors" 
+              title={prop.name}
+              onClick={() => setIsEditingName(true)}
+            >
+              {prop.name}
+            </span>
+          )}
+          <button
+            onClick={onDelete}
+            className="opacity-0 group-hover/customrow:opacity-100 p-0.5 hover:text-red-400 transition-all text-muted-foreground/40 shrink-0"
+            title="Eliminar propiedad"
+          >
+            <Trash2 className="w-3 h-3" />
+          </button>
+        </div>
+        <div className="w-full flex items-center min-h-[32px]">
+          {renderInput()}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-4 group/customrow">
@@ -646,7 +691,22 @@ function MultiSelectInput({ value, options, onChange }: {
   );
 }
 
-function FieldRow({ icon, label, children, dragHandleProps }: { icon: React.ReactNode; label: string; children: React.ReactNode; dragHandleProps?: any }) {
+function FieldRow({ icon, label, children, dragHandleProps, fullWidth }: { icon: React.ReactNode; label: string; children: React.ReactNode; dragHandleProps?: any; fullWidth?: boolean }) {
+  if (fullWidth) {
+    return (
+      <div className="flex flex-col gap-2 group w-full pt-4">
+        <div
+          {...dragHandleProps}
+          className={`flex items-center justify-center gap-2 text-muted-foreground w-full shrink-0 pt-1.5 pb-1.5 px-1.5 uppercase tracking-wider text-[11px] font-semibold ${dragHandleProps ? "cursor-grab active:cursor-grabbing hover:bg-white/5 rounded-md transition-colors" : ""}`}
+        >
+          {icon}
+          <span className="truncate" title={label}>{label}</span>
+        </div>
+        <div className="w-full flex items-center min-h-[32px]">{children}</div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-4 group">
       <div

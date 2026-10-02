@@ -68,9 +68,14 @@ export default function JobPanel({ job, columnId, config, columns, onClose, onUp
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [onClose]);
 
+  const dataRef = useRef(data);
+  useEffect(() => {
+    dataRef.current = data;
+  }, [data]);
+
 
   const handleChange = (field: keyof TrackerJob, value: any) => {
-    const updated = { ...data, [field]: value };
+    const updated = { ...dataRef.current, [field]: value };
     if (field === "salarioMensual") {
       const num = typeof value === "number" ? value : parseFloat(value);
       updated.salarioAnual = isNaN(num) ? undefined : num * 12;
@@ -80,7 +85,7 @@ export default function JobPanel({ job, columnId, config, columns, onClose, onUp
   };
 
   const handleCustomPropChange = (propId: string, value: CustomPropertyValue) => {
-    const updated = { ...data, customProps: { ...data.customProps, [propId]: value } };
+    const updated = { ...dataRef.current, customProps: { ...dataRef.current.customProps, [propId]: value } };
     setData(updated);
     onUpdate(updated);
   };

@@ -29,13 +29,15 @@ export default function JobNotes({ notes, onChange }: JobNotesProps) {
   });
 
   const timeoutRef = useRef<NodeJS.Timeout>(null);
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
 
   const handleEditorChange = useCallback(() => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     timeoutRef.current = setTimeout(() => {
-      onChange(JSON.stringify(editor.document));
+      onChangeRef.current(JSON.stringify(editor.document));
     }, 1500);
-  }, [editor, onChange]);
+  }, [editor]);
 
   return (
     <div className="mt-8 pt-6 border-t border-white/10 -mx-6 px-6">

@@ -238,6 +238,23 @@ export default function JobPanel({ job, columnId, config, columns, onClose, onUp
       unifiedOrder.push(p.id);
     }
   }
+  
+  // Ensure all default fields (like newly added 'score') are present
+  for (const defaultField of DEFAULT_FIELD_ORDER) {
+    if (!unifiedOrder.includes(defaultField)) {
+      // Let's specifically try to put 'score' near the top if it's missing
+      if (defaultField === 'score') {
+        const stageIdx = unifiedOrder.indexOf('stage');
+        if (stageIdx !== -1) {
+          unifiedOrder.splice(stageIdx + 1, 0, 'score');
+        } else {
+          unifiedOrder.push('score');
+        }
+      } else {
+        unifiedOrder.push(defaultField);
+      }
+    }
+  }
 
   return (
     <>

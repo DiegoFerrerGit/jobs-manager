@@ -196,6 +196,10 @@ export default function TrackerClient({ initialData }: { initialData: any }) {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [dropdownRect, setDropdownRect] = useState<{ top: number, left: number } | null>(null);
   const [isColumnDropdownOpen, setIsColumnDropdownOpen] = useState(false);
+  
+  // Column title editing state
+  const [editingColumnId, setEditingColumnId] = useState<string | null>(null);
+  const [editingColumnTitle, setEditingColumnTitle] = useState<string>("");
 
   // Panel state
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
@@ -633,10 +637,44 @@ export default function TrackerClient({ initialData }: { initialData: any }) {
                               className="flex items-center gap-2 cursor-grab active:cursor-grabbing flex-1"
                               {...providedCol.dragHandleProps}
                             >
-                              <div className={`px-2 py-0.5 rounded text-sm font-medium ${column.badge}`}>
-                                {column.title}
-                              </div>
-                              <span className="text-muted-foreground text-sm font-medium">{column.jobs.length}</span>
+                              {editingColumnId === columnId ? (
+                                <input
+                                  autoFocus
+                                  className={`px-2 py-0.5 rounded text-sm font-medium ${column.badge.replace('text-white', 'text-white/90')} outline-none bg-black/20 focus:ring-1 focus:ring-white/50 w-full max-w-[150px]`}
+                                  value={editingColumnTitle}
+                                  onChange={(e) => setEditingColumnTitle(e.target.value)}
+                                  onBlur={() => {
+                                    if (editingColumnTitle.trim() !== "" && editingColumnTitle !== column.title) {
+                                      setColumns(prev => {
+                                        const newCols = { ...prev, [columnId]: { ...prev[columnId], title: editingColumnTitle.trim() } };
+                                        updateColumnsAction(newCols).catch(console.error);
+                                        return newCols;
+                                      });
+                                    }
+                                    setEditingColumnId(null);
+                                  }}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      e.currentTarget.blur();
+                                    } else if (e.key === 'Escape') {
+                                      setEditingColumnId(null);
+                                    }
+                                  }}
+                                />
+                              ) : (
+                                <div
+                                  className={`px-2 py-0.5 rounded text-sm font-medium ${column.badge} cursor-text hover:brightness-110 transition-all`}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setEditingColumnId(columnId);
+                                    setEditingColumnTitle(column.title);
+                                  }}
+                                  title="Click para editar"
+                                >
+                                  {column.title}
+                                </div>
+                              )}
+                              <span className="text-muted-foreground text-sm font-medium shrink-0">{column.jobs.length}</span>
                             </div>
                             <div className="relative flex items-center text-muted-foreground/60">
                               <button

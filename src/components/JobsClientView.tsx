@@ -280,9 +280,8 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialCo
     return 3;
   };
 
-  // Compute keyword-hidden count separately so we can show it in the UI
   const { keywordHiddenCount, jobsAfterKeywords } = useMemo(() => {
-    if (!initialKeywords || initialKeywords.length === 0 || showKeywordHidden) {
+    if (!initialKeywords || initialKeywords.length === 0) {
       return { keywordHiddenCount: 0, jobsAfterKeywords: jobs };
     }
     const lowerKeywords = initialKeywords.map(k => k.keyword.toLowerCase());
@@ -296,7 +295,10 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialCo
         visible.push(j);
       }
     }
-    return { keywordHiddenCount: hiddenCount, jobsAfterKeywords: visible };
+    return { 
+      keywordHiddenCount: hiddenCount, 
+      jobsAfterKeywords: showKeywordHidden ? jobs : visible 
+    };
   }, [jobs, initialKeywords, showKeywordHidden]);
 
   const processedJobs = useMemo(() => {

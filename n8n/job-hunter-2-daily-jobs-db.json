@@ -627,7 +627,7 @@
   "nodeGroups": [],
   "pinData": {},
   "versionId": "2b95f763-cd04-4eae-b790-5aed281a5299",
-  "activeVersionId": "b6f51863-0627-4fd6-815e-522c46e89457",
+  "activeVersionId": "2b95f763-cd04-4eae-b790-5aed281a5299",
   "versionCounter": 209,
   "triggerCount": 1,
   "sourceWorkflowId": null,
@@ -653,7 +653,7 @@
     }
   ],
   "versionMetadata": {
-    "name": null,
-    "description": null
+    "name": "Version 2b95f763",
+    "description": ""
   }
 }

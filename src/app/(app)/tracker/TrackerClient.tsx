@@ -221,6 +221,19 @@ export default function TrackerClient({ initialData }: { initialData: any }) {
   const [chartInstanciaFilter, setChartInstanciaFilter] = useState<string | null>(null);
   const [activeMotivoIndex, setActiveMotivoIndex] = useState<number>(-1);
 
+  // Exchange rate for ARS to USD
+  const [dolarBlue, setDolarBlue] = useState<number | null>(null);
+
+  useEffect(() => {
+    fetch('https://dolarapi.com/v1/dolares/blue')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.venta) {
+          setDolarBlue(data.venta);
+        }
+      })
+      .catch(console.error);
+  }, []);
 
   const renderJobCard = (job: TrackerJob, columnId: string, column: ColumnData, providedJob?: any, snapshotJob?: any, isFinalized = false) => {
     return (
@@ -301,8 +314,18 @@ export default function TrackerClient({ initialData }: { initialData: any }) {
 
         {(Boolean(job.salarioMensual) || Boolean(job.salarioAnual)) && (
           <div className={`mt-1 flex flex-col gap-1.5 text-[12px] font-semibold ${job.monedaSalario === 'ARS' ? 'text-sky-400' : 'text-emerald-400'}`}>
-            {Boolean(job.salarioAnual) && <span>{job.monedaSalario === 'ARS' ? '$ ' : 'US$ '}{job.salarioAnual!.toLocaleString(job.monedaSalario === 'ARS' ? 'es-AR' : 'en-US')}</span>}
-            {Boolean(job.salarioMensual) && <span>{job.monedaSalario === 'ARS' ? '$ ' : 'US$ '}{job.salarioMensual!.toLocaleString(job.monedaSalario === 'ARS' ? 'es-AR' : 'en-US')}</span>}
+            {Boolean(job.salarioAnual) && (
+              <span>
+                {job.monedaSalario === 'ARS' ? '$ ' : 'US$ '}{job.salarioAnual!.toLocaleString(job.monedaSalario === 'ARS' ? 'es-AR' : 'en-US')}
+                {job.monedaSalario === 'ARS' && dolarBlue && <span className="text-muted-foreground font-normal ml-1">- US$ {Math.round(job.salarioAnual! / dolarBlue).toLocaleString('en-US')}</span>}
+              </span>
+            )}
+            {Boolean(job.salarioMensual) && (
+              <span>
+                {job.monedaSalario === 'ARS' ? '$ ' : 'US$ '}{job.salarioMensual!.toLocaleString(job.monedaSalario === 'ARS' ? 'es-AR' : 'en-US')}
+                {job.monedaSalario === 'ARS' && dolarBlue && <span className="text-muted-foreground font-normal ml-1">- US$ {Math.round(job.salarioMensual! / dolarBlue).toLocaleString('en-US')}</span>}
+              </span>
+            )}
           </div>
         )}
       </div>

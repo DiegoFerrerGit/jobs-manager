@@ -66,16 +66,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: "User not found" }, { status: 200 });
     }
 
-    // Rotar Refresh Token
-    const newRefreshToken = generateRefreshToken();
-    const newExpires = getRefreshTokenExpiration();
-
-    await db.update(sessions).set({
-      refreshTokenHash: await hashToken(newRefreshToken),
-      expiresAt: newExpires
-    }).where(eq(sessions.id, session.id)).execute();
-
-    // Nuevo Access Token
+    // Nuevo Access Token (No rotamos el refresh token para evitar race conditions con prefetching concurrente)
     const accessToken = await signAccessToken({ sub: user.id, email: user.email, name: user.name });
 
     const response = NextResponse.json({ success: true, user: { email: user.email, name: user.name }, accessToken });
@@ -91,16 +82,6 @@ export async function POST(req: NextRequest) {
       secure: isSecure,
       sameSite,
       maxAge: parseInt(process.env.ACCESS_TOKEN_TTL_MIN || "15", 10) * 60,
-      path: "/",
-    });
-
-    response.cookies.set({
-      name: "refresh_token",
-      value: newRefreshToken,
-      httpOnly: true,
-      secure: isSecure,
-      sameSite,
-      maxAge: parseInt(process.env.REFRESH_TOKEN_TTL_DAYS || "30", 10) * 24 * 60 * 60,
       path: "/",
     });
 

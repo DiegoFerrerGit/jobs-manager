@@ -719,16 +719,15 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialFa
                 </div>
               </div>
 
-              <div className="mt-auto pt-3 border-t border-border flex justify-end items-center">
-                <div className="flex items-center gap-2">
+              <div className="mt-auto pt-3 border-t border-border flex items-center justify-between gap-2">
                   <button
                     onClick={() => handleToggleStatus(job.id, job.userStatus ?? 'SAVED')}
-                    className={`whitespace-nowrap inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all duration-200 hover:scale-105 active:scale-95 border cursor-pointer shadow-sm ${(job.userStatus ?? 'SAVED') === "APPLIED" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20" : "bg-secondary text-muted-foreground border-transparent hover:text-foreground hover:border-border hover:bg-secondary/80"}`}
+                    className={`shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all duration-200 hover:scale-105 active:scale-95 border cursor-pointer shadow-sm ${(job.userStatus ?? 'SAVED') === "APPLIED" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20" : "bg-secondary text-muted-foreground border-transparent hover:text-foreground hover:border-border hover:bg-secondary/80"}`}
                   >
                     <CheckCircle className="w-3 h-3 shrink-0" />
-                    <span className="truncate">
-                      {(job.userStatus ?? 'SAVED') === "APPLIED" ? `Aplicada ${job.userExpectedSalary ? `(${job.userExpectedSalary})` : ''}` : "Marcar como aplicado"}
-                    </span>
+                    {(job.userStatus ?? 'SAVED') === "APPLIED"
+                      ? `Aplicada${job.userExpectedSalary ? ` (${job.userExpectedSalary})` : ''}`
+                      : "Ya apliqué"}
                   </button>
 
                   {job.applyUrl && (
@@ -737,13 +736,12 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialFa
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={() => handleVisitJob(job.id)}
-                      className="whitespace-nowrap inline-flex items-center justify-center gap-1 px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-xs font-medium transition-all duration-200 hover:bg-primary/90 hover:scale-105 active:scale-95 cursor-pointer shadow-sm shrink-0"
+                      className="shrink-0 whitespace-nowrap inline-flex items-center justify-center gap-1 px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-xs font-medium transition-all duration-200 hover:bg-primary/90 hover:scale-105 active:scale-95 cursor-pointer shadow-sm"
                     >
                       Aplicar
                       <ExternalLink className="w-3 h-3 shrink-0" />
                     </Link>
                   )}
-                </div>
               </div>
             </div>
           ))}

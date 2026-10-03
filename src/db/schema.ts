@@ -12,6 +12,7 @@ export const roleCategory = pgEnum('role_category', ['manager', 'lead_staff', 'i
 export const argentinaFit = pgEnum('argentina_fit', ['yes', 'maybe']);
 export const jobSource = pgEnum('job_source', ['yc', 'ashby', 'greenhouse', 'lever', 'manual', 'teamtailor', 'workday', 'oracle', 'workable', 'custom', 'getonbrd']);
 export const companyStatus = pgEnum('company_status', ['active', 'inactive']);
+export const slugCheckResult = pgEnum('slug_check_result', ['promoted', 'no_latam', 'dead', 'error']);
 
 // --- Auth Tables ---
 export const users = pgTable("users", {
@@ -251,3 +252,24 @@ export type NewUserCv = typeof userCvs.$inferInsert;
 export type TrackerColumn = typeof trackerColumns.$inferSelect;
 export type TrackerJobDb = typeof trackerJobs.$inferSelect;
 export type TrackerConfigDb = typeof trackerConfig.$inferSelect;
+
+export const discoveredSlugs = pgTable('discovered_slugs', {
+  id: serial('id').primaryKey(),
+  ats: jobSource('ats').notNull(),
+  slug: text('slug').notNull(),
+  source: text('source').notNull(), // 'commoncrawl' | 'probing' | 'manual'
+  discoveredAt: timestamp('discovered_at', { withTimezone: true }).notNull().defaultNow(),
+  checkedAt: timestamp('checked_at', { withTimezone: true }),
+  result: slugCheckResult('result'),
+  jobsFound: integer('jobs_found'),
+  latamJobs: integer('latam_jobs'),
+  companyId: integer('company_id').references(() => companies.id, { onDelete: 'set null' }),
+  attempts: smallint('attempts').notNull().default(0),
+  lastError: text('last_error'),
+}, (t) => ({
+  atsSlug: uniqueIndex('discovered_slugs_ats_slug_key').on(t.ats, t.slug),
+  pendingQueue: index('discovered_slugs_pending_idx').on(t.discoveredAt).where(sql`${t.checkedAt} IS NULL`),
+  byCheckedAt: index('discovered_slugs_checked_at_idx').on(t.checkedAt),
+}));
+export type DiscoveredSlug = typeof discoveredSlugs.$inferSelect;
+export type NewDiscoveredSlug = typeof discoveredSlugs.$inferInsert;

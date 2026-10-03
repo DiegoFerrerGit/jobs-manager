@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-10-02T12:59:22.200Z",
-  "createdAt": "2026-10-02T10:48:38.945Z",
-  "id": "7wa7kY3r9tURPNqs",
+  "updatedAt": "2026-10-03T02:16:06.467Z",
+  "createdAt": "2026-10-03T01:19:43.381Z",
+  "id": "84DzoLAqcm9UzXNW",
   "name": "Job Hunter 2 - Daily jobs (DB)",
   "description": null,
-  "active": true,
+  "active": false,
   "isArchived": false,
   "nodes": [
     {
@@ -12,10 +12,10 @@
         "rule": {
           "interval": [
             {
-              "triggerAtHour": 9
+              "triggerAtHour": 12
             },
             {
-              "triggerAtHour": 18
+              "triggerAtHour": 21
             }
           ]
         }
@@ -24,10 +24,10 @@
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
       "position": [
-        -320,
+        -352,
         -80
       ],
-      "id": "c45c2404-a9cf-4c78-a9e5-430a037fa2f8"
+      "id": "65499b36-c55e-4bc5-b859-28f61d0f0c45"
     },
     {
       "parameters": {
@@ -39,15 +39,15 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        96,
+        -16,
         -224
       ],
       "alwaysOutputData": true,
-      "id": "132fef99-1412-4197-a56b-4f16475d70d2",
+      "id": "c0cf5048-50bb-4c05-905d-d35f6af53cfd",
       "credentials": {
         "postgres": {
-          "id": "5Ggn116ONj0zb4KN",
-          "name": "Jobs Manager - PROD Neon"
+          "id": "s5Wde8B9bo2Et8hN",
+          "name": "Jobs-Manager - LOCAL"
         }
       }
     },
@@ -74,7 +74,7 @@
         416,
         -384
       ],
-      "id": "d2828249-556a-4611-83ef-77ecbf5ee8e4"
+      "id": "5a6c5b5f-5018-4b8c-af1c-206ff3e2a508"
     },
     {
       "parameters": {
@@ -87,7 +87,7 @@
         976,
         -128
       ],
-      "id": "a88d73da-8a61-4f20-a847-d8193c91cace"
+      "id": "3e05d142-75e5-491e-9aa0-0406a613c590"
     },
     {
       "parameters": {
@@ -100,7 +100,7 @@
         1984,
         -96
       ],
-      "id": "9cf70c53-c68e-4dfc-a73d-e8f0526407a8"
+      "id": "d3a8bbcd-92fb-44fe-bb7a-e85dcd773907"
     },
     {
       "parameters": {
@@ -117,17 +117,17 @@
         2160,
         -96
       ],
-      "id": "d79c666e-9a29-4b20-b928-2e3a0ad0447a",
+      "id": "909b95bf-54b7-465c-8806-deb519a195a0",
       "credentials": {
         "postgres": {
-          "id": "5Ggn116ONj0zb4KN",
-          "name": "Jobs Manager - PROD Neon"
+          "id": "s5Wde8B9bo2Et8hN",
+          "name": "Jobs-Manager - LOCAL"
         }
       }
     },
     {
       "parameters": {
-        "jsCode": "// Trae las ofertas crudas de las empresas que publican en Workday.\n// Su API es POST y pagina de a 20, por eso no entra en el nodo HTTP común.\n// Las empresas se consultan en paralelo, de a tandas, para que no tarde tanto.\nconst SEARCH_TERMS = ['engineer', 'developer', 'architect'];\nconst PAGE_SIZE = 20;      // Workday devuelve vacío si se pide más de 20\nconst MAX_PAGES = 3;       // tope por término: 60 ofertas\nconst CONCURRENCY = 6;     // empresas en paralelo\n\nconst http = (opts) => this.helpers.httpRequest(opts);\n\n// teladoc.wd503.myworkdayjobs.com/teladochealth_is_hiring\n//   → https://teladoc.wd503.myworkdayjobs.com/wday/cxs/teladoc/teladochealth_is_hiring/jobs\nfunction wdEndpoint(careersUrl) {\n  const clean = String(careersUrl || '').replace(/^https?:\\/\\//, '').replace(/\\/+$/, '');\n  const parts = clean.split('/');\n  const host = parts.shift();\n  if (!host || !parts.length) return null;\n  const tenant = host.split('.')[0];\n  const site = parts[parts.length - 1];\n  if (!tenant || !site) return null;\n  return {\n    api: `https://${host}/wday/cxs/${tenant}/${site}/jobs`,\n    jobBase: `https://${host}/${parts.join('/')}`,\n  };\n}\n\nasync function pagesFor(api, term) {\n  const found = [];\n  for (let page = 0; page < MAX_PAGES; page++) {\n    let res;\n    try {\n      res = await http({\n        method: 'POST',\n        url: api,\n        json: true,\n        headers: { Accept: 'application/json', 'Content-Type': 'application/json' },\n        body: { appliedFacets: {}, limit: PAGE_SIZE, offset: page * PAGE_SIZE, searchText: term },\n      });\n    } catch (e) {\n      break; // empresa que no responde: se saltea\n    }\n    const list = res?.jobPostings || [];\n    found.push(...list);\n    if (list.length < PAGE_SIZE) break;\n  }\n  return found;\n}\n\nasync function fetchCompany(c) {\n  const ep = wdEndpoint(c.careers_url);\n  if (!ep) return [];\n  const porTermino = await Promise.all(SEARCH_TERMS.map(t => pagesFor(ep.api, t)));\n  const vistos = new Map();\n  for (const lista of porTermino) {\n    for (const j of lista) if (j.externalPath) vistos.set(j.externalPath, j);\n  }\n  return [...vistos.values()].map(j => ({ json: { company: c, jobBase: ep.jobBase, job: j } }));\n}\n\nconst empresas = $('Read Companies').all()\n  .map(i => i.json)\n  .filter(c => (c.ats || '').toLowerCase() === 'workday' && c.careers_url);\n\nconst out = [];\nfor (let i = 0; i < empresas.length; i += CONCURRENCY) {\n  const tanda = await Promise.all(empresas.slice(i, i + CONCURRENCY).map(fetchCompany));\n  for (const r of tanda) out.push(...r);\n}\n\nreturn out;"
+        "jsCode": "// Trae las ofertas crudas de las empresas que publican en Workday.\n// Su API es POST y pagina de a 20, por eso no entra en el nodo HTTP común.\n// Las empresas se consultan en paralelo, de a tandas, para que no tarde tanto.\nconst SEARCH_TERMS = ['engineer', 'developer', 'architect'];\nconst PAGE_SIZE = 20;      // Workday devuelve vacío si se pide más de 20\nconst MAX_PAGES = 3;       // tope por término: 60 ofertas\nconst CONCURRENCY = 12;     // empresas en paralelo\nconst TIMEOUT_MS = 15000;   // una empresa que no responde no frena la tanda\n\nconst http = (opts) => this.helpers.httpRequest(opts);\n\n// teladoc.wd503.myworkdayjobs.com/teladochealth_is_hiring\n//   → https://teladoc.wd503.myworkdayjobs.com/wday/cxs/teladoc/teladochealth_is_hiring/jobs\nfunction wdEndpoint(careersUrl) {\n  const clean = String(careersUrl || '').replace(/^https?:\\/\\//, '').replace(/\\/+$/, '');\n  const parts = clean.split('/');\n  const host = parts.shift();\n  if (!host || !parts.length) return null;\n  const tenant = host.split('.')[0];\n  const site = parts[parts.length - 1];\n  if (!tenant || !site) return null;\n  return {\n    api: `https://${host}/wday/cxs/${tenant}/${site}/jobs`,\n    jobBase: `https://${host}/${parts.join('/')}`,\n  };\n}\n\nasync function pagesFor(api, term) {\n  const found = [];\n  for (let page = 0; page < MAX_PAGES; page++) {\n    let res;\n    try {\n      res = await http({\n        method: 'POST',\n        url: api,\n        json: true,\n        timeout: TIMEOUT_MS,\n        headers: { Accept: 'application/json', 'Content-Type': 'application/json' },\n        body: { appliedFacets: {}, limit: PAGE_SIZE, offset: page * PAGE_SIZE, searchText: term },\n      });\n    } catch (e) {\n      break; // empresa que no responde: se saltea\n    }\n    const list = res?.jobPostings || [];\n    found.push(...list);\n    if (list.length < PAGE_SIZE) break;\n  }\n  return found;\n}\n\nasync function fetchCompany(c) {\n  const ep = wdEndpoint(c.careers_url);\n  if (!ep) return [];\n  const porTermino = await Promise.all(SEARCH_TERMS.map(t => pagesFor(ep.api, t)));\n  const vistos = new Map();\n  for (const lista of porTermino) {\n    for (const j of lista) if (j.externalPath) vistos.set(j.externalPath, j);\n  }\n  return [...vistos.values()].map(j => ({ json: { company: c, jobBase: ep.jobBase, job: j } }));\n}\n\nconst empresas = $('Read Companies').all()\n  .map(i => i.json)\n  .filter(c => (c.ats || '').toLowerCase() === 'workday' && c.careers_url);\n\nconst out = [];\nfor (let i = 0; i < empresas.length; i += CONCURRENCY) {\n  const tanda = await Promise.all(empresas.slice(i, i + CONCURRENCY).map(fetchCompany));\n  for (const r of tanda) out.push(...r);\n}\n\nreturn out;"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -135,7 +135,7 @@
         416,
         -16
       ],
-      "id": "5bc4843e-e6f0-4d0a-aa5e-352fa0c7faf3",
+      "id": "1abaa4bf-16cf-47e9-a751-eeaca62b635e",
       "name": "Fetch Workday"
     },
     {
@@ -150,13 +150,13 @@
         2352,
         -96
       ],
-      "id": "30608480-0acb-40fb-8cf1-482a62e710c1",
+      "id": "638d260d-63c1-40db-a4da-671549818adf",
       "name": "Mark Closed",
       "executeOnce": true,
       "credentials": {
         "postgres": {
-          "id": "5Ggn116ONj0zb4KN",
-          "name": "Jobs Manager - PROD Neon"
+          "id": "s5Wde8B9bo2Et8hN",
+          "name": "Jobs-Manager - LOCAL"
         }
       }
     },
@@ -170,7 +170,7 @@
         416,
         496
       ],
-      "id": "86c4766f-8b39-4158-bebc-b0dcfe83454b",
+      "id": "d476294a-be04-41cb-89d9-1bb819d050e7",
       "name": "Fetch GOB"
     },
     {
@@ -185,7 +185,7 @@
         416,
         240
       ],
-      "id": "170a154a-5ef1-4f9b-b209-dac838f0831c"
+      "id": "53770c3b-a5c8-4e81-9114-25a7aae14c1f"
     },
     {
       "parameters": {
@@ -197,7 +197,7 @@
         1168,
         -96
       ],
-      "id": "eb9c2de5-f287-4227-9efa-3a83413e3231",
+      "id": "5421e991-0822-45c1-afff-a7831d04b1ea",
       "name": "Classify & Filter"
     },
     {
@@ -212,7 +212,7 @@
         -384
       ],
       "alwaysOutputData": true,
-      "id": "8005047b-24f5-48e6-90be-11ccf13b5b11"
+      "id": "5b5b3830-b36d-4589-b169-6f93334cf501"
     },
     {
       "parameters": {
@@ -224,7 +224,7 @@
         640,
         -16
       ],
-      "id": "72147613-18d7-47a6-8d88-c81e1c81608f",
+      "id": "80277a4d-8c26-4f34-b268-496f1db76cb2",
       "name": "Normalize Workday"
     },
     {
@@ -239,7 +239,7 @@
         240
       ],
       "alwaysOutputData": true,
-      "id": "59df2750-b8a2-437b-9e3e-152e48a055d3"
+      "id": "149fa042-61ae-4023-a57e-2bff19e1c157"
     },
     {
       "parameters": {
@@ -251,7 +251,7 @@
         640,
         496
       ],
-      "id": "b914bb18-cab6-4a7d-aeae-2a70e2e93e21",
+      "id": "d33f565a-99b3-4056-8d59-eadb4a992ae5",
       "name": "Normalize GOB"
     },
     {
@@ -264,7 +264,7 @@
         1424,
         -96
       ],
-      "id": "dabe0e27-a44a-4064-ae81-efc88ae9b0f5",
+      "id": "a8d049e3-e1da-4da1-aa11-3072383b8f10",
       "name": "Resolve GOB company"
     },
     {
@@ -277,13 +277,13 @@
         1728,
         -96
       ],
-      "id": "1b5f435e-a06e-4b00-b676-0f65bcd9698f",
+      "id": "d23548ff-a248-4d74-8f88-84d51c720e6d",
       "name": "Deduplicate and complete"
     },
     {
       "parameters": {
         "content": "## Preparar y Guardar en DB\n\n\n",
-        "height": 288,
+        "height": 304,
         "width": 592,
         "color": 6
       },
@@ -293,38 +293,38 @@
         -192
       ],
       "typeVersion": 1,
-      "id": "943c2867-4068-4900-8ebb-b47d2bc4a4ee",
+      "id": "4121f161-5065-49b9-b0f3-55e7c409c680",
       "name": "Sticky Note6"
     },
     {
       "parameters": {
         "content": "Get on Board manda el aviso con el **id** de la empresa, no con el nombre.\n\n- Pide el nombre a su API\n- Descarta consultoras y outsourcing\n\n\nVa *después* del filtro: así pide solo los nombres de los avisos que sobrevivieron",
-        "height": 272,
+        "height": 528,
         "width": 256
       },
       "type": "n8n-nodes-base.stickyNote",
       "position": [
         1344,
-        64
+        -416
       ],
       "typeVersion": 1,
-      "id": "a92f392c-d1cb-412a-a3c4-2cec25e3cd35",
+      "id": "2e21dc06-16b3-4afa-a80b-56db1d96c940",
       "name": "Sticky Note7"
     },
     {
       "parameters": {
         "content": "Deduplica por **empresa + título**. El mismo puesto puede venir por varios sitios \n\n**Gana la mejor fuente, no la primera:**\n\n1. ATS directos — Ashby, Greenhouse, Lever, Workable, Teamtailor\n2. Workday\n3. Get on Board\n4. YC\n\nAl ganador se le completan los campos vacíos con los datos de los otros:\nqueda el mejor link **sin perder el sueldo**.",
-        "height": 464,
+        "height": 704,
         "width": 256,
         "color": 2
       },
       "type": "n8n-nodes-base.stickyNote",
       "position": [
         1648,
-        64
+        -592
       ],
       "typeVersion": 1,
-      "id": "ce462ef6-6e6d-4e02-9f15-6618087ba8e5",
+      "id": "315b1154-1de2-4589-8506-1fb43ded7a3a",
       "name": "Sticky Note8"
     },
     {
@@ -340,12 +340,12 @@
         -640
       ],
       "typeVersion": 1,
-      "id": "0c74fd47-b55e-4d4a-8640-b9e3db6dedd8",
+      "id": "d3086784-b1f0-4a98-be84-2e083c4413a0",
       "name": "Sticky Note4"
     },
     {
       "parameters": {
-        "content": "## Ofertas de ATS\n\nEmpresas activas de la tabla `companies`.\n\nAshby · Greenhouse · Lever · Teamtailor · Workable\n\nAPIs públicas, GET sin auth. Workday va aparte.",
+        "content": "## Job Offers de ATS\n\nEmpresas activas de la tabla `companies`.\n\nAshby · Greenhouse · Lever · Teamtailor · Workable\n\nAPIs públicas, GET sin auth. Workday va aparte.",
         "height": 336,
         "width": 592,
         "color": 4
@@ -356,12 +356,12 @@
         -576
       ],
       "typeVersion": 1,
-      "id": "6bd53445-6bed-4586-afbe-391ee8a3fed9",
+      "id": "21e91c58-f3a2-4cf4-b9c8-4600cfe39d32",
       "name": "Sticky Note5"
     },
     {
       "parameters": {
-        "content": "## Ofertas de Workday\n\nEmpresas activas con `ats = 'workday'`.\n\nVa aparte porque no es un GET simple: POST con body,\npaginado de a 20 y una búsqueda por término\n(engineer · developer · architect).",
+        "content": "## Job Offers de Workday\n\nEmpresas activas con `ats = 'workday'`.\n\nVa aparte porque no es un GET simple: POST con body,\npaginado de a 20 y una búsqueda por término\n(engineer · developer · architect).",
         "height": 336,
         "width": 592,
         "color": 2
@@ -372,7 +372,7 @@
         -208
       ],
       "typeVersion": 1,
-      "id": "10fac7cd-63b7-4908-882b-3023491d89d9",
+      "id": "e022161f-2825-4e5f-9c99-4a09d1cecf57",
       "name": "Sticky Note3"
     },
     {
@@ -388,7 +388,7 @@
         160
       ],
       "typeVersion": 1,
-      "id": "e44870cc-7520-45f7-aafa-3e8144cc2fe1",
+      "id": "81c4d30d-1aba-435e-bed2-416fc9dba8ab",
       "name": "Sticky Note1"
     },
     {
@@ -404,7 +404,7 @@
         432
       ],
       "typeVersion": 1,
-      "id": "1deaf2fb-0df5-4919-8538-bc1a387fbae2",
+      "id": "1944d19b-aa45-462e-b8c5-9af115d4140a",
       "name": "Sticky Note"
     }
   ],
@@ -605,39 +605,28 @@
     "executionOrder": "v1",
     "binaryMode": "separate",
     "timeSavedMode": "fixed",
-    "timezone": "America/Argentina/Buenos_Aires",
+    "timezone": "Etc/UTC",
     "callerPolicy": "workflowsFromSameOwner",
     "availableInMCP": false
   },
-  "staticData": {
-    "node:Daily 9am and 6pm": {
-      "recurrenceRules": [
-        null,
-        null
-      ],
-      "recurrenceRuleSignatures": [
-        null,
-        null
-      ]
-    }
-  },
+  "staticData": null,
   "meta": {
     "templateCredsSetupCompleted": true
   },
   "nodeGroups": [],
   "pinData": {},
-  "versionId": "2b95f763-cd04-4eae-b790-5aed281a5299",
-  "activeVersionId": "2b95f763-cd04-4eae-b790-5aed281a5299",
-  "versionCounter": 209,
-  "triggerCount": 1,
+  "versionId": "6b5afe9b-5382-4928-b1ba-ef77dc0456b3",
+  "activeVersionId": null,
+  "versionCounter": 26,
+  "triggerCount": 0,
   "sourceWorkflowId": null,
   "tags": [],
   "shared": [
     {
-      "updatedAt": "2026-10-02T10:48:38.950Z",
-      "createdAt": "2026-10-02T10:48:38.950Z",
+      "updatedAt": "2026-10-03T01:19:43.383Z",
+      "createdAt": "2026-10-03T01:19:43.383Z",
       "role": "workflow:owner",
-      "workflowId": "7wa7kY3r9tURPNqs",
+      "workflowId": "84DzoLAqcm9UzXNW",
       "projectId": "iNXI5R7gWjOyxfvE",
       "project": {
         "updatedAt": "2026-08-30T21:59:52.951Z",
@@ -653,7 +642,7 @@
     }
   ],
   "versionMetadata": {
-    "name": "Version 2b95f763",
-    "description": ""
+    "name": null,
+    "description": null
   }
 }

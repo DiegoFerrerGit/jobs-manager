@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-10-03T01:15:50.082Z",
-  "createdAt": "2026-09-26T19:33:20.586Z",
-  "id": "u5pM2gHjqodQyg4k",
-  "name": "Job Hunter 1 - Discover companies (DB)",
+  "updatedAt": "2026-10-03T02:24:30.595Z",
+  "createdAt": "2026-10-03T01:19:26.715Z",
+  "id": "S4irU0ooc9EJSGD7",
+  "name": "Job Hunter 1 - Discover companies",
   "description": null,
-  "active": true,
+  "active": false,
   "isArchived": false,
   "nodes": [
     {
@@ -16,7 +16,7 @@
               "triggerAtDay": [
                 1
               ],
-              "triggerAtHour": 8
+              "triggerAtHour": 11
             }
           ]
         }
@@ -28,7 +28,7 @@
         -320,
         416
       ],
-      "id": "de14301a-7840-48cd-b6b7-160c9c90e78f"
+      "id": "21722610-3eff-4393-b263-764a8c5fdfa0"
     },
     {
       "parameters": {
@@ -39,10 +39,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        560,
-        576
+        496,
+        752
       ],
-      "id": "69099f7a-5e06-412f-80d0-ba0025764b3e"
+      "id": "90f94afd-6cc0-4563-9d88-fa43e6b4fd8c"
     },
     {
       "parameters": {
@@ -52,19 +52,19 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        800,
-        576
+        848,
+        752
       ],
-      "id": "5f0c64b0-7126-4a15-9c23-75624a305616"
+      "id": "bce0c304-5bf0-4a4f-8fcb-ec28c044ee79"
     },
     {
       "parameters": {
         "workflowId": {
           "__rl": true,
-          "value": "ZQRyPt1sQAAvBGBn",
+          "value": "sU445YgjGcQPDzIO",
           "mode": "list",
-          "cachedResultUrl": "/workflow/ZQRyPt1sQAAvBGBn",
-          "cachedResultName": "Job Hunter 1 - Process chunk (sub)"
+          "cachedResultUrl": "/workflow/sU445YgjGcQPDzIO",
+          "cachedResultName": "Job Hunter 1.A - Process chunk (sub) V-2"
         },
         "workflowInputs": {
           "mappingMode": "defineBelow",
@@ -83,11 +83,11 @@
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        1040,
-        576
+        1200,
+        752
       ],
       "alwaysOutputData": true,
-      "id": "85ff09b1-ec33-49c3-863b-a6f67f2a9f44"
+      "id": "8a1625e6-a797-44e7-9375-4c5eb36c8a45"
     },
     {
       "parameters": {
@@ -100,7 +100,7 @@
         576,
         304
       ],
-      "id": "1fa4c534-ec08-48d3-af20-a24971df4c98"
+      "id": "16aad393-6130-4025-9d50-0164ce4c39ad"
     },
     {
       "parameters": {
@@ -126,13 +126,7 @@
         800,
         304
       ],
-      "id": "ec366c63-13a3-4e47-91ee-930b74da59ed",
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "sfAoxXg6MHwXULkj",
-          "name": "Serper"
-        }
-      },
+      "id": "f006c3a0-92c1-456e-b5be-fb80addc8042",
       "disabled": true,
       "onError": "continueRegularOutput"
     },
@@ -148,7 +142,7 @@
         304
       ],
       "alwaysOutputData": true,
-      "id": "bfa4203c-98cf-4f8a-bfcf-788461c4dc41"
+      "id": "10014433-eddd-432f-9e4b-dbb6251721bc"
     },
     {
       "parameters": {},
@@ -156,10 +150,10 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3,
       "position": [
-        1616,
-        448
+        1632,
+        416
       ],
-      "id": "da0daff1-1730-4077-8e7f-7f1a0fe16151"
+      "id": "1adc9395-44e8-4623-b0f1-cc81b961abcc"
     },
     {
       "parameters": {
@@ -170,9 +164,9 @@
       "typeVersion": 2,
       "position": [
         1856,
-        448
+        416
       ],
-      "id": "81990e8b-c2df-4e7b-8235-a1450bd41717"
+      "id": "bfad6c2b-e179-4c09-bbb9-85507f08c4c2"
     },
     {
       "parameters": {
@@ -187,9 +181,9 @@
       "typeVersion": 2.6,
       "position": [
         2096,
-        448
+        416
       ],
-      "id": "2e67a25f-d86b-43c1-a596-20bb03f57146",
+      "id": "53db664c-37bc-47d1-ba7f-8605cfac9d7f",
       "credentials": {
         "postgres": {
           "id": "s5Wde8B9bo2Et8hN",
@@ -200,64 +194,64 @@
     {
       "parameters": {
         "content": "Rama B — el dataset comunitario (activa)\n\n",
-        "height": 224,
-        "width": 752
+        "height": 432,
+        "width": 1120
       },
       "type": "n8n-nodes-base.stickyNote",
       "position": [
-        480,
+        336,
         512
       ],
       "typeVersion": 1,
-      "id": "5f25e684-ba19-4387-a460-a818feae2830",
+      "id": "5bf55517-7b05-4220-9c7e-2a359eb47d40",
       "name": "Sticky Note"
     },
     {
       "parameters": {
-        "content": "Read aggregator index Un GET a un archivo en raw.githubusercontent.com. Es un dataset mantenido por la comunidad que lista empresas con su plataforma de ATS y su slug. Se reconstruye a diario, así que cada lunes trae lo que haya de nuevo.",
-        "height": 144,
-        "width": 480,
+        "content": "## Un GET a un archivo en raw.githubusercontent.com. Es un dataset mantenido por la comunidad que lista empresas con su plataforma de ATS y su slug. Se reconstruye a diario, así que cada lunes trae lo que haya de nuevo.",
+        "height": 368,
+        "width": 368,
         "color": 5
       },
       "type": "n8n-nodes-base.stickyNote",
       "position": [
-        224,
-        752
+        368,
+        560
       ],
       "typeVersion": 1,
-      "id": "44313304-0204-4f71-8b86-1038e24c3ceb",
+      "id": "db0a09d6-d03c-43ec-801f-43b41cfb824a",
       "name": "Sticky Note1"
     },
     {
       "parameters": {
-        "content": "Parte la lista en pedazos. La lista entera es demasiado grande para procesarla de una: n8n se queda sin memoria o la ejecución tarda una eternidad.",
-        "height": 144,
+        "content": "## Parte la lista en pedazos. La lista entera es demasiado grande para procesarla de una: n8n se queda sin memoria o la ejecución tarda una eternidad.",
+        "height": 368,
         "width": 272,
         "color": 2
       },
       "type": "n8n-nodes-base.stickyNote",
       "position": [
-        720,
-        752
+        768,
+        560
       ],
       "typeVersion": 1,
-      "id": "0984e8ef-8f74-42fd-8659-60b511d8723c",
+      "id": "ae78a288-323a-4c60-ad56-6405c909d1ff",
       "name": "Sticky Note2"
     },
     {
       "parameters": {
-        "content": "Llama a un sub-workflow, una vez por pedazo. Ahí adentro se valida y normaliza cada empresa. Que sea un sub-workflow es lo que mantiene acotado el uso de memoria: cada ejecución termina y libera antes de que arranque la siguiente.",
-        "height": 144,
-        "width": 528,
+        "content": "## Llama a un sub-workflow, una vez por pedazo. Ahí adentro se valida y normaliza cada empresa. Que sea un sub-workflow es lo que mantiene acotado el uso de memoria: cada ejecución termina y libera antes de que arranque la siguiente.",
+        "height": 368,
+        "width": 384,
         "color": 6
       },
       "type": "n8n-nodes-base.stickyNote",
       "position": [
-        1008,
-        752
+        1056,
+        560
       ],
       "typeVersion": 1,
-      "id": "b870a341-58aa-426a-8ef5-995f933bca09",
+      "id": "5697add6-92f3-4c83-b936-88184df99117",
       "name": "Sticky Note3"
     },
     {
@@ -272,7 +266,7 @@
         240
       ],
       "typeVersion": 1,
-      "id": "2ebfdcd9-04e9-4a49-97b8-f2cab926702d",
+      "id": "cb471152-7ce7-4803-8b5f-c4563c7105e5",
       "name": "Sticky Note4"
     },
     {
@@ -284,11 +278,11 @@
       },
       "type": "n8n-nodes-base.stickyNote",
       "position": [
-        320,
-        112
+        768,
+        -288
       ],
       "typeVersion": 1,
-      "id": "f2b1f79e-2c48-4d79-8f8d-de13333b9793",
+      "id": "c6a90526-b4e0-47db-9500-969762ce27dd",
       "name": "Sticky Note5"
     },
     {
@@ -300,11 +294,11 @@
       },
       "type": "n8n-nodes-base.stickyNote",
       "position": [
-        736,
-        -288
+        1184,
+        -496
       ],
       "typeVersion": 1,
-      "id": "b9042e13-a655-47ca-97d6-78ac3707977a",
+      "id": "ef68d364-144e-482d-89e6-1d6fe45c1bb8",
       "name": "Sticky Note6"
     },
     {
@@ -316,11 +310,11 @@
       },
       "type": "n8n-nodes-base.stickyNote",
       "position": [
-        1040,
-        112
+        1600,
+        -304
       ],
       "typeVersion": 1,
-      "id": "941fc5c0-eeba-4e33-8db2-62341c4cc541",
+      "id": "7f6408f9-6e4d-410c-8c93-53afbf2511fa",
       "name": "Sticky Note7"
     },
     {
@@ -332,11 +326,11 @@
       },
       "type": "n8n-nodes-base.stickyNote",
       "position": [
-        96,
-        -320
+        16,
+        -416
       ],
       "typeVersion": 1,
-      "id": "90d611db-0f09-46a7-8c59-4777b130d867",
+      "id": "06f5143f-5779-4d83-a7c9-d28fa8e1ac28",
       "name": "Sticky Note8"
     },
     {
@@ -348,26 +342,27 @@
       },
       "type": "n8n-nodes-base.stickyNote",
       "position": [
-        80,
-        -208
+        0,
+        -304
       ],
       "typeVersion": 1,
-      "id": "ed112e72-c1fa-41ee-9888-c70278e91893",
+      "id": "57812cbb-93f7-496f-81de-ac5b2e4dd97b",
       "name": "Sticky Note9"
     },
     {
       "parameters": {
-        "content": "Nuestro producto de hunter, se basa enotnces en buscar empresas y luego ver si tienen un board en lso ATS mas importantes - SI\n",
+        "content": "# Nuestro producto de hunter, se basa enotnces en buscar empresas y luego ver si tienen un board en lso ATS mas importantes - SI\n",
+        "height": 128,
         "width": 432,
         "color": 4
       },
       "type": "n8n-nodes-base.stickyNote",
       "position": [
-        -496,
-        144
+        -768,
+        -400
       ],
       "typeVersion": 1,
-      "id": "0067c2c4-d92a-4555-b579-f62991d415a2",
+      "id": "e659b91a-35c3-4905-9bd1-eb1c2412f8cc",
       "name": "Sticky Note10"
     }
   ],
@@ -470,37 +465,28 @@
     "executionOrder": "v1",
     "binaryMode": "separate",
     "timeSavedMode": "fixed",
-    "timezone": "America/Argentina/Buenos_Aires",
+    "timezone": "Etc/UTC",
     "callerPolicy": "workflowsFromSameOwner",
     "availableInMCP": false
   },
-  "staticData": {
-    "node:Every Monday 8am": {
-      "recurrenceRules": [
-        null
-      ],
-      "recurrenceRuleSignatures": [
-        null
-      ]
-    }
-  },
+  "staticData": null,
   "meta": {
     "templateCredsSetupCompleted": true
   },
   "nodeGroups": [],
   "pinData": {},
-  "versionId": "41ba2943-489f-415a-b489-3e8f9606721d",
-  "activeVersionId": "52e04d61-4534-437e-ae8d-9c6943068ef1",
-  "versionCounter": 132,
-  "triggerCount": 1,
+  "versionId": "2e532c66-be9b-4450-8eb8-2eaf1cae2b8c",
+  "activeVersionId": null,
+  "versionCounter": 46,
+  "triggerCount": 0,
   "sourceWorkflowId": null,
   "tags": [],
   "shared": [
     {
-      "updatedAt": "2026-09-26T19:33:20.587Z",
-      "createdAt": "2026-09-26T19:33:20.587Z",
+      "updatedAt": "2026-10-03T01:19:26.719Z",
+      "createdAt": "2026-10-03T01:19:26.719Z",
       "role": "workflow:owner",
-      "workflowId": "u5pM2gHjqodQyg4k",
+      "workflowId": "S4irU0ooc9EJSGD7",
       "projectId": "iNXI5R7gWjOyxfvE",
       "project": {
         "updatedAt": "2026-08-30T21:59:52.951Z",

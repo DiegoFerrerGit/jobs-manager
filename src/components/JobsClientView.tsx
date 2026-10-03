@@ -61,9 +61,10 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialFa
   const [favoriteCompanies, setFavoriteCompanies] = useState<Set<string>>(new Set(initialFavoriteCompanies || []));
   const [showKeywordHidden, setShowKeywordHidden] = useState(false);
   const [view, setView] = useState<"grid" | "table">("grid");
-  const [sortParam, setSortParam] = useState<"date" | "salary" | "priority" | "latam" | "employees">("priority");
+  const [sortParam, setSortParam] = useState<"date" | "salary" | "priority">("priority");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
-  const [filterLatam, setFilterLatam] = useState<string>("all");
+  const [sortParam2, setSortParam2] = useState<"none" | "date" | "salary" | "priority">("none");
+  const [sortOrder2, setSortOrder2] = useState<"asc" | "desc">("asc");
   const [filterPriority, setFilterPriority] = useState<"all" | "1" | "2" | "3">("all");
   const [filterStatus, setFilterStatus] = useState<"unapplied" | "all" | "applied" | "hidden" | "closed" | "config_hidden">("unapplied");
   const [filterCompany, setFilterCompany] = useState<"all" | string>("all");
@@ -124,14 +125,15 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialFa
     }
   };
 
-  const hasFiltersChanged = filterLatam !== "all" || filterPriority !== "all" || filterStatus !== "unapplied" || sortParam !== "priority" || sortOrder !== "asc" || searchQuery !== "" || filterCompany !== "all";
+  const hasFiltersChanged = filterPriority !== "all" || filterStatus !== "unapplied" || sortParam !== "priority" || sortOrder !== "asc" || sortParam2 !== "none" || sortOrder2 !== "asc" || searchQuery !== "" || filterCompany !== "all";
 
   const handleClearFilters = () => {
-    setFilterLatam("all");
     setFilterPriority("all");
     setFilterStatus("unapplied");
     setSortParam("priority");
     setSortOrder("asc");
+    setSortParam2("none");
+    setSortOrder2("asc");
     setSearchQuery("");
     setFilterCompany("all");
   };
@@ -309,20 +311,10 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialFa
     // Resolve effective status: userStatus ?? 'SAVED'
     const getStatus = (j: JobWithUserState) => j.userStatus ?? 'SAVED';
 
-    // Filter
-    if (filterLatam !== "all") {
-      result = result.filter(j => j.acceptsArgentina === filterLatam);
-    }
-
     // Filter by Priority
     if (filterPriority !== "all") {
       const prioVal = parseInt(filterPriority);
       result = result.filter(j => (j.priority || 3) === prioVal);
-    }
-
-    // Filter only with salary if sorting by salary
-    if (sortParam === "salary") {
-      result = result.filter(j => extractSalary(j.salary) > 0);
     }
 
     // Filter by Status (using user-specific status from user_jobs)
@@ -354,35 +346,35 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialFa
 
     // Sort
     result.sort((a, b) => {
-      let cmp = 0;
-      if (sortParam === "salary") {
-        cmp = extractSalary(a.salary) - extractSalary(b.salary);
-      } else if (sortParam === "priority") {
-        cmp = (a.priority || 3) - (b.priority || 3);
-      } else if (sortParam === "employees") {
-        const empA = a.companySize || 0;
-        const empB = b.companySize || 0;
-        cmp = empA - empB;
-      } else if (sortParam === "latam") {
-        const getLatamWeight = (val: string | null) => {
-          if (val === "yes") return 3;
-          if (val === "maybe") return 2;
-          return 1;
-        };
-        cmp = getLatamWeight(a.acceptsArgentina) - getLatamWeight(b.acceptsArgentina);
-      } else {
-        // Date sorting (default)
-        const dateA = new Date(a.detectedAt || a.createdAt).getTime();
-        const dateB = new Date(b.detectedAt || b.createdAt).getTime();
-        cmp = dateA - dateB;
+      const getCmp = (param: string, order: string) => {
+        let c = 0;
+        if (param === "salary") {
+          const salA = extractSalary(a.salary);
+          const salB = extractSalary(b.salary);
+          if (salA === 0 && salB !== 0) return 1; // a is empty, send to bottom
+          if (salB === 0 && salA !== 0) return -1; // b is empty, send to bottom
+          c = salA - salB;
+        } else if (param === "priority") {
+          c = (a.priority || 3) - (b.priority || 3);
+        } else if (param === "date") {
+          const dateA = new Date(a.detectedAt || a.createdAt).getTime();
+          const dateB = new Date(b.detectedAt || b.createdAt).getTime();
+          c = dateA - dateB;
+        }
+        return order === "asc" ? c : -c;
+      };
+
+      let cmp = getCmp(sortParam, sortOrder);
+      if (cmp === 0 && sortParam2 !== "none") {
+        cmp = getCmp(sortParam2, sortOrder2);
       }
-      return sortOrder === "asc" ? cmp : -cmp;
+      return cmp;
     });
 
     return result;
-  }, [jobsAfterKeywords, hiddenByKeywords, sortParam, sortOrder, filterLatam, filterPriority, filterStatus, filterCompany, searchQuery, favoriteCompanies]);
+  }, [jobsAfterKeywords, hiddenByKeywords, sortParam, sortOrder, sortParam2, sortOrder2, filterPriority, filterStatus, filterCompany, searchQuery, favoriteCompanies]);
 
-  const handleHeaderSort = (param: "date" | "salary" | "priority" | "latam" | "employees") => {
+  const handleHeaderSort = (param: "date" | "salary" | "priority") => {
     if (sortParam === param) {
       setSortOrder(prev => prev === "asc" ? "desc" : "asc");
     } else {
@@ -420,6 +412,63 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialFa
           </div>
 
           {/* Filters & Sort */}
+          {/* Primary Sort */}
+          <div className="flex flex-1 sm:flex-none items-center gap-2 bg-secondary/50 px-3 py-2 rounded-lg border border-border">
+            <ArrowUpDown className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+            <select
+              className="bg-transparent text-foreground outline-none border-none cursor-pointer w-full"
+              value={sortParam}
+              onChange={(e) => {
+                const newVal = e.target.value as any;
+                if (sortParam !== newVal) {
+                  setSortParam(newVal);
+                  setSortOrder(newVal === "salary" ? "desc" : "asc");
+                }
+              }}
+            >
+              <option value="date">Fecha</option>
+              <option value="salary">Salario</option>
+              <option value="priority">Prioridad</option>
+            </select>
+            <button
+              onClick={() => setSortOrder(prev => prev === "asc" ? "desc" : "asc")}
+              className="ml-2 hover:text-primary text-muted-foreground transition-colors font-bold px-2 py-0.5 bg-background rounded border border-border cursor-pointer"
+            >
+              {sortOrder === "asc" ? "Asc" : "Desc"}
+            </button>
+          </div>
+
+          {/* Secondary Sort */}
+          <div className="flex flex-1 sm:flex-none items-center gap-2 bg-secondary/50 px-3 py-2 rounded-lg border border-border">
+            <ArrowUpDown className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+            <select
+              className="bg-transparent text-foreground outline-none border-none cursor-pointer w-full"
+              value={sortParam2}
+              onChange={(e) => {
+                const newVal = e.target.value as any;
+                if (sortParam2 !== newVal) {
+                  setSortParam2(newVal);
+                  if (newVal !== "none") {
+                    setSortOrder2(newVal === "salary" ? "desc" : "asc");
+                  }
+                }
+              }}
+            >
+              <option value="none">2do Criterio</option>
+              <option value="date">Fecha</option>
+              <option value="salary">Salario</option>
+              <option value="priority">Prioridad</option>
+            </select>
+            {sortParam2 !== "none" && (
+              <button
+                onClick={() => setSortOrder2(prev => prev === "asc" ? "desc" : "asc")}
+                className="ml-2 hover:text-primary text-muted-foreground transition-colors font-bold px-2 py-0.5 bg-background rounded border border-border cursor-pointer"
+              >
+                {sortOrder2 === "asc" ? "Asc" : "Desc"}
+              </button>
+            )}
+          </div>
+
           <div className="flex flex-1 sm:flex-none items-center gap-2 bg-secondary/50 px-3 py-2 rounded-lg border border-border">
             <CheckCircle className="w-4 h-4 text-muted-foreground flex-shrink-0" />
             <select
@@ -437,19 +486,6 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialFa
           </div>
 
           <div className="flex flex-1 sm:flex-none items-center gap-2 bg-secondary/50 px-3 py-2 rounded-lg border border-border">
-            <SlidersHorizontal className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-            <select
-              className="bg-transparent text-foreground outline-none border-none cursor-pointer w-full"
-              value={filterLatam}
-              onChange={(e) => setFilterLatam(e.target.value)}
-            >
-              <option value="all">Todos</option>
-              <option value="si">LATAM Ok</option>
-              <option value="posible">LATAM Posible</option>
-            </select>
-          </div>
-
-          <div className="flex flex-1 sm:flex-none items-center gap-2 bg-secondary/50 px-3 py-2 rounded-lg border border-border">
             <Flag className="w-4 h-4 text-muted-foreground flex-shrink-0" />
             <select
               className="bg-transparent text-foreground outline-none border-none cursor-pointer w-full"
@@ -461,33 +497,6 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialFa
               <option value="2">Media</option>
               <option value="3">Baja</option>
             </select>
-          </div>
-
-          <div className="flex flex-1 sm:flex-none items-center gap-2 bg-secondary/50 px-3 py-2 rounded-lg border border-border">
-            <ArrowUpDown className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-            <select
-              className="bg-transparent text-foreground outline-none border-none cursor-pointer w-full"
-              value={sortParam}
-              onChange={(e) => {
-                const newVal = e.target.value as any;
-                if (sortParam !== newVal) {
-                  setSortParam(newVal);
-                  setSortOrder(newVal === "salary" ? "desc" : "asc");
-                }
-              }}
-            >
-              <option value="date">Fecha</option>
-              <option value="salary">Salario</option>
-              <option value="priority">Prioridad</option>
-              <option value="latam">LATAM</option>
-              <option value="employees">Empleados</option>
-            </select>
-            <button
-              onClick={() => setSortOrder(prev => prev === "asc" ? "desc" : "asc")}
-              className="ml-2 hover:text-primary text-muted-foreground transition-colors font-bold px-2 py-0.5 bg-background rounded border border-border cursor-pointer"
-            >
-              {sortOrder === "asc" ? "Asc" : "Desc"}
-            </button>
           </div>
 
           <div className="flex flex-1 sm:flex-none items-center gap-2 bg-secondary/50 px-3 py-2 rounded-lg border border-border">
@@ -714,10 +723,12 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialFa
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => handleToggleStatus(job.id, job.userStatus ?? 'SAVED')}
-                    className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all duration-200 hover:scale-105 active:scale-95 border cursor-pointer shadow-sm ${(job.userStatus ?? 'SAVED') === "APPLIED" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20" : "bg-secondary text-muted-foreground border-transparent hover:text-foreground hover:border-border hover:bg-secondary/80"}`}
+                    className={`whitespace-nowrap inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all duration-200 hover:scale-105 active:scale-95 border cursor-pointer shadow-sm ${(job.userStatus ?? 'SAVED') === "APPLIED" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20" : "bg-secondary text-muted-foreground border-transparent hover:text-foreground hover:border-border hover:bg-secondary/80"}`}
                   >
-                    <CheckCircle className="w-3 h-3" />
-                    {(job.userStatus ?? 'SAVED') === "APPLIED" ? `Aplicada ${job.userExpectedSalary ? `(${job.userExpectedSalary})` : ''}` : "Marcar como aplicado"}
+                    <CheckCircle className="w-3 h-3 shrink-0" />
+                    <span className="truncate">
+                      {(job.userStatus ?? 'SAVED') === "APPLIED" ? `Aplicada ${job.userExpectedSalary ? `(${job.userExpectedSalary})` : ''}` : "Marcar como aplicado"}
+                    </span>
                   </button>
 
                   {job.applyUrl && (
@@ -726,10 +737,10 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialFa
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={() => handleVisitJob(job.id)}
-                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-xs font-medium transition-all duration-200 hover:bg-primary/90 hover:scale-105 active:scale-95 cursor-pointer shadow-sm"
+                      className="whitespace-nowrap inline-flex items-center justify-center gap-1 px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-xs font-medium transition-all duration-200 hover:bg-primary/90 hover:scale-105 active:scale-95 cursor-pointer shadow-sm shrink-0"
                     >
                       Aplicar
-                      <ExternalLink className="w-3 h-3" />
+                      <ExternalLink className="w-3 h-3 shrink-0" />
                     </Link>
                   )}
                 </div>

@@ -755,14 +755,8 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialFa
             <thead className="text-[11px] text-muted-foreground uppercase bg-secondary/30 border-b border-border">
               <tr>
                 <th className="px-6 py-4 whitespace-nowrap">Rol / Empresa</th>
-                <th
-                  className="px-6 py-4 whitespace-nowrap cursor-pointer hover:bg-secondary/50 transition-colors select-none group"
-                  onClick={() => handleHeaderSort("employees")}
-                >
-                  <div className="flex items-center gap-1">
-                    Empleados
-                    <ArrowUpDown className={`w-3 h-3 ${sortParam === 'employees' ? 'text-primary' : 'opacity-0 group-hover:opacity-50'}`} />
-                  </div>
+                <th className="px-6 py-4 whitespace-nowrap">
+                  Empleados
                 </th>
                 <th
                   className="px-6 py-4 whitespace-nowrap cursor-pointer hover:bg-secondary/50 transition-colors select-none group"
@@ -783,14 +777,8 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialFa
                     <ArrowUpDown className={`w-3 h-3 ${sortParam === 'priority' ? 'text-primary' : 'opacity-0 group-hover:opacity-50'}`} />
                   </div>
                 </th>
-                <th
-                  className="px-6 py-4 whitespace-nowrap cursor-pointer hover:bg-secondary/50 transition-colors select-none group"
-                  onClick={() => handleHeaderSort("latam")}
-                >
-                  <div className="flex items-center gap-1">
-                    LATAM
-                    <ArrowUpDown className={`w-3 h-3 ${sortParam === 'latam' ? 'text-primary' : 'opacity-0 group-hover:opacity-50'}`} />
-                  </div>
+                <th className="px-6 py-4 whitespace-nowrap">
+                  LATAM
                 </th>
                 <th
                   className="px-6 py-4 whitespace-nowrap cursor-pointer hover:bg-secondary/50 transition-colors select-none group"

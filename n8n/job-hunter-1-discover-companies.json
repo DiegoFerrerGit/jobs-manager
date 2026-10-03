@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-03T02:47:55.047Z",
+  "updatedAt": "2026-10-03T03:52:13.563Z",
   "createdAt": "2026-10-03T01:19:26.715Z",
   "id": "S4irU0ooc9EJSGD7",
   "name": "Job Hunter 1 - Discover companies",
@@ -91,7 +91,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Arma una sola consulta con las empresas descubiertas.\n// Los datos viajan como parámetro JSON ($1). La base ignora las repetidas.\nconst AGENCIES = new Set(['truelogic','olsson','caylent','arionkoder','encora','encora10','nttdatausa','redbee','solvd','jobgether','launchpadtechnologiesinc','nimblegravity','dept','resilientco','santex','factored','devsavant','particle41llc','appnovation','eleks','lokainc','lokajobs','atmosera','bluecoding','telus-digital','toptal','valtech','admios','neoris','techstars57','exadelinc','externaljobboards','onhires','space44','zartis','massive-rocket','applydigital','go-nimbly','rehire','g2i','fluxon','robotsandpencils','webstacks','doitintl','inflect','interviewengineering','muttdata','silver','latamcent','empirical','precisionmedicinegroup','pfm','powerdigitalmarketing','extenteamcareers','applytoaktos','correlationone','squad','emilabs','globant','bairesdev','endava','epam','softtek','turing','andela','agent']);\nconst LOOKS_LIKE_AGENCY = /consult|staffing|talent|recruit|outsourc|nearshore|jobboard|careers$|jobs$/i;\nconst nice = s => String(s).replace(/[-_]+/g, ' ').replace(/\\b\\w/g, ch => ch.toUpperCase());\n\nconst acc = {};\nfor (const it of $input.all()) {\n  const c = it.json;\n  if (!c.slug || !c.ats) continue;\n  const k = `${c.ats.toLowerCase()}|${c.slug.toLowerCase()}`;\n  const a = acc[k] ||= { ...c, latam_jobs: 0, is_recruiter: false };\n  a.latam_jobs += c.latam_jobs || 0;\n  a.is_recruiter = a.is_recruiter || c.is_recruiter;\n  if (!a.hq && c.hq) a.hq = c.hq;\n}\n\nconst rows = Object.values(acc).map(c => {\n  // en Workday el slug es \"empresa/sitio\": solo importa la empresa\n  const slug = c.slug.toLowerCase().split('/')[0];\n  const agency = AGENCIES.has(slug) || c.is_recruiter || LOOKS_LIKE_AGENCY.test(slug);\n  return {\n    slug: c.slug,\n    ats: c.ats,\n    name: nice(c.company || c.slug),\n    hq: c.hq || null,\n    careers_url: c.careers_url || null,\n    source: c.source || null,\n    status: agency ? 'inactive' : 'active',\n  };\n});\n\nconst sql = `\nINSERT INTO companies (slug, ats, name, hq, careers_url, source, status)\nSELECT v.slug, v.ats::job_source, v.name, v.hq, v.careers_url, v.source, v.status::company_status\nFROM jsonb_to_recordset($1::jsonb) AS v(\n  slug text, ats text, name text, hq text, careers_url text, source text, status text\n)\nON CONFLICT (ats, slug) DO UPDATE SET\n  hq = COALESCE(companies.hq, EXCLUDED.hq),\n  careers_url = COALESCE(companies.careers_url, EXCLUDED.careers_url)\nRETURNING (xmax = 0) AS inserted, slug, ats`;\n\nreturn [{ json: { sql, params: JSON.stringify(rows), rows: rows.length } }];"
+        "jsCode": "// Arma una sola consulta con las empresas descubiertas.\n// Los datos viajan como parámetro JSON ($1). La base ignora las repetidas.\nconst AGENCIES = new Set(['truelogic','olsson','caylent','arionkoder','encora','encora10','nttdatausa','redbee','solvd','jobgether','launchpadtechnologiesinc','nimblegravity','dept','resilientco','santex','factored','devsavant','particle41llc','appnovation','eleks','lokainc','lokajobs','atmosera','bluecoding','telus-digital','toptal','valtech','admios','neoris','techstars57','exadelinc','externaljobboards','onhires','space44','zartis','massive-rocket','applydigital','go-nimbly','rehire','g2i','fluxon','robotsandpencils','webstacks','doitintl','inflect','interviewengineering','muttdata','silver','latamcent','empirical','precisionmedicinegroup','pfm','powerdigitalmarketing','extenteamcareers','applytoaktos','correlationone','squad','emilabs','globant','bairesdev','endava','epam','softtek','turing','andela','agent']);\nconst LOOKS_LIKE_AGENCY = /consult|staffing|talent|recruit|outsourc|nearshore|jobboard|careers$|jobs$/i;\nconst nice = s => String(s).replace(/[-_]+/g, ' ').replace(/\\b\\w/g, ch => ch.toUpperCase());\n\nconst acc = {};\nfor (const it of $input.all()) {\n  const c = it.json;\n  if (!c.slug || !c.ats) continue;\n  const k = `${c.ats.toLowerCase()}|${c.slug.toLowerCase()}`;\n  const a = acc[k] ||= { ...c, latam_jobs: 0, is_recruiter: false };\n  a.latam_jobs += c.latam_jobs || 0;\n  a.is_recruiter = a.is_recruiter || c.is_recruiter;\n  if (!a.hq && c.hq) a.hq = c.hq;\n}\n\nconst rows = Object.values(acc).map(c => {\n  // en Workday el slug es \"empresa/sitio\": solo importa la empresa\n  const slug = c.slug.toLowerCase().split('/')[0];\n  const agency = AGENCIES.has(slug) || c.is_recruiter || LOOKS_LIKE_AGENCY.test(slug);\n  return {\n    slug: c.slug,\n    ats: c.ats,\n    name: nice(c.company || c.slug),\n    hq: c.hq || null,\n    careers_url: c.careers_url || null,\n    source: c.source || null,\n    status: agency ? 'inactive' : 'active',\n  };\n});\n\nconst sql = `\nINSERT INTO companies (slug, ats, name, hq, careers_url, source, status)\nSELECT v.slug, v.ats::job_source, v.name, v.hq, v.careers_url, v.source, v.status::company_status\nFROM jsonb_to_recordset($1::jsonb) AS v(\n  slug text, ats text, name text, hq text, careers_url text, source text, status text\n)\nON CONFLICT (ats, slug) DO UPDATE SET\n  hq = COALESCE(companies.hq, EXCLUDED.hq),\n  careers_url = COALESCE(companies.careers_url, EXCLUDED.careers_url),\n  source      = 'aggregator'\nRETURNING (xmax = 0) AS inserted, slug, ats`;\n\nreturn [{ json: { sql, params: JSON.stringify(rows), rows: rows.length } }];"
       },
       "name": "Build companies SQL",
       "type": "n8n-nodes-base.code",
@@ -270,9 +270,9 @@
   },
   "nodeGroups": [],
   "pinData": {},
-  "versionId": "c21f7fb3-bf64-4a84-a3d8-434104568ec8",
-  "activeVersionId": "c21f7fb3-bf64-4a84-a3d8-434104568ec8",
-  "versionCounter": 62,
+  "versionId": "3a2df88c-055f-466f-8fbc-bf02d1ba748d",
+  "activeVersionId": "3a2df88c-055f-466f-8fbc-bf02d1ba748d",
+  "versionCounter": 63,
   "triggerCount": 1,
   "sourceWorkflowId": null,
   "tags": [],
@@ -297,7 +297,7 @@
     }
   ],
   "versionMetadata": {
-    "name": "Version c21f7fb3",
+    "name": "Version 3a2df88c",
     "description": ""
   }
 }

@@ -60,7 +60,7 @@ export const companies = pgTable('companies', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 }, (t) => ({
-  atsSlug: uniqueIndex('companies_ats_slug_key').on(t.ats, t.slug),
+  atsSlug: uniqueIndex('companies_ats_slug_key').on(t.ats, sql`lower(${t.slug})`),
   byStatus: index('companies_status_idx').on(t.status),
 }));
 

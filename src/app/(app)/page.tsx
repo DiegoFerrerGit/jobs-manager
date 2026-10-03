@@ -72,10 +72,6 @@ export default async function Home() {
     .where(eq(favoriteCompanies.userId, userId)) : [];
   const initialFavoriteCompanies = favorites.map((f: any) => f.companyName);
 
-  const manualCompanies = await db.select()
-    .from(companies)
-    .where(eq(companies.source, 'manual'))
-    .orderBy(desc(companies.createdAt));
 
   return (
     <div className="min-h-screen relative selection:bg-primary/30 p-4 sm:p-6 lg:p-8">
@@ -110,7 +106,7 @@ export default async function Home() {
           </div>
         </div>
 
-        <JobsClientView initialJobs={jobsList} initialKeywords={keywords} initialCompanies={manualCompanies} initialFavoriteCompanies={initialFavoriteCompanies} userId={userId} />
+        <JobsClientView initialJobs={jobsList} initialKeywords={keywords} initialFavoriteCompanies={initialFavoriteCompanies} userId={userId} />
       </div>
     </div>
   )

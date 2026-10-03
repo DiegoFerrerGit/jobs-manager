@@ -40,5 +40,5 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# Ignore Docs-future folder
-Docs-future/
+# Ignore docs/future folder
+docs/future/

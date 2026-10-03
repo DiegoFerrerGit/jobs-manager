@@ -7,7 +7,6 @@ import { JobWithUserState, IgnoredKeyword, Company } from "@/db/schema";
 import { toggleJobStatus, hideJob, toggleFavoriteCompany, updateCompanyLinkedin } from "@/app/actions";
 import { filterJobsBySearch } from "@/utils/search";
 import KeywordManager from "./KeywordManager";
-import ManualCompanyManager from "./ManualCompanyManager";
 
 const getSourceBadge = (source: string | null | undefined, externalId: string | null | undefined) => {
   const src = source || (externalId ? externalId.split(':')[0] : null);
@@ -57,7 +56,7 @@ const getSourceBadge = (source: string | null | undefined, externalId: string | 
   );
 };
 
-export default function JobsClientView({ initialJobs, initialKeywords, initialCompanies, initialFavoriteCompanies, userId }: { initialJobs: JobWithUserState[], initialKeywords: IgnoredKeyword[], initialCompanies: Company[], initialFavoriteCompanies: string[], userId: number }) {
+export default function JobsClientView({ initialJobs, initialKeywords, initialFavoriteCompanies, userId }: { initialJobs: JobWithUserState[], initialKeywords: IgnoredKeyword[], initialFavoriteCompanies: string[], userId: number }) {
   const [jobs, setJobs] = useState<JobWithUserState[]>(initialJobs);
   const [favoriteCompanies, setFavoriteCompanies] = useState<Set<string>>(new Set(initialFavoriteCompanies || []));
   const [showKeywordHidden, setShowKeywordHidden] = useState(false);
@@ -944,7 +943,7 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialCo
 
             <div className="max-h-[80vh] overflow-y-auto p-2">
               <KeywordManager keywords={initialKeywords} userId={userId} />
-              <ManualCompanyManager initialCompanies={initialCompanies} />
+
             </div>
           </div>
         </div>

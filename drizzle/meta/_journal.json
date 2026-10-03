@@ -50,6 +50,13 @@
       "when": 1790825000001,
       "tag": "0006_discovered_slugs",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791000112679,
+      "tag": "0007_loose_azazel",
+      "breakpoints": true
     }
   ]
 }

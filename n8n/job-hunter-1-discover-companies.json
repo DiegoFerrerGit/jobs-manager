@@ -1,0 +1,303 @@
+{
+  "updatedAt": "2026-10-03T02:47:55.047Z",
+  "createdAt": "2026-10-03T01:19:26.715Z",
+  "id": "S4irU0ooc9EJSGD7",
+  "name": "Job Hunter 1 - Discover companies",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtDay": [
+                1
+              ],
+              "triggerAtHour": 11
+            }
+          ]
+        }
+      },
+      "name": "Every Monday 8am",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -64,
+        432
+      ],
+      "id": "21722610-3eff-4393-b263-764a8c5fdfa0"
+    },
+    {
+      "parameters": {
+        "url": "https://raw.githubusercontent.com/Feashliaa/job-board-data/main/data/chunks/jobs_manifest.json",
+        "options": {}
+      },
+      "name": "Read aggregator index",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        272,
+        432
+      ],
+      "id": "90f94afd-6cc0-4563-9d88-fa43e6b4fd8c"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Arma la lista de bloques a procesar a partir del índice del agregador\nconst base = 'https://raw.githubusercontent.com/Feashliaa/job-board-data/main/data/chunks/';\n\nlet d = $input.first().json;\nif (typeof d.data === 'string') d = JSON.parse(d.data);   // viene como texto\nelse if (d.data) d = d.data;\n\nreturn (d.chunks || []).map(nombre => ({ json: { url: base + nombre } }));"
+      },
+      "name": "Chunk list",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        624,
+        432
+      ],
+      "id": "bce0c304-5bf0-4a4f-8fcb-ec28c044ee79"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "sU445YgjGcQPDzIO",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/sU445YgjGcQPDzIO",
+          "cachedResultName": "Job Hunter 1.A - Process chunk (sub) V-2"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "each",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "name": "Process each chunk",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        976,
+        432
+      ],
+      "alwaysOutputData": true,
+      "id": "8a1625e6-a797-44e7-9375-4c5eb36c8a45"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Arma una sola consulta con las empresas descubiertas.\n// Los datos viajan como parámetro JSON ($1). La base ignora las repetidas.\nconst AGENCIES = new Set(['truelogic','olsson','caylent','arionkoder','encora','encora10','nttdatausa','redbee','solvd','jobgether','launchpadtechnologiesinc','nimblegravity','dept','resilientco','santex','factored','devsavant','particle41llc','appnovation','eleks','lokainc','lokajobs','atmosera','bluecoding','telus-digital','toptal','valtech','admios','neoris','techstars57','exadelinc','externaljobboards','onhires','space44','zartis','massive-rocket','applydigital','go-nimbly','rehire','g2i','fluxon','robotsandpencils','webstacks','doitintl','inflect','interviewengineering','muttdata','silver','latamcent','empirical','precisionmedicinegroup','pfm','powerdigitalmarketing','extenteamcareers','applytoaktos','correlationone','squad','emilabs','globant','bairesdev','endava','epam','softtek','turing','andela','agent']);\nconst LOOKS_LIKE_AGENCY = /consult|staffing|talent|recruit|outsourc|nearshore|jobboard|careers$|jobs$/i;\nconst nice = s => String(s).replace(/[-_]+/g, ' ').replace(/\\b\\w/g, ch => ch.toUpperCase());\n\nconst acc = {};\nfor (const it of $input.all()) {\n  const c = it.json;\n  if (!c.slug || !c.ats) continue;\n  const k = `${c.ats.toLowerCase()}|${c.slug.toLowerCase()}`;\n  const a = acc[k] ||= { ...c, latam_jobs: 0, is_recruiter: false };\n  a.latam_jobs += c.latam_jobs || 0;\n  a.is_recruiter = a.is_recruiter || c.is_recruiter;\n  if (!a.hq && c.hq) a.hq = c.hq;\n}\n\nconst rows = Object.values(acc).map(c => {\n  // en Workday el slug es \"empresa/sitio\": solo importa la empresa\n  const slug = c.slug.toLowerCase().split('/')[0];\n  const agency = AGENCIES.has(slug) || c.is_recruiter || LOOKS_LIKE_AGENCY.test(slug);\n  return {\n    slug: c.slug,\n    ats: c.ats,\n    name: nice(c.company || c.slug),\n    hq: c.hq || null,\n    careers_url: c.careers_url || null,\n    source: c.source || null,\n    status: agency ? 'inactive' : 'active',\n  };\n});\n\nconst sql = `\nINSERT INTO companies (slug, ats, name, hq, careers_url, source, status)\nSELECT v.slug, v.ats::job_source, v.name, v.hq, v.careers_url, v.source, v.status::company_status\nFROM jsonb_to_recordset($1::jsonb) AS v(\n  slug text, ats text, name text, hq text, careers_url text, source text, status text\n)\nON CONFLICT (ats, slug) DO UPDATE SET\n  hq = COALESCE(companies.hq, EXCLUDED.hq),\n  careers_url = COALESCE(companies.careers_url, EXCLUDED.careers_url)\nRETURNING (xmax = 0) AS inserted, slug, ats`;\n\nreturn [{ json: { sql, params: JSON.stringify(rows), rows: rows.length } }];"
+      },
+      "name": "Build companies SQL",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1296,
+        432
+      ],
+      "id": "bfad6c2b-e179-4c09-bbb9-85507f08c4c2"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "{{ $json.sql }}",
+        "options": {
+          "queryReplacement": "={{ $json.params }}"
+        }
+      },
+      "name": "Save companies",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1536,
+        432
+      ],
+      "id": "53db664c-37bc-47d1-ba7f-8605cfac9d7f",
+      "credentials": {
+        "postgres": {
+          "id": "s5Wde8B9bo2Et8hN",
+          "name": "Jobs-Manager - LOCAL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Un GET a un archivo en raw.githubusercontent.com. Es un dataset mantenido por la comunidad que lista empresas con su plataforma de ATS y su slug. Se reconstruye a diario, así que cada lunes trae lo que haya de nuevo.",
+        "height": 368,
+        "width": 368,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        144,
+        240
+      ],
+      "typeVersion": 1,
+      "id": "db0a09d6-d03c-43ec-801f-43b41cfb824a",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "## Parte la lista en pedazos. La lista entera es demasiado grande para procesarla de una: n8n se queda sin memoria o la ejecución tarda una eternidad.",
+        "height": 368,
+        "width": 272,
+        "color": 2
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        544,
+        240
+      ],
+      "typeVersion": 1,
+      "id": "ae78a288-323a-4c60-ad56-6405c909d1ff",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "## Llama a un sub-workflow, una vez por pedazo. Ahí adentro se valida y normaliza cada empresa. Que sea un sub-workflow es lo que mantiene acotado el uso de memoria: cada ejecución termina y libera antes de que arranque la siguiente.",
+        "height": 368,
+        "width": 384,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        832,
+        240
+      ],
+      "typeVersion": 1,
+      "id": "5697add6-92f3-4c83-b936-88184df99117",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "# Nuestro producto de hunter, se basa enotnces en buscar empresas y luego ver si tienen un board en lso ATS mas importantes - SI\n",
+        "height": 240,
+        "width": 560,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        384,
+        -80
+      ],
+      "typeVersion": 1,
+      "id": "e659b91a-35c3-4905-9bd1-eb1c2412f8cc",
+      "name": "Sticky Note10"
+    }
+  ],
+  "connections": {
+    "Every Monday 8am": {
+      "main": [
+        [
+          {
+            "node": "Read aggregator index",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read aggregator index": {
+      "main": [
+        [
+          {
+            "node": "Chunk list",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chunk list": {
+      "main": [
+        [
+          {
+            "node": "Process each chunk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process each chunk": {
+      "main": [
+        [
+          {
+            "node": "Build companies SQL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build companies SQL": {
+      "main": [
+        [
+          {
+            "node": "Save companies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "timezone": "Etc/UTC",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "staticData": {
+    "node:Every Monday 8am": {
+      "recurrenceRules": [
+        null
+      ],
+      "recurrenceRuleSignatures": [
+        null
+      ]
+    }
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "nodeGroups": [],
+  "pinData": {},
+  "versionId": "c21f7fb3-bf64-4a84-a3d8-434104568ec8",
+  "activeVersionId": "c21f7fb3-bf64-4a84-a3d8-434104568ec8",
+  "versionCounter": 62,
+  "triggerCount": 1,
+  "sourceWorkflowId": null,
+  "tags": [],
+  "shared": [
+    {
+      "updatedAt": "2026-10-03T01:19:26.719Z",
+      "createdAt": "2026-10-03T01:19:26.719Z",
+      "role": "workflow:owner",
+      "workflowId": "S4irU0ooc9EJSGD7",
+      "projectId": "iNXI5R7gWjOyxfvE",
+      "project": {
+        "updatedAt": "2026-08-30T21:59:52.951Z",
+        "createdAt": "2026-08-30T21:59:22.385Z",
+        "id": "iNXI5R7gWjOyxfvE",
+        "name": "Diego diegoferrer.educacion.local@gmail.com <diegoferrer.educacion@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "customTelemetryTags": [],
+        "creatorId": "2d8c2ad2-7b9d-46e1-a3fe-e800e3bc9896"
+      }
+    }
+  ],
+  "versionMetadata": {
+    "name": "Version c21f7fb3",
+    "description": ""
+  }
+}

@@ -1,0 +1,197 @@
+{
+  "updatedAt": "2026-10-03T02:49:41.273Z",
+  "createdAt": "2026-10-03T01:19:50.315Z",
+  "id": "sU445YgjGcQPDzIO",
+  "name": "Job Hunter 1.A - Process chunk (sub)",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "name": "Receive chunk",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -160,
+        -80
+      ],
+      "id": "ee6aa9f5-9d6c-4bbe-8022-56761eab5360"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "name": "Download chunk",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        64,
+        -80
+      ],
+      "id": "9a918cae-496f-4e11-84a6-cc2414ed197a"
+    },
+    {
+      "parameters": {
+        "jsCode": "// El archivo viene comprimido (.gz); lo marcamos así para que el nodo Compression lo abra\nreturn $input.all().map(item => {\n  const b = item.binary?.data;\n  if (b) {\n    b.fileExtension = 'gz';\n    b.mimeType = 'application/gzip';\n    b.fileName = 'chunk.json.gz';\n  }\n  return item;\n});\n"
+      },
+      "name": "Tag as gzip",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        288,
+        -80
+      ],
+      "id": "799e43bc-e612-4285-afb5-3037bc0cbc21"
+    },
+    {
+      "parameters": {},
+      "name": "Decompress",
+      "type": "n8n-nodes-base.compression",
+      "typeVersion": 1.1,
+      "position": [
+        512,
+        -80
+      ],
+      "id": "c5543329-fc39-4a4f-81bd-2f8857461c84"
+    },
+    {
+      "parameters": {
+        "operation": "fromJson",
+        "binaryPropertyName": "file_0",
+        "destinationKey": "jobs",
+        "options": {}
+      },
+      "name": "Parse JSON",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        720,
+        -80
+      ],
+      "id": "1393c013-93dc-4e44-bc25-4bad712d9f8d"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Empresas con al menos una oferta de ingeniería para Argentina o LATAM\nconst IS_ENGINEERING = /engineer|engineering|developer|desarrollador|desarrollo|programador|programmer|builder|full.?stack|front.?end|back.?end|ingenier|arquitect|\\bsre\\b|devops|architect|tech(nical)? lead|l[íi]der t[ée]cnico|forward deployed|machine learning|\\bml\\b|\\bcto\\b|head of eng|vp.*eng/i;\nconst EXCLUDE = /recruit|reclut|talent|sales(?! engineer)|ventas|account exec|marketing|designer|dise[ñn]ador|legal|finance|contador|intern|pasant|practicante|product manager|program manager|project manager|gerente de producto|jefe de producto|\\banalyst\\b|analista(?! programador)|data scientist|cient[íi]fico de datos|incident manager/i;\n// Formularios de banco de talento: dicen \"Engineering\" pero no hay busqueda detras.\nconst EXCLUDE_EVERGREEN = /future .*(opportunit|role|position)|general interest|talent (pool|community|network)|open application|spontaneous/i;\nconst ARGENTINA = /argentin|buenos aires/i;\nconst LATAM = /latam|latin america|south america|\\bamericas\\b/i;\n// Paises de LATAM, por nombre, por codigo ISO y por ciudad principal.\n// Con acentos, porque muchas ofertas escriben \"Mexico\" o \"Peru\".\nconst LATAM_COUNTRY = /\\b(argentin|brazil|brasil|colombia|chile|uruguay|per[úu]|paraguay|bolivia|ecuador|venezuela|(?<!new )m[ée]xico|costa rica|panam[áa]|guatemala)\\b|\\b(ARG|BRA|COL|CHL|URY|PER|MEX|CRI)\\b|\\b(bogot[áa]|medell[íi]n|barranquilla|cartagena|s[ãa]o paulo|rio de janeiro|porto alegre|belo horizonte|curitiba|florian[óo]polis|joinville|recife|montevideo|asunci[óo]n|guadalajara|monterrey|cdmx|quito|guayaquil|san salvador|tegucigalpa|managua)\\b/i;\nconst REMOTE = /remote|remoto|anywhere|worldwide|global|latam|latin america/i;\n\n// \"AR\" también es Arkansas: solo cuenta como Argentina si hay otro país de la región\nconst OTHER_LATAM_CODE = /\\b(BR|CO|CL|UY|PE|MX|EC|BO|PY|VE|CR)\\b/;\n// \"Avenue of the Americas\" es una calle de Nueva York, no la región\nconst NY_STREET = /ave(nue)?\\.?\\s+of\\s+(the\\s+)?americas/ig;\n\nconst SLUG = {\n  Ashby: /jobs\\.ashbyhq\\.com\\/([^\\/?#]+)/i,\n  Greenhouse: /greenhouse\\.io\\/([^\\/?#&]+)/i,\n  Lever: /jobs\\.lever\\.co\\/([^\\/?#]+)/i,\n};\n// https://teladoc.wd503.myworkdayjobs.com/teladochealth_is_hiring/job/...\nconst WORKDAY = /^https?:\\/\\/([^\\/]+\\.myworkdayjobs\\.com)\\/(.+?)\\/job\\//i;\n\nfunction esLatam(loc) {\n  const l = String(loc || '').replace(NY_STREET, '');\n  if (ARGENTINA.test(l) || /\\bARG\\b/.test(l)) return true;\n  if (/\\bAR\\b/.test(l) && OTHER_LATAM_CODE.test(l)) return true;\n  if (LATAM_COUNTRY.test(l)) return true;\n  return LATAM.test(l);\n}\n\nconst companies = {};\n\nfor (const item of $input.all()) {\n  for (const j of item.json.jobs || []) {\n    const url = j.url || '';\n    let ats = null, slug = null, careersUrl = '';\n\n    if (j.ats === 'Workday') {\n      const m = WORKDAY.exec(url);\n      if (!m) continue;\n      const host = m[1];\n      // el sitio puede venir con prefijo de idioma (en-US): se quita\n      const site = m[2].split('/').filter(p => !/^[a-z]{2}(-[A-Za-z]{2})?$/.test(p)).join('/') || m[2];\n      ats = 'workday';\n      slug = `${host.split('.')[0]}/${site}`;\n      careersUrl = `https://${host}/${site}`;\n    } else {\n      const re = SLUG[j.ats];\n      if (!re) continue;\n      const m = re.exec(url);\n      if (!m || m[1] === 'embed') continue;\n      ats = j.ats.toLowerCase();\n      slug = m[1];\n    }\n\n    const k = `${ats}|${slug.toLowerCase()}`;\n    const c = companies[k] ||= {\n      ats, slug, company: j.company || slug, careers_url: careersUrl,\n      latam_jobs: 0, is_recruiter: false, source: 'aggregator', places: {},\n    };\n\n    if (j.is_recruiter) { c.is_recruiter = true; continue; }\n\n    const loc = j.location || '';\n    if (loc && !REMOTE.test(loc)) c.places[loc] = (c.places[loc] || 0) + 1;\n\n    const t = j.title || '';\n    if (!IS_ENGINEERING.test(t) || EXCLUDE.test(t)) continue;\n    if (EXCLUDE_EVERGREEN.test(t)) continue;\n    if (esLatam(loc)) c.latam_jobs++;\n  }\n}\n\nreturn Object.values(companies)\n  .filter(c => c.latam_jobs > 0)\n  .map(c => {\n    const top = Object.entries(c.places).sort((a, b) => b[1] - a[1])[0];\n    delete c.places;\n    return { json: { ...c, hq: top ? top[0] : '' } };\n  });"
+      },
+      "name": "LATAM companies in chunk",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        944,
+        -80
+      ],
+      "alwaysOutputData": true,
+      "id": "eeebf175-ccc6-4db9-a205-b79249d07541"
+    }
+  ],
+  "connections": {
+    "Receive chunk": {
+      "main": [
+        [
+          {
+            "node": "Download chunk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download chunk": {
+      "main": [
+        [
+          {
+            "node": "Tag as gzip",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tag as gzip": {
+      "main": [
+        [
+          {
+            "node": "Decompress",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decompress": {
+      "main": [
+        [
+          {
+            "node": "Parse JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse JSON": {
+      "main": [
+        [
+          {
+            "node": "LATAM companies in chunk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "timezone": "Etc/UTC",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": null,
+  "nodeGroups": [],
+  "pinData": {},
+  "versionId": "2570ef1e-e81e-4455-9920-8764921614b9",
+  "activeVersionId": "2570ef1e-e81e-4455-9920-8764921614b9",
+  "versionCounter": 6,
+  "triggerCount": 0,
+  "sourceWorkflowId": null,
+  "tags": [],
+  "shared": [
+    {
+      "updatedAt": "2026-10-03T01:19:50.316Z",
+      "createdAt": "2026-10-03T01:19:50.316Z",
+      "role": "workflow:owner",
+      "workflowId": "sU445YgjGcQPDzIO",
+      "projectId": "iNXI5R7gWjOyxfvE",
+      "project": {
+        "updatedAt": "2026-08-30T21:59:52.951Z",
+        "createdAt": "2026-08-30T21:59:22.385Z",
+        "id": "iNXI5R7gWjOyxfvE",
+        "name": "Diego diegoferrer.educacion.local@gmail.com <diegoferrer.educacion@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "customTelemetryTags": [],
+        "creatorId": "2d8c2ad2-7b9d-46e1-a3fe-e800e3bc9896"
+      }
+    }
+  ],
+  "versionMetadata": {
+    "name": "Version 2570ef1e",
+    "description": ""
+  }
+}

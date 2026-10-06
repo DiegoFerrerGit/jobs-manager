@@ -64,6 +64,13 @@
       "when": 1791235612357,
       "tag": "0008_add_jobs_department",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791295619932,
+      "tag": "0009_add_hidden_companies",
+      "breakpoints": true
     }
   ]
 }

@@ -4,9 +4,10 @@ import { useState, useMemo, useEffect } from "react";
 import { Briefcase, Building2, MapPin, DollarSign, Calendar, ExternalLink, Globe2, LayoutGrid, List, SlidersHorizontal, ArrowUpDown, CheckCircle, XCircle, Search, EyeOff, Eye, Settings, X, Star, Info, Flag, Pencil } from "lucide-react";
 import Link from "next/link";
 import { JobWithUserState, IgnoredKeyword, Company } from "@/db/schema";
-import { toggleJobStatus, hideJob, toggleFavoriteCompany, updateCompanyLinkedin } from "@/app/actions";
+import { toggleJobStatus, hideJob, toggleFavoriteCompany, toggleHiddenCompany, updateCompanyLinkedin } from "@/app/actions";
 import { filterJobsBySearch } from "@/utils/search";
 import KeywordManager from "./KeywordManager";
+import HiddenCompaniesManager from "./HiddenCompaniesManager";
 
 const getSourceBadge = (source: string | null | undefined, externalId: string | null | undefined) => {
   const src = source || (externalId ? externalId.split(':')[0] : null);
@@ -56,9 +57,10 @@ const getSourceBadge = (source: string | null | undefined, externalId: string | 
   );
 };
 
-export default function JobsClientView({ initialJobs, initialKeywords, initialFavoriteCompanies, userId }: { initialJobs: JobWithUserState[], initialKeywords: IgnoredKeyword[], initialFavoriteCompanies: string[], userId: number }) {
+export default function JobsClientView({ initialJobs, initialKeywords, initialFavoriteCompanies, initialHiddenCompanies, userId }: { initialJobs: JobWithUserState[], initialKeywords: IgnoredKeyword[], initialFavoriteCompanies: string[], initialHiddenCompanies: string[], userId: number }) {
   const [jobs, setJobs] = useState<JobWithUserState[]>(initialJobs);
   const [favoriteCompanies, setFavoriteCompanies] = useState<Set<string>>(new Set(initialFavoriteCompanies || []));
+  const [hiddenCompanies, setHiddenCompanies] = useState<Set<string>>(new Set(initialHiddenCompanies || []));
   const [showKeywordHidden, setShowKeywordHidden] = useState(false);
   const [view, setView] = useState<"grid" | "table">("grid");
   const [sortParam, setSortParam] = useState<"date" | "salary" | "priority">("priority");
@@ -154,6 +156,21 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialFa
       console.error("Failed to toggle favorite company", e);
       // Revert on error
       setFavoriteCompanies(favoriteCompanies);
+    }
+  };
+
+  const handleToggleHiddenCompany = async (companyName: string) => {
+    if (!userId) return;
+    const wasHidden = hiddenCompanies.has(companyName);
+    const next = new Set(hiddenCompanies);
+    if (wasHidden) next.delete(companyName); else next.add(companyName);
+    setHiddenCompanies(next);
+    if (!wasHidden && filterCompany === companyName) setFilterCompany("all");
+    try {
+      await toggleHiddenCompany(userId, companyName, !wasHidden);
+    } catch (e) {
+      console.error("Failed to toggle hidden company", e);
+      setHiddenCompanies(hiddenCompanies);
     }
   };
 
@@ -281,15 +298,20 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialFa
     return 3;
   };
 
+  const visibleJobs = useMemo(
+    () => jobs.filter(j => !hiddenCompanies.has(j.company)),
+    [jobs, hiddenCompanies]
+  );
+
   const { keywordHiddenCount, jobsAfterKeywords, hiddenByKeywords } = useMemo(() => {
     if (!initialKeywords || initialKeywords.length === 0) {
-      return { keywordHiddenCount: 0, jobsAfterKeywords: jobs, hiddenByKeywords: [] };
+      return { keywordHiddenCount: 0, jobsAfterKeywords: visibleJobs, hiddenByKeywords: [] };
     }
     const lowerKeywords = initialKeywords.map(k => k.keyword.toLowerCase());
     const visible: typeof jobs = [];
     const hidden: typeof jobs = [];
     let hiddenCount = 0;
-    for (const j of jobs) {
+    for (const j of visibleJobs) {
       const titleLower = j.title.toLowerCase();
       if (lowerKeywords.some(kw => titleLower.includes(kw))) {
         hiddenCount++;
@@ -300,10 +322,10 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialFa
     }
     return { 
       keywordHiddenCount: hiddenCount, 
-      jobsAfterKeywords: showKeywordHidden ? jobs : visible,
+      jobsAfterKeywords: showKeywordHidden ? visibleJobs : visible,
       hiddenByKeywords: hidden
     };
-  }, [jobs, initialKeywords, showKeywordHidden]);
+  }, [visibleJobs, initialKeywords, showKeywordHidden]);
 
   const processedJobs = useMemo(() => {
     let result = filterStatus === "config_hidden" ? [...hiddenByKeywords] : [...jobsAfterKeywords];
@@ -679,6 +701,9 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialFa
                     </button>
                   </div>
                 )}
+                <button onClick={() => handleToggleHiddenCompany(job.company)} className="p-0.5 rounded text-muted-foreground/50 hover:text-red-400 hover:bg-secondary transition-colors" title="Ocultar propuestas de esta empresa">
+                  <EyeOff className="w-3.5 h-3.5" />
+                </button>
                 {job.companySize != null && job.companySize > 0 && (
                   <span className="text-[10px] px-1 py-0.5 rounded-sm bg-secondary/50 whitespace-nowrap">
                     {job.companySize} empleados
@@ -846,6 +871,9 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialFa
                           </button>
                         </div>
                       )}
+                      <button onClick={() => handleToggleHiddenCompany(job.company)} className="p-0.5 rounded text-muted-foreground/50 hover:text-red-400 hover:bg-secondary transition-colors" title="Ocultar propuestas de esta empresa">
+                        <EyeOff className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   </td>
                   <td className="px-6 py-4 text-muted-foreground text-xs font-medium">
@@ -928,6 +956,7 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialFa
 
             <div className="max-h-[80vh] overflow-y-auto p-2">
               <KeywordManager keywords={initialKeywords} userId={userId} />
+              <HiddenCompaniesManager companies={Array.from(hiddenCompanies).sort((a, b) => a.localeCompare(b))} onShow={handleToggleHiddenCompany} />
 
             </div>
           </div>

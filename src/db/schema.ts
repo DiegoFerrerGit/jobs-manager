@@ -146,6 +146,16 @@ export const favoriteCompanies = pgTable('favorite_companies', {
   userCompany: uniqueIndex('favorite_companies_user_company_key').on(t.userId, sql`lower(${t.companyName})`),
 }));
 
+export const hiddenCompanies = pgTable('hidden_companies', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  companyName: text('company_name').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  userCompany: uniqueIndex('hidden_companies_user_company_key').on(t.userId, sql`lower(${t.companyName})`),
+}));
+
+
 export const userCvs = pgTable("user_cvs", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }).unique(),

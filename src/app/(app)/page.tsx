@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { jobs, userJobs, ignoredKeywords, companies, favoriteCompanies } from "@/db/schema";
+import { jobs, userJobs, ignoredKeywords, companies, favoriteCompanies, hiddenCompanies } from "@/db/schema";
 import { desc, eq, sql } from "drizzle-orm";
 import JobsClientView from "@/components/JobsClientView";
 import { getCurrentUser } from "@/lib/auth";
@@ -72,6 +72,11 @@ export default async function Home() {
     .where(eq(favoriteCompanies.userId, userId)) : [];
   const initialFavoriteCompanies = favorites.map((f: any) => f.companyName);
 
+  const hidden = userId ? await db.select()
+    .from(hiddenCompanies)
+    .where(eq(hiddenCompanies.userId, userId)) : [];
+  const initialHiddenCompanies = hidden.map((h: any) => h.companyName);
+
 
   return (
     <div className="min-h-screen relative selection:bg-primary/30 p-4 sm:p-6 lg:p-8">
@@ -106,7 +111,7 @@ export default async function Home() {
           </div>
         </div>
 
-        <JobsClientView initialJobs={jobsList} initialKeywords={keywords} initialFavoriteCompanies={initialFavoriteCompanies} userId={userId} />
+        <JobsClientView initialJobs={jobsList} initialKeywords={keywords} initialFavoriteCompanies={initialFavoriteCompanies} initialHiddenCompanies={initialHiddenCompanies} userId={userId} />
       </div>
     </div>
   )

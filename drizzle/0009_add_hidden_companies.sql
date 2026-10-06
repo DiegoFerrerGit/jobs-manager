@@ -1,0 +1,9 @@
+CREATE TABLE "hidden_companies" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"user_id" integer NOT NULL,
+	"company_name" text NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+ALTER TABLE "hidden_companies" ADD CONSTRAINT "hidden_companies_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+CREATE UNIQUE INDEX "hidden_companies_user_company_key" ON "hidden_companies" USING btree ("user_id",lower("company_name"));

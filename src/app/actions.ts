@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/db";
-import { jobs, userJobs, ignoredKeywords, companies, favoriteCompanies } from "@/db/schema";
+import { jobs, userJobs, ignoredKeywords, companies, favoriteCompanies, hiddenCompanies } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
@@ -74,6 +74,16 @@ export async function toggleFavoriteCompany(userId: number, companyName: string,
 }
 
 
+
+export async function toggleHiddenCompany(userId: number, companyName: string, isHidden: boolean) {
+  if (isHidden) {
+    await db.insert(hiddenCompanies).values({ userId, companyName }).onConflictDoNothing();
+  } else {
+    await db.delete(hiddenCompanies)
+      .where(and(eq(hiddenCompanies.userId, userId), eq(hiddenCompanies.companyName, companyName)));
+  }
+  revalidatePath("/");
+}
 
 export async function updateCompanyLinkedin(companyName: string, linkedinUrl: string) {
   const manualUrl = linkedinUrl ? (linkedinUrl.includes('#manual') ? linkedinUrl : `${linkedinUrl}#manual`) : null;

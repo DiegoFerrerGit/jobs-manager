@@ -62,9 +62,9 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialFa
   const [showKeywordHidden, setShowKeywordHidden] = useState(false);
   const [view, setView] = useState<"grid" | "table">("grid");
   const [sortParam, setSortParam] = useState<"date" | "salary" | "priority">("priority");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [sortParam2, setSortParam2] = useState<"none" | "date" | "salary" | "priority">("none");
-  const [sortOrder2, setSortOrder2] = useState<"asc" | "desc">("asc");
+  const [sortOrder2, setSortOrder2] = useState<"asc" | "desc">("desc");
   const [filterPriority, setFilterPriority] = useState<"all" | "1" | "2" | "3">("all");
   const [filterStatus, setFilterStatus] = useState<"unapplied" | "all" | "applied" | "hidden" | "closed" | "config_hidden">("unapplied");
   const [filterCompany, setFilterCompany] = useState<"all" | string>("all");
@@ -125,15 +125,15 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialFa
     }
   };
 
-  const hasFiltersChanged = filterPriority !== "all" || filterStatus !== "unapplied" || sortParam !== "priority" || sortOrder !== "asc" || sortParam2 !== "none" || sortOrder2 !== "asc" || searchQuery !== "" || filterCompany !== "all";
+  const hasFiltersChanged = filterPriority !== "all" || filterStatus !== "unapplied" || sortParam !== "priority" || sortOrder !== "desc" || sortParam2 !== "none" || sortOrder2 !== "desc" || searchQuery !== "" || filterCompany !== "all";
 
   const handleClearFilters = () => {
     setFilterPriority("all");
     setFilterStatus("unapplied");
     setSortParam("priority");
-    setSortOrder("asc");
+    setSortOrder("desc");
     setSortParam2("none");
-    setSortOrder2("asc");
+    setSortOrder2("desc");
     setSearchQuery("");
     setFilterCompany("all");
   };
@@ -355,7 +355,7 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialFa
           if (salB === 0 && salA !== 0) return -1; // b is empty, send to bottom
           c = salA - salB;
         } else if (param === "priority") {
-          c = (a.priority || 3) - (b.priority || 3);
+          c = (b.priority || 3) - (a.priority || 3);
         } else if (param === "date") {
           const dateA = new Date(a.detectedAt || a.createdAt).getTime();
           const dateB = new Date(b.detectedAt || b.createdAt).getTime();
@@ -379,7 +379,7 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialFa
       setSortOrder(prev => prev === "asc" ? "desc" : "asc");
     } else {
       setSortParam(param);
-      setSortOrder(param === "salary" ? "desc" : "asc");
+      setSortOrder("desc");
     }
   };
 
@@ -422,7 +422,7 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialFa
                 const newVal = e.target.value as any;
                 if (sortParam !== newVal) {
                   setSortParam(newVal);
-                  setSortOrder(newVal === "salary" ? "desc" : "asc");
+                  setSortOrder("desc");
                 }
               }}
             >
@@ -449,7 +449,7 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialFa
                 if (sortParam2 !== newVal) {
                   setSortParam2(newVal);
                   if (newVal !== "none") {
-                    setSortOrder2(newVal === "salary" ? "desc" : "asc");
+                    setSortOrder2("desc");
                   }
                 }
               }}
@@ -679,12 +679,6 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialFa
                     </button>
                   </div>
                 )}
-                {job.companyHq && (
-                  <>
-                    <span className="text-muted-foreground/50 shrink-0">-</span>
-                    <span className="text-muted-foreground" title={job.companyHq}>📍 {job.companyHq}</span>
-                  </>
-                )}
                 {job.companySize != null && job.companySize > 0 && (
                   <span className="text-[10px] px-1 py-0.5 rounded-sm bg-secondary/50 whitespace-nowrap">
                     {job.companySize} empleados
@@ -851,12 +845,6 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialFa
                             <Pencil className="w-3 h-3" />
                           </button>
                         </div>
-                      )}
-                      {job.companyHq && (
-                        <>
-                          <span className="text-muted-foreground/50 shrink-0">-</span>
-                          <span className="text-muted-foreground" title={job.companyHq}>📍 {job.companyHq}</span>
-                        </>
                       )}
                     </div>
                   </td>

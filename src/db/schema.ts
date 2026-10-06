@@ -74,6 +74,7 @@ export const jobs = pgTable('jobs', {
   description: text('description'),
   applyUrl: text('apply_url').notNull(),
   locations: text('locations'),
+  department: text('department'),
   publishedAt: date('published_at'),
   republishedAt: date('republished_at'),
   detectedAt: date('detected_at').notNull().default(sql`CURRENT_DATE`),

@@ -118,7 +118,8 @@ export async function getTrackerData() {
         instanciaCierre: job.instanciaCierre || "",
         categoriaCierre: job.categoriaCierre || "",
         motivoRechazo: job.motivoRechazo || "",
-        closedAt: job.closedAt || null,
+        // Procesos cerrados viejos sin closedAt: usar la última actualización como aproximación
+        closedAt: job.closedAt || ((job.columnId === 'col-rejected' || job.columnId === 'col-accepted') ? job.updatedAt : null) || null,
         notes: job.notes || "",
         comments: (job.comments as any) || [],
         customProps: (job.customProps as Record<string, any>) ?? {},
@@ -197,7 +198,9 @@ export async function updateJobAction(jobId: string, columnId: string, jobData: 
     categoriaCierre: jobData.categoriaCierre,
     motivoRechazo: jobData.motivoRechazo,
     score: jobData.score,
-    closedAt: jobData.closedAt,
+    closedAt: (columnId === 'col-rejected' || columnId === 'col-accepted')
+      ? (jobData.closedAt ? new Date(jobData.closedAt) : (existing?.closedAt ?? new Date()))
+      : jobData.closedAt,
     notes: jobData.notes ?? null,
     comments: jobData.comments ?? null,
     customProps: jobData.customProps ?? null,

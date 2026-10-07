@@ -574,6 +574,7 @@ export default function TrackerClient({ initialData, currentUser }: { initialDat
       const [removed] = sourceItems.splice(source.index, 1);
       destItems.splice(destination.index, 0, removed);
       removed.instanciaCierre = toInstanciaLabel(destCol.title);
+      removed.closedAt = (destination.droppableId === 'col-accepted' || destination.droppableId === 'col-rejected') ? new Date() : null;
       updateJobColumnAction(result.draggableId, destination.droppableId, removed.instanciaCierre).catch(console.error);
 
       setColumns({
@@ -1407,7 +1408,8 @@ export default function TrackerClient({ initialData, currentUser }: { initialDat
                   const updatedJob = {
                     ...targetJob,
                     instanciaCierre: finalInstanciaCierre,
-                    categoriaCierre: finalizeCategory
+                    categoriaCierre: finalizeCategory,
+                    closedAt: new Date()
                   };
 
                   setColumns(prev => {
@@ -1434,7 +1436,8 @@ export default function TrackerClient({ initialData, currentUser }: { initialDat
                   const updatedJob = {
                     ...targetJob,
                     instanciaCierre: toInstanciaLabel(jobToFinalize.currentColumnTitle),
-                    categoriaCierre: finalizeCategory || "Aceptada"
+                    categoriaCierre: finalizeCategory || "Aceptada",
+                    closedAt: new Date()
                   };
 
                   setColumns(prev => {

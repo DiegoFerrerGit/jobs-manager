@@ -11,5 +11,8 @@ export default async function TrackerPage() {
 
   const data = await getTrackerData();
 
-  return <TrackerClient initialData={data} />;
+  return <TrackerClient
+      initialData={data}
+      currentUser={{ name: (user as any).name || (user as any).email || "Usuario", picture: (user as any).picture }}
+    />;
 }

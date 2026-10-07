@@ -140,7 +140,7 @@ type ColumnData = {
   jobs: TrackerJob[];
 };
 
-export default function TrackerClient({ initialData }: { initialData: any }) {
+export default function TrackerClient({ initialData, currentUser }: { initialData: any, currentUser?: { name: string; picture?: string } }) {
 
   // -- MIGRATION LOGIC (Run once on initialData) --
   const getAnnualSalaryLocal = (job: any) => job.salarioAnual || (job.salarioMensual ? job.salarioMensual * 12 : 0);
@@ -872,6 +872,7 @@ export default function TrackerClient({ initialData }: { initialData: any }) {
         <AnimatePresence>
           {selectedJobId && selectedColumnId && columns[selectedColumnId] && (
             <JobPanel
+              currentUser={currentUser}
               job={columns[selectedColumnId].jobs.find(j => j.id === selectedJobId)!}
               columnId={selectedColumnId}
               columns={Object.values(columns).map(c => ({ id: c.id, title: c.title, badge: c.badge, cardBg: c.cardBg, wrapperBg: c.wrapperBg }))}

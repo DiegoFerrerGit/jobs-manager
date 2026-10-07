@@ -31,6 +31,7 @@ export interface TrackerJob {
 export interface JobComment {
   id: string;
   author: string;
+  authorPicture?: string;
   content: string;
   createdAt: Date;
 }

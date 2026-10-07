@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { JobComment } from "../types";
-import { formatDistanceToNow } from "date-fns";
+import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import TextareaAutosize from "react-textarea-autosize";
 import { Send, Trash2, User } from "lucide-react";
@@ -8,9 +8,23 @@ import { Send, Trash2, User } from "lucide-react";
 interface JobCommentsProps {
   comments: JobComment[];
   onChange: (comments: JobComment[]) => void;
+  currentUser?: { name: string; picture?: string };
 }
 
-export default function JobComments({ comments, onChange }: JobCommentsProps) {
+function Avatar({ picture, name, className = "" }: { picture?: string; name?: string; className?: string }) {
+  return (
+    <div className={`w-7 h-7 rounded-full bg-white/10 flex items-center justify-center shrink-0 overflow-hidden ${className}`}>
+      {picture ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={picture} alt={name || "Avatar"} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
+      ) : (
+        <User className="w-4 h-4 text-white/70" />
+      )}
+    </div>
+  );
+}
+
+export default function JobComments({ comments, onChange, currentUser }: JobCommentsProps) {
   const [newComment, setNewComment] = useState("");
 
   const handleAddComment = () => {
@@ -18,7 +32,8 @@ export default function JobComments({ comments, onChange }: JobCommentsProps) {
     
     const comment: JobComment = {
       id: `comment_${Date.now()}`,
-      author: "User", // Can be dynamic if we had auth
+      author: currentUser?.name || "User",
+      authorPicture: currentUser?.picture,
       content: newComment.trim(),
       createdAt: new Date()
     };
@@ -38,16 +53,19 @@ export default function JobComments({ comments, onChange }: JobCommentsProps) {
       </h3>
       
       <div className="space-y-4 mb-4">
-        {(comments || []).map(comment => (
+        {(comments || []).map(comment => {
+          // Comentarios antiguos guardados como "User": se atribuyen al usuario logueado
+          const isLegacy = comment.author === "User" && !comment.authorPicture;
+          const name = isLegacy ? (currentUser?.name || comment.author) : comment.author;
+          const picture = isLegacy ? currentUser?.picture : comment.authorPicture;
+          return (
           <div key={comment.id} className="group flex gap-3">
-            <div className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center shrink-0">
-              <User className="w-4 h-4 text-white/70" />
-            </div>
+            <Avatar picture={picture} name={name} />
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="font-medium text-[13px]">{comment.author}</span>
-                <span className="text-[11px] text-muted-foreground" title={new Date(comment.createdAt).toLocaleString()}>
-                  {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true, locale: es })}
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <span className="font-medium text-[13px] truncate">{name}</span>
+                <span className="text-[11px] text-muted-foreground shrink-0">
+                  {format(new Date(comment.createdAt), "dd/MM/yyyy HH:mm", { locale: es })}
                 </span>
               </div>
               <div className="text-[13px] text-foreground/90 whitespace-pre-wrap break-words">
@@ -62,13 +80,12 @@ export default function JobComments({ comments, onChange }: JobCommentsProps) {
               <Trash2 className="w-3.5 h-3.5" />
             </button>
           </div>
-        ))}
+          );
+        })}
       </div>
 
       <div className="flex gap-3 items-start">
-        <div className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center shrink-0 mt-1">
-          <User className="w-4 h-4 text-white/70" />
-        </div>
+        <Avatar picture={currentUser?.picture} name={currentUser?.name} className="mt-1" />
         <div className="flex-1 relative">
           <TextareaAutosize
             minRows={1}

@@ -16,6 +16,7 @@ interface JobPanelProps {
   onClose: () => void;
   onUpdate: (updatedJob: TrackerJob, targetColumnId?: string) => void;
   onUpdateConfig: (newConfig: TrackerConfig) => void;
+  currentUser?: { name: string; picture?: string };
 }
 
 const PROPERTY_TYPES: { type: CustomPropertyType; label: string; icon: React.ReactNode }[] = [
@@ -38,7 +39,7 @@ function getTypeIcon(type: CustomPropertyType) {
   return PROPERTY_TYPES.find(p => p.type === type)?.icon ?? <AlignLeft className="w-4 h-4" />;
 }
 
-export default function JobPanel({ job, columnId, config, columns, onClose, onUpdate, onUpdateConfig }: JobPanelProps) {
+export default function JobPanel({ job, columnId, config, columns, onClose, onUpdate, onUpdateConfig, currentUser }: JobPanelProps) {
   const [data, setData] = useState<TrackerJob>(job);
   const [showAddProperty, setShowAddProperty] = useState(false);
   const [newPropName, setNewPropName] = useState("");
@@ -369,7 +370,7 @@ export default function JobPanel({ job, columnId, config, columns, onClose, onUp
           </div>
 
           <JobNotes notes={data.notes} onChange={v => handleChange("notes", v)} />
-          <JobComments comments={data.comments || []} onChange={v => handleChange("comments", v)} />
+          <JobComments currentUser={currentUser} comments={data.comments || []} onChange={v => handleChange("comments", v)} />
         </div>
       </motion.div>
 

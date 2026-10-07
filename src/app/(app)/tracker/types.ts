@@ -144,7 +144,8 @@ export const DEFAULT_SELECT_OPTIONS: TrackerConfig["options"] = {
   categoriaCierre: [
     { label: "Nivel Inglés", color: "bg-[#41688d] text-white/95" },
     { label: "Filtro Técnico/Ambiguo", color: "bg-[#914646] text-white/95" },
-    { label: "Ghosting/Sin respuesta", color: "bg-[#9d6333] text-white/95" },
+    { label: "Ghosting", color: "bg-[#9d6333] text-white/95" },
+    { label: "Sin feedback", color: "bg-[#8c4669] text-white/95" },
     { label: "Presupuesto/Salario", color: "bg-[#457b54] text-white/95" },
     { label: "Cerrada por mí/No me gustó", color: "bg-[#785885] text-white/95" },
     { label: "Referido/Interno", color: "bg-[#8b7a37] text-white/95" },

@@ -1,6 +1,6 @@
 import {
   pgTable, pgEnum, serial, integer, smallint, text, char, date,
-  timestamp, uniqueIndex, index, uuid, jsonb, primaryKey
+  timestamp, uniqueIndex, index, uuid, jsonb, primaryKey, boolean
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
@@ -102,6 +102,17 @@ export const jobs = pgTable('jobs', {
   companyStage: text('company_stage'),
   companyLinkedin: text('company_linkedin'),
   linkedinPeopleAr: text('linkedin_people_ar'),
+
+  // Taxonomía / clasificación
+  jobFunction: text('job_function'),
+  level: text('level'),
+  tags: text('tags').array().notNull().default(sql`'{}'::text[]`),
+  eligible: boolean('eligible'),
+  isAgency: boolean('is_agency').notNull().default(false),
+  isEvergreen: boolean('is_evergreen').notNull().default(false),
+  classificationNote: text('classification_note'),
+  classifiedAt: timestamp('classified_at', { withTimezone: true }),
+  taxonomyVersion: smallint('taxonomy_version'),
 
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),

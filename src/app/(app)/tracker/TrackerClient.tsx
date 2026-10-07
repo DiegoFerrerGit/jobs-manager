@@ -207,6 +207,16 @@ export default function TrackerClient({ initialData, currentUser }: { initialDat
 
   // Delete modal state
   const [jobToDelete, setJobToDelete] = useState<{ jobId: string, columnId: string } | null>(null);
+  // Las columnas no siempre coinciden con las opciones de "Instancia de Cierre" (ej: "People / Screening" -> "People")
+  const toInstanciaLabel = (title: string) => {
+    const opts: any[] = config?.options?.instanciaCierre || [];
+    const norm = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+    const t = norm(title);
+    const exact = opts.find(o => norm(o.label) === t);
+    if (exact) return exact.label;
+    const partial = opts.find(o => t.includes(norm(o.label)) || norm(o.label).includes(t));
+    return partial ? partial.label : title;
+  };
   const [jobToFinalize, setJobToFinalize] = useState<{ jobId: string, columnId: string, currentColumnTitle: string } | null>(null);
   const [jobToRestore, setJobToRestore] = useState<{ jobId: string, currentColumnId: string } | null>(null);
   const [restoreTargetCol, setRestoreTargetCol] = useState<string>("");
@@ -563,8 +573,8 @@ export default function TrackerClient({ initialData, currentUser }: { initialDat
 
       const [removed] = sourceItems.splice(source.index, 1);
       destItems.splice(destination.index, 0, removed);
-      removed.instanciaCierre = destCol.title;
-      updateJobColumnAction(result.draggableId, destination.droppableId, destCol.title).catch(console.error);
+      removed.instanciaCierre = toInstanciaLabel(destCol.title);
+      updateJobColumnAction(result.draggableId, destination.droppableId, removed.instanciaCierre).catch(console.error);
 
       setColumns({
         ...columns,
@@ -1389,7 +1399,7 @@ export default function TrackerClient({ initialData, currentUser }: { initialDat
                   const targetJob = columns[jobToFinalize.columnId].jobs.find(j => j.id === jobToFinalize.jobId);
                   if (!targetJob) return;
 
-                  let finalInstanciaCierre = jobToFinalize.currentColumnTitle;
+                  let finalInstanciaCierre = toInstanciaLabel(jobToFinalize.currentColumnTitle);
                   if (jobToFinalize.currentColumnTitle === "C-Level / Culture" && finalizeCLevelSuccess === true) {
                     finalInstanciaCierre = "Proceso completo";
                   }
@@ -1423,7 +1433,7 @@ export default function TrackerClient({ initialData, currentUser }: { initialDat
 
                   const updatedJob = {
                     ...targetJob,
-                    instanciaCierre: jobToFinalize.currentColumnTitle,
+                    instanciaCierre: toInstanciaLabel(jobToFinalize.currentColumnTitle),
                     categoriaCierre: finalizeCategory || "Aceptada"
                   };
 

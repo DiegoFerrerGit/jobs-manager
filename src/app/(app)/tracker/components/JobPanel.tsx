@@ -538,7 +538,11 @@ function CustomPropertyRow({ prop, value, job, onChange, onDelete, onRename, onA
       case "created_at":
         return (
           <span className="text-sm text-muted-foreground px-2 py-1.5">
-            {job.closedAt ? new Date(job.closedAt).toLocaleDateString("es-AR") : "—"}
+            {job.closedAt ? (() => {
+              const d = new Date(job.closedAt);
+              const mes = d.toLocaleDateString("es-AR", { month: "long" });
+              return `${d.getDate()} de ${mes} ${d.getFullYear()}`;
+            })() : "—"}
           </span>
         );
       default:

@@ -87,17 +87,6 @@ const initialColumns = {
     cardHover: "hover:bg-[#2d4052]",
     jobs: [] as TrackerJob[]
   },
-  "hold": {
-    id: "hold",
-    title: "Hold",
-    badge: "bg-[#787774] text-white",
-    wrapperBg: "bg-[#202020]",
-    cardBg: "bg-[#2f2f2f]",
-    cardHover: "hover:bg-[#383838]",
-    jobs: [
-      { id: "job-4", name: "Katapult", location: "Colombia", role: "Head Of Engineering", salarioAnual: 96000, salarioMensual: 8000 }
-    ] as TrackerJob[]
-  },
   "aceptada": {
     id: "aceptada",
     title: "Aceptada",

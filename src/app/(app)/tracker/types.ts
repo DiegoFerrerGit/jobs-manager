@@ -150,7 +150,8 @@ export const DEFAULT_SELECT_OPTIONS: TrackerConfig["options"] = {
     { label: "Presupuesto/Salario", color: "bg-[#457b54] text-white/95" },
     { label: "Cerrada por mí/No me gustó", color: "bg-[#785885] text-white/95" },
     { label: "Referido/Interno", color: "bg-[#8b7a37] text-white/95" },
-    { label: "Fit especifico", color: "bg-[#5c5c5c] text-white/95" }
+    { label: "Fit especifico", color: "bg-[#5c5c5c] text-white/95" },
+    { label: "En Hold", color: "bg-[#5c5c5c] text-white/95" }
   ]
 };
 

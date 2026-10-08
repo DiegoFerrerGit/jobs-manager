@@ -152,6 +152,12 @@ export async function getTrackerData() {
         });
       }
     }
+    // Migration: add "En Hold" to already-saved configs
+    const cats = mergedOptions.categoriaCierre as any[];
+    if (!cats.some((o: any) => o.label === "En Hold")) {
+      const hold = DEFAULT_SELECT_OPTIONS.categoriaCierre.find((o: any) => o.label === "En Hold");
+      if (hold) mergedOptions.categoriaCierre = [...cats, hold];
+    }
   }
   const config = {
     options: mergedOptions,

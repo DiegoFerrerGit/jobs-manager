@@ -7,7 +7,7 @@ import { Plus, Eye, EyeOff, GripVertical, Trash2, CheckCircle2, Check, Undo2, Fi
 import { motion, AnimatePresence } from "framer-motion";
 import { TrackerJob, TrackerConfig, DEFAULT_SELECT_OPTIONS } from "./types";
 import JobPanel from "./components/JobPanel";
-import { updateJobAction, updateJobColumnAction, deleteJobAction, updateColumnsAction, updateConfigAction } from "./actions";
+import { updateJobAction, updateJobColumnAction, deleteJobAction, updateColumnsAction, updateConfigAction, deleteColumnAction } from "./actions";
 import { PieChart, Pie, Cell, Tooltip, BarChart, Bar, XAxis, YAxis, ResponsiveContainer, CartesianGrid, Sector } from "recharts";
 
 const extractHexColor = (colorClass?: string) => {
@@ -476,6 +476,22 @@ export default function TrackerClient({ initialData, currentUser }: { initialDat
 
 
   const deleteColumn = (id: string) => {
+    const count = columns[id]?.jobs.length || 0;
+    const msg = count > 0
+      ? `Esta columna tiene ${count} posición(es). Se eliminarán junto con la columna. ¿Continuar?`
+      : "¿Eliminar esta columna?";
+    if (!window.confirm(msg)) return;
+    setColumnOrder(prev => prev.filter(c => c !== id));
+    setColumns(prev => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+    setActiveDropdown(null);
+    deleteColumnAction(id).catch(console.error);
+  };
+
+  const hideColumn = (id: string) => {
     setColumnOrder(prev => prev.filter(c => c !== id));
     setActiveDropdown(null);
   };
@@ -743,7 +759,7 @@ export default function TrackerClient({ initialData, currentUser }: { initialDat
                                       <button
                                         type="button"
                                         className="w-full text-left px-3 py-1.5 hover:bg-[#303030] rounded text-foreground transition-colors flex items-center gap-2"
-                                        onClick={() => { deleteColumn(columnId); }}
+                                        onClick={() => { hideColumn(columnId); }}
                                       >
                                         <EyeOff className="w-4 h-4 text-muted-foreground" />
                                         Ocultar columna

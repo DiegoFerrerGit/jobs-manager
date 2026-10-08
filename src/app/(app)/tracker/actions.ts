@@ -2,7 +2,7 @@
 
 import { db } from "@/db";
 import { trackerColumns, trackerJobs, trackerConfig } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/auth";
 import { DEFAULT_SELECT_OPTIONS } from "./types";
@@ -282,6 +282,14 @@ export async function updateColumnsAction(columnsRecord: Record<string, any>, co
       await db.insert(trackerColumns).values({ id: colId, ...payload });
     }
   }
+  revalidatePath("/tracker");
+}
+
+export async function deleteColumnAction(columnId: string) {
+  const user = await getCurrentUser();
+  if (!user?.sub) throw new Error("Unauthorized");
+  // Jobs in this column are removed too (FK cascade)
+  await db.delete(trackerColumns).where(and(eq(trackerColumns.id, columnId), eq(trackerColumns.userId, user.sub)));
   revalidatePath("/tracker");
 }
 

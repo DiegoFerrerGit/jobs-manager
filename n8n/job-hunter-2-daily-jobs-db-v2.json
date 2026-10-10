@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-10T20:24:00.823Z",
+  "updatedAt": "2026-10-10T21:24:13.966Z",
   "createdAt": "2026-10-06T14:11:16.581Z",
   "id": "waLP5wbqTh3i6Flf",
   "name": "Job Hunter 2 - Daily jobs (DB) - V2",
@@ -881,7 +881,8 @@
     "timeSavedMode": "fixed",
     "timezone": "Etc/UTC",
     "callerPolicy": "workflowsFromSameOwner",
-    "availableInMCP": false
+    "availableInMCP": false,
+    "errorWorkflow": "LVN1G5auv4gqiRW8"
   },
   "staticData": null,
   "meta": {
@@ -891,7 +892,7 @@
   "pinData": {},
   "versionId": "6c1b11de-f4d6-4570-8cd4-07d6262210c9",
   "activeVersionId": null,
-  "versionCounter": 144,
+  "versionCounter": 145,
   "triggerCount": 0,
   "sourceWorkflowId": null,
   "tags": [],

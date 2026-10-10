@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-10T20:36:15.301Z",
+  "updatedAt": "2026-10-10T21:24:30.275Z",
   "createdAt": "2026-10-10T18:10:50.261Z",
   "id": "nkQDAF881J0RIguL",
   "name": "Job Hunter 3 - Classify",
@@ -98,7 +98,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT id, external_id, title, department, locations, description\nFROM jobs\nWHERE classified_at IS NULL\n  AND closed_at IS NULL\n  AND classification_attempts < 3\nORDER BY created_at DESC\nLIMIT 1000; ",
+        "query": "SELECT id, external_id, title, department, locations, description\nFROM jobs\nWHERE classified_at IS NULL\n  AND closed_at IS NULL\n  AND classification_attempts < 3\nORDER BY created_at DESC\nLIMIT 150; ",
         "options": {}
       },
       "name": "Read unclassified LOCAL",
@@ -441,15 +441,16 @@
     "timeSavedMode": "fixed",
     "timezone": "Etc/UTC",
     "callerPolicy": "workflowsFromSameOwner",
-    "availableInMCP": false
+    "availableInMCP": false,
+    "errorWorkflow": "LVN1G5auv4gqiRW8"
   },
   "staticData": null,
   "meta": null,
   "nodeGroups": [],
   "pinData": {},
-  "versionId": "279b3ccd-ac7d-4432-9bbc-197f0916f5e0",
+  "versionId": "ee9b64cf-29d0-4d17-af92-f7a1dbae5c0e",
   "activeVersionId": null,
-  "versionCounter": 54,
+  "versionCounter": 56,
   "triggerCount": 0,
   "sourceWorkflowId": null,
   "tags": [],

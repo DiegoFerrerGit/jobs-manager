@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-03T03:52:13.563Z",
+  "updatedAt": "2026-10-10T21:24:05.124Z",
   "createdAt": "2026-10-03T01:19:26.715Z",
   "id": "S4irU0ooc9EJSGD7",
   "name": "Job Hunter 1 - Discover companies",
@@ -253,7 +253,8 @@
     "timeSavedMode": "fixed",
     "timezone": "Etc/UTC",
     "callerPolicy": "workflowsFromSameOwner",
-    "availableInMCP": false
+    "availableInMCP": false,
+    "errorWorkflow": "LVN1G5auv4gqiRW8"
   },
   "staticData": {
     "node:Every Monday 8am": {
@@ -272,7 +273,7 @@
   "pinData": {},
   "versionId": "3a2df88c-055f-466f-8fbc-bf02d1ba748d",
   "activeVersionId": "3a2df88c-055f-466f-8fbc-bf02d1ba748d",
-  "versionCounter": 63,
+  "versionCounter": 64,
   "triggerCount": 1,
   "sourceWorkflowId": null,
   "tags": [],

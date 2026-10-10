@@ -1,0 +1,99 @@
+{
+  "updatedAt": "2026-10-10T21:27:11.933Z",
+  "createdAt": "2026-10-10T21:19:43.011Z",
+  "id": "LVN1G5auv4gqiRW8",
+  "name": "Job Hunter - Error",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {},
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        -448,
+        -32
+      ],
+      "id": "0f407023-e8b2-413e-85b7-48b659776c00"
+    },
+    {
+      "parameters": {
+        "sendTo": "diegoferrer.df@gmail.com",
+        "subject": "=n8n falló: {{ $json.workflow.name }}",
+        "emailType": "text",
+        "message": "=Workflow: {{ $json.workflow.name }}\nNodo: {{ $json.execution.lastNodeExecuted }}\nError: {{ $json.execution.error.message }}\nDetalle: {{ $json.execution.error.description ?? '-' }}\nCuándo: {{ $now.setZone('America/Buenos_Aires').toFormat('yyyy-MM-dd HH:mm') }}\nVer ejecución: {{ $json.execution.url }}",
+        "options": {}
+      },
+      "name": "Avisar por mail",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        -208,
+        -32
+      ],
+      "id": "58668ca7-5786-477c-86d7-bc9707ffffe0",
+      "webhookId": "d5589307-b6c5-43b8-b8ab-d8d692b98a84",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "RXvxeMAx6SU6bDJR",
+          "name": "diegoferrer.df@gmail.com account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Avisar por mail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "nodeGroups": [],
+  "pinData": {},
+  "versionId": "bf8733a8-139d-4c38-a5fd-21450f2e3273",
+  "activeVersionId": "bf8733a8-139d-4c38-a5fd-21450f2e3273",
+  "versionCounter": 7,
+  "triggerCount": 0,
+  "sourceWorkflowId": null,
+  "tags": [],
+  "shared": [
+    {
+      "updatedAt": "2026-10-10T21:19:43.014Z",
+      "createdAt": "2026-10-10T21:19:43.014Z",
+      "role": "workflow:owner",
+      "workflowId": "LVN1G5auv4gqiRW8",
+      "projectId": "iNXI5R7gWjOyxfvE",
+      "project": {
+        "updatedAt": "2026-08-30T21:59:52.951Z",
+        "createdAt": "2026-08-30T21:59:22.385Z",
+        "id": "iNXI5R7gWjOyxfvE",
+        "name": "Diego diegoferrer.educacion.local@gmail.com <diegoferrer.educacion@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "customTelemetryTags": [],
+        "creatorId": "2d8c2ad2-7b9d-46e1-a3fe-e800e3bc9896"
+      }
+    }
+  ],
+  "versionMetadata": {
+    "name": "Version bf8733a8",
+    "description": ""
+  }
+}

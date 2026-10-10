@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-07T18:52:48.409Z",
+  "updatedAt": "2026-10-10T20:24:00.823Z",
   "createdAt": "2026-10-06T14:11:16.581Z",
   "id": "waLP5wbqTh3i6Flf",
   "name": "Job Hunter 2 - Daily jobs (DB) - V2",
@@ -103,19 +103,6 @@
     },
     {
       "parameters": {
-        "jsCode": "// =====================================================================\n//  Classify & Filter  —  CON INSTRUMENTACION (temporal)\n//\n//  Cuenta los descartes por motivo y emite un item de resumen al principio.\n//  No cambia que avisos pasan: lo que pasaba antes sigue pasando.\n//  Para sacarlo despues: borrar las lineas marcadas con  // [INSTR]\n// =====================================================================\n\nconst MIN_SALARY_K = 60;\n\nconst IS_ENGINEERING = /engineer|engineering|developer|desarrollador|desarrollo|programador|programmer|builder|full.?stack|front.?end|back.?end|ingenier|arquitect|\\bsre\\b|devops|architect|tech(nical)? lead|l[íi]der t[ée]cnico|forward deployed|machine learning|\\bml\\b|\\bcto\\b|head of eng|vp.*eng/i;\nconst IS_ENG_DEPT = /engineer|engineering|technolog|\\btech\\b|software|\\br&?d\\b|platform|infrastructur/i;\nconst EXCLUDE = /recruit|reclut|talent|sales(?! engineer)|ventas|account exec|marketing|designer|dise[ñn]ador|legal|finance|contador|intern|pasant|practicante|product manager|program manager|project manager|gerente de producto|jefe de producto|\\banalyst\\b|analista(?! programador)|data scientist|cient[íi]fico de datos|incident manager/i;\nconst EXCLUDE_EVERGREEN = /future .*(opportunit|role|position)|general interest|talent (pool|community|network)|open application|spontaneous/i;\n\nconst ARGENTINA = /argentin|buenos aires/i;\nconst LATAM = /latam|latin america|south america|\\bamericas\\b/i;\nconst GLOBAL = /\\b(anywhere|worldwide|global)\\b/i;\nconst REMOTE_ONLY = /^(remote|remoto|fully remote)$/i;\nconst US_ONLY = /(must|need to|required to)\\s+(be\\s+)?(based|located|live|reside)[^.]{0,40}(united states|u\\.s\\.|\\busa\\b)|(authorized|authorization|eligible)\\s+to\\s+work\\s+in\\s+the\\s+(united states|u\\.s\\.)|u\\.s\\.\\s+(citizen|work authorization)|citizen\\/visa only/i;\n\nconst MANAGER = /manager|gerente|jefe|head of|director|\\bvp\\b|vice president|\\bcto\\b/i;\nconst LEAD = /lead|l[íi]der|staff|principal|forward deployed|product engineer|founding/i;\nconst PRIORITY = { manager: 1, lead_staff: 2, ic: 3 };\n\nconst LATAM_COUNTRY = /\\b(argentin|brazil|brasil|colombia|chile|uruguay|per[úu]|paraguay|bolivia|ecuador|venezuela|(?<!new )m[ée]xico|costa rica|panam[áa]|guatemala)\\b|\\b(ARG|BRA|COL|CHL|URY|PER|MEX|CRI)\\b|\\b(bogot[áa]|medell[íi]n|barranquilla|cartagena|s[ãa]o paulo|rio de janeiro|porto alegre|belo horizonte|curitiba|florian[óo]polis|joinville|recife|montevideo|asunci[óo]n|guadalajara|monterrey|cdmx|quito|guayaquil|san salvador|tegucigalpa|managua)\\b/i;\nconst OTHER_LATAM_CODE = /\\b(BR|CO|CL|UY|PE|MX|EC|BO|PY|VE|CR)\\b/;\nconst NY_STREET = /ave(nue)?\\.?\\s+of\\s+(the\\s+)?americas/ig;\n\n// \"Americas\" a secas es ambiguo; \"LATAM\" y \"Latin America\" no lo son.\nconst AMERICAS_GENERIC = /\\bamericas\\b/i;\nconst EXPLICIT_LATAM   = /latam|latin america|south america/i;\nconst NORTH_AM_COUNTRY = /\\b(usa|u\\.s\\.a?\\.?|united states|canada|canad[áa])\\b/i;\n// El titulo nombra EE.UU. aunque la ubicacion diga solo \"Remote\"\nconst US_IN_TITLE = /\\busa\\b|\\bu\\.s\\.a?\\.|\\bunited states\\b/i;\n\nconst IGNORED_COMPANIES = ['canonical'];\n\nconst MAX_AGE_DAYS = 180;\nconst CUTOFF = new Date(Date.now() - MAX_AGE_DAYS * 86400000).toISOString().slice(0, 10);\n\n// Las descripciones vienen en HTML crudo y pesan 10-20 KB cada una.\n// Se guardan limpias y recortadas: el payload baja ~90% y el modelo\n// no paga tokens por etiquetas ni por el boilerplate del final.\nconst MAX_DESC_CHARS = 4000;\nfunction limpiarDesc(s) {\n  if (!s) return '';\n  return String(s)\n    .replace(/<(script|style)[^>]*>[\\s\\S]*?<\\/\\1>/gi, ' ')\n    .replace(/<[^>]*>/g, ' ')\n    .replace(/&nbsp;/g, ' ')\n    .replace(/&amp;/g, '&')\n    .replace(/&lt;/g, '<')\n    .replace(/&gt;/g, '>')\n    .replace(/&#39;|&apos;|&rsquo;/g, \"'\")\n    .replace(/&quot;|&ldquo;|&rdquo;/g, '\"')\n    .replace(/&#\\d+;/g, ' ')\n    .replace(/\\s+/g, ' ')\n    .trim()\n    .slice(0, MAX_DESC_CHARS);\n}\n\n// ---------------------------------------------------------------------\n\nfunction classify(rawLoc, extra, title,o) {\n  const t = title || '';\n  const loc = String(rawLoc || '').replace(NY_STREET, '');\n\n  if (ARGENTINA.test(loc) || /\\bARG\\b/.test(loc)) return ['yes', 'argentina_in_location'];\n  if (/\\bAR\\b/.test(loc) && OTHER_LATAM_CODE.test(loc)) return ['yes', 'argentina_in_location'];\n\n  // \"Americas (USA or Canada)\": nombra la region pero enumera paises de afuera\n  if (AMERICAS_GENERIC.test(loc) && NORTH_AM_COUNTRY.test(loc)\n      && !EXPLICIT_LATAM.test(loc) && !LATAM_COUNTRY.test(loc)) {\n    return ['no', 'descartado_americas_us_ca'];\n  }\n\n  if (LATAM.test(loc)) return ['yes', 'latam_in_location'];\n  if (ARGENTINA.test(t)) return ['yes', 'argentina_in_title'];\n  if (LATAM.test(t)) return ['yes', 'latam_in_title'];\n\n  // \"Team Lead, Android Core Product - Boise, ID, USA\" con ubicacion \"Remote\"\n  if (US_IN_TITLE.test(t)) return ['no', 'descartado_us_en_titulo'];\n\n  // La bandera viene calculada sobre el texto completo en Normalize.\n  // El test sobre `extra` queda de respaldo para las fuentes que todavia\n  // no la mandan (Workday, YC, Get on Board).\n  const restricted = (o && o.us_only === true) || US_ONLY.test(extra);\n  const parts = loc.split(/\\s*[|\\/;]\\s*/).map(p => p.trim()).filter(Boolean);\n  const remoteOnly = parts.length > 0 && parts.every(p => REMOTE_ONLY.test(p) || GLOBAL.test(p));\n\n  if (remoteOnly && !restricted) {\n    return ((o && o.visa_not_required === true) || /not required/i.test(extra))\n      ? ['maybe', 'remote_visa_not_required']\n      : ['maybe', 'remote_no_country'];\n  }\n\n  if (LATAM_COUNTRY.test(loc) && /remote|remoto|híbrido|hybrid/i.test(loc) && !restricted) {\n    return ['maybe', 'latam_country_remote'];\n  }\n\n  const hasCountryInfo = parts.some(p => !REMOTE_ONLY.test(p) && !GLOBAL.test(p));\n  if (!hasCountryInfo && ((o && o.latam_hint === true) || ARGENTINA.test(extra) || LATAM.test(extra)) && !restricted)  {\n    return ['maybe', 'latam_in_description'];\n  }\n\n  return ['no', restricted ? 'descartado_us_only_en_descripcion' : 'descartado_sin_senal_latam'];\n}\n\nfunction salaryMaxK(s) {\n  const m = (s || '').match(/\\$([\\d.,]+)\\s*(K?)\\s*[-–]\\s*\\$([\\d.,]+)\\s*(K?)/i);\n  if (!m) return null;\n  let max = parseFloat(m[3].replace(/,/g, ''));\n  if (!m[4]) max = max / 1000;\n  return max < 20 ? Math.round(max * 12) : max;\n}\n\nfunction roleCategory(title) {\n  if (MANAGER.test(title)) return 'manager';\n  if (LEAD.test(title)) return 'lead_staff';\n  return 'ic';\n}\n\nfunction guessHq(locations) {\n  const count = {};\n  for (const raw of locations) {\n    for (const p of String(raw || '').split(/\\s*[|\\/;]\\s*/)) {\n      const v = p.trim();\n      if (!v || /remote|remoto|anywhere|worldwide|global|latam|latin america/i.test(v)) continue;\n      count[v] = (count[v] || 0) + 1;\n    }\n  }\n  const top = Object.entries(count).sort((a, b) => b[1] - a[1])[0];\n  return top ? top[0] : '';\n}\n\n// ---------------------------------------------------------------------\n// [INSTR] contadores\nconst drops = {};\nconst deptsNoEng = {};\nconst motivosNoElegible = {};\nconst bump = (obj, k) => { if (!k) return; obj[k] = (obj[k] || 0) + 1; };\nconst topN = (obj, n) => Object.entries(obj).sort((a, b) => b[1] - a[1]).slice(0, n)\n                               .map(([k, v]) => ({ depto: k, n: v }));\nfunction drop(motivo, o) {\n  bump(drops, motivo);\n  if (motivo === 'no_es_ingenieria') {\n    bump(deptsNoEng, String(o?.department || '').trim().toLowerCase() || '(sin departamento)');\n  }\n}\n// [INSTR] fin\n\nconst items = $input.all().map(i => i.json || {});\n\nconst locsByCompany = {};\nfor (const o of items) {\n  if (!o.company_slug) continue;\n  (locsByCompany[o.company_slug] = locsByCompany[o.company_slug] || []).push(o.locations);\n}\n\nconst out = [];\nconst seen = new Set();\n\nfor (const o of items) {\n  if (!o.job_id) { drop('sin_job_id', o); continue; }                        // [INSTR]\n  if (seen.has(o.job_id)) { drop('duplicado_en_corrida', o); continue; }     // [INSTR]\n  seen.add(o.job_id);\n\n  const title = String(o.title || '');\n  if (!title) { drop('sin_titulo', o); continue; }                           // [INSTR]\n\n  const isEng = IS_ENGINEERING.test(title) || IS_ENG_DEPT.test(o.department || '');\n  if (!isEng) { drop('no_es_ingenieria', o); continue; }                     // [INSTR]\n  if (EXCLUDE.test(title)) { drop('excluido_por_titulo', o); continue; }     // [INSTR]\n  if (EXCLUDE_EVERGREEN.test(title)) { drop('evergreen', o); continue; }     // [INSTR]\n\n  const companyLower = String(o.company || '').trim().toLowerCase();\n  if (companyLower && IGNORED_COMPANIES.some(c => companyLower.startsWith(c))) {\n    drop('empresa_en_lista_negra', o); continue;                             // [INSTR]\n  }\n\n  const pub = String(o.published_at || '');\n  if (pub && pub < CUTOFF) { drop('mas_viejo_que_180_dias', o); continue; }  // [INSTR]\n\n  // OJO: classify() recibe la descripcion CRUDA, sin recortar.\n  // Con la version recortada se perderian las detecciones de\n  // \"must be based in the US\" que viven al final del texto.\n  const [accepts, match] = Array.isArray(o.match_override)\n    ? o.match_override\n    : classify(o.locations, o.description, title,o);\n  if (accepts === 'no') {\n    drop('no_elegible_latam', o);                                            // [INSTR]\n    bump(motivosNoElegible, match || 'sin_motivo');                          // [INSTR]\n    continue;\n  }\n\n  const maxK = (o.salary_max_k === '' || o.salary_max_k === null || o.salary_max_k === undefined)\n    ? salaryMaxK(o.salary)\n    : Number(o.salary_max_k);\n  if (maxK !== null && !Number.isNaN(maxK) && maxK < MIN_SALARY_K) {\n    drop('salario_bajo', o); continue;                                       // [INSTR]\n  }\n\n  const role = roleCategory(title);\n  const li = o.company_linkedin || '';\n\n  out.push({ json: {\n    job_id: o.job_id,\n    company_id: o.company_id ?? '',\n    priority: PRIORITY[role],\n    role_category: role,\n    accepts_argentina: accepts,\n    location_match: match,\n    company: o.company || '',\n    company_slug: o.company_slug || '',\n    company_hq: o.company_hq || guessHq(locsByCompany[o.company_slug] || []),\n    company_size: o.company_size || '',\n    company_stage: o.company_stage || '',\n    title: title.trim(),\n    department: o.department || '',\n    description: limpiarDesc(o.description),\n    salary: o.salary || '',\n    salary_max_k: (maxK === null || Number.isNaN(maxK)) ? '' : maxK,\n    locations: o.locations || '',\n    published_at: o.published_at || '',\n    apply_url: o.apply_url || '',\n    company_linkedin: li,\n    linkedin_people_ar: li ? `${li}/people/?facetGeoRegion=100446943` : '',\n    source: o.source || '',\n    gob_company_id: o.gob_company_id || '',\n  }});\n}\n\n// [INSTR] resumen como primer item. Muere en \"Deduplicate and complete\"\n// porque no tiene company ni title, asi que no llega a la base.\nout.unshift({ json: {\n  __RESUMEN__: true,\n  entrada: items.length,\n  pasaron: out.length,\n  descartados: Object.values(drops).reduce((a, b) => a + b, 0),\n  descartes_por_motivo: Object.fromEntries(\n    Object.entries(drops).sort((a, b) => b[1] - a[1])\n  ),\n  departamentos_de_los_no_ingenieria: topN(deptsNoEng, 50),\n  motivos_no_elegible: Object.fromEntries(\n    Object.entries(motivosNoElegible).sort((a, b) => b[1] - a[1])\n  ),\n}});\n// [INSTR] fin\n\nconsole.log('=== RESUMEN === \\n' + JSON.stringify(out[0].json, null, 2));\n\nreturn out;"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        1168,
-        -128
-      ],
-      "id": "d159b346-4728-457c-bfad-1b1f4373ab90",
-      "name": "Classify & Filter"
-    },
-    {
-      "parameters": {
         "jsCode": "// =====================================================================\n//  Normalize ATS  — \n//\n//  Solo traduce Ashby / Greenhouse / Lever / Workable / Teamtailor al\n//  formato comun y resuelve a que empresa pertenece cada aviso.\n// =====================================================================\n\n// El texto completo de la descripcion se usa SOLO adentro de este nodo,\n// para decidir elegibilidad, y despues se descarta. Lo que viaja al resto\n// del pipeline es un recorte corto mas dos banderas con el veredicto ya\n// tomado. Con ~50.000 avisos por corrida, llevar el texto entero eran\n// cientos de MB sostenidos en memoria y n8n se quedaba sin aire.\nconst MAX_DESC = 2000;\nconst cap = s => String(s || '').replace(/\\s+/g, ' ').trim().slice(0, MAX_DESC);\n\n// Mismas expresiones que usa Classify & Filter, aplicadas acá sobre el\n// texto COMPLETO en vez de sobre el recorte.\nconst US_ONLY_RE = /(must|need to|required to)\\s+(be\\s+)?(based|located|live|reside)[^.]{0,40}(united states|u\\.s\\.|\\busa\\b)|(authorized|authorization|eligible)\\s+to\\s+work\\s+in\\s+the\\s+(united states|u\\.s\\.)|u\\.s\\.\\s+(citizen|work authorization)|citizen\\/visa only/i;\nconst LATAM_HINT_RE = /argentin|buenos aires|latam|latin america|south america|\\bamericas\\b/i;\nconst VISA_NOT_REQ_RE = /not required/i;\n\n// Teamtailor: ubicacion estructurada dentro de _jobposting\nfunction ttLocations(jp) {\n  const out = [];\n  for (const p of jp?.jobLocation || []) {\n    const a = p.address || {};\n    const v = [a.addressLocality, a.addressRegion, a.addressCountry].filter(Boolean).join(', ');\n    if (v) out.push(v);\n  }\n  return out.join(' | ');\n}\n\nfunction stripHtml(h) {\n  return String(h || '')\n    .replace(/<[^>]+>/g, ' ')\n    .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&#39;/g, \"'\").replace(/&quot;/g, '\"')\n    .replace(/\\s+/g, ' ').trim();\n}\n\n// Greenhouse devuelve el content con las etiquetas escapadas (&lt;p&gt;).\n// Se corta a 20000 nada mas para acotar casos patologicos: el recorte real\n// lo hace cap(), despues de evaluar las banderas sobre este texto.\nfunction ghContent(s) {\n  const decoded = String(s || '')\n    .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');\n  return stripHtml(decoded).slice(0, 20000);\n}\n\n// El departamento viene con forma distinta en cada plataforma:\n// texto, objeto con name, o array\nfunction deptOf(v) {\n  if (!v) return '';\n  if (typeof v === 'string') return v.trim();\n  if (Array.isArray(v)) return deptOf(v[0]);\n  return String(v.name || v.title || '').trim();\n}\n\n// Plataforma segun la forma de la oferta, no segun el indice del item\nfunction detectAts(j) {\n  if (j && j.shortcode && (j.url || j.shortlink)) return 'workable';\n  if (j && j._jobposting) return 'teamtailor';\n  if (j && j.absolute_url) return 'greenhouse';\n  if (j && j.hostedUrl) return 'lever';\n  return 'ashby';\n}\n\n// Slug de la empresa segun la URL de la oferta\nfunction slugFromUrl(u) {\n  const s = String(u || '');\n  let m;\n  if ((m = s.match(/jobs\\.ashbyhq\\.com\\/([^\\/?#]+)/i))) return m[1];\n  if ((m = s.match(/greenhouse\\.io\\/([^\\/?#]+)/i))) return m[1];\n  if ((m = s.match(/jobs\\.lever\\.co\\/([^\\/?#]+)/i))) return m[1];\n  if ((m = s.match(/apply\\.workable\\.com\\/([^\\/?#]+)/i))) return m[1];\n  if ((m = s.match(/https?:\\/\\/([^.\\/]+)\\.(?:[a-z]{2}\\.)?teamtailor\\.com/i))) return m[1];\n  return '';\n}\n\n// Dominio de una URL, sin \"www.\".\n// Hace falta porque algunas empresas configuran su board para redirigir a su\n// propio sitio: Twindo publica en Greenhouse pero sus ofertas quedan en\n// https://www.twindo.com/careers/?gh_jid=123, donde no aparece \"greenhouse.io\".\nfunction hostOf(u) {\n  const m = String(u || '').match(/^https?:\\/\\/([^\\/?#]+)/i);\n  return m ? m[1].toLowerCase().replace(/^www\\./, '') : '';\n}\n\n// Convierte una oferta de cualquier plataforma al mismo formato.\n// description viene COMPLETA; el recorte se hace mas abajo.\nfunction normalize(ats, j) {\n  if (ats === 'workable') {\n    const locs = (j.locations || [])\n      .map(l => [l.city, l.region, l.country].filter(Boolean).join(', '))\n      .filter(Boolean);\n    const base = locs.length ? locs.join(' | ') : [j.city, j.state, j.country].filter(Boolean).join(', ');\n    return {\n      job_id: `wk:${j.shortcode}`,\n      title: j.title || '',\n      department: deptOf(j.department) || deptOf(j.departments),\n      locations: [j.telecommuting ? 'Remote' : null, base].filter(Boolean).join(' | '),\n      description: stripHtml(j.description),\n      salary: '',\n      published_at: String(j.published_on || j.created_at || '').slice(0, 10),\n      apply_url: j.url || j.shortlink,\n    };\n  }\n  if (ats === 'teamtailor') {\n    const jp = j._jobposting || {};\n    return {\n      job_id: `tt:${jp.identifier?.value || j.id}`,\n      title: j.title || jp.title || '',\n      department: deptOf(j.department) || deptOf(jp.department),\n      locations: ttLocations(jp),\n      description: stripHtml(j.content_html),\n      salary: '',\n      published_at: String(j.date_published || jp.datePosted || '').slice(0, 10),\n      apply_url: j.url,\n    };\n  }\n  if (ats === 'greenhouse') return {\n    job_id: `gh:${j.id}`,\n    title: j.title || '',\n    department: deptOf(j.departments) || deptOf(j.department),\n    locations: j.location?.name || '',\n    description: ghContent(j.content),\n    salary: '',\n    published_at: (j.first_published || j.updated_at || '').slice(0, 10),\n    apply_url: j.absolute_url,\n  };\n  if (ats === 'lever') {\n    const sr = j.salaryRange;\n    return {\n      job_id: `lever:${j.id}`,\n      title: j.text || '',\n      department: deptOf(j.categories?.department) || deptOf(j.categories?.team),\n      locations: [...new Set([j.categories?.location, ...(j.categories?.allLocations || [])].filter(Boolean))].join(' | '),\n      description: j.descriptionPlain || '',\n      salary: sr && sr.max ? `$${Math.round(sr.min / 1000)}K - $${Math.round(sr.max / 1000)}K` : '',\n      published_at: j.createdAt ? new Date(j.createdAt).toISOString().slice(0, 10) : '',\n      apply_url: j.hostedUrl,\n    };\n  }\n  // Ashby: el pais principal va en location, el resto en secondaryLocations\n  return {\n    job_id: `ashby:${j.id}`,\n    title: j.title || '',\n    department: deptOf(j.department) || deptOf(j.team),\n    locations: [\n      (j.isRemote || j.workplaceType === 'Remote') ? 'Remote' : null,\n      j.location,\n      ...(j.secondaryLocations || []).map(\n        l => l && (l.location || l.address?.postalAddress?.addressCountry)\n      ),\n    ].filter(Boolean).join(' | '),\n    description: j.descriptionPlain || '',\n    salary: j.compensation?.scrapeableCompensationSalarySummary || j.compensation?.compensationTierSummary || '',\n    published_at: (j.publishedAt || '').slice(0, 10),\n    apply_url: j.jobUrl,\n  };\n}\n\n// ---- Indices de empresas ----\nconst env = $('ENV').first().json.env;\nconst companies = env === 'local'\n  ? $('Read Companies LOCAL').all()\n  : $('Read Companies PROD').all();\n\nconst bySlug = new Map();\ncompanies.forEach(it => {\n  const c = it.json || {};\n  if (c.slug) bySlug.set(String(c.slug).toLowerCase(), c);\n});\n\n// Segundo indice, por dominio propio de la empresa. Los dominios de los\n// propios ATS quedan afuera a proposito: si no, cien empresas se mapearian\n// al mismo host.\nconst ATS_HOSTS = /greenhouse\\.io|lever\\.co|ashbyhq\\.com|workable\\.com|teamtailor\\.com|myworkdayjobs\\.com|workday/i;\nconst byHost = new Map();\ncompanies.forEach(it => {\n  const c = it.json || {};\n  const h = hostOf(c.careers_url);\n  if (h && !ATS_HOSTS.test(h) && !byHost.has(h)) byHost.set(h, c);\n});\n\nconst out = [];\n\n$input.all().forEach((item, i) => {\n  // Algunas plataformas devuelven el JSON como texto: lo parseamos\n  let body = item.json;\n  if (typeof body?.data === 'string') {\n    try { body = JSON.parse(body.data); } catch (e) { body = {}; }\n  }\n\n  // Ashby, Greenhouse y Workable devuelven { jobs: [...] }; Teamtailor, { items: [...] };\n  // Lever devuelve un array que n8n ya partio en un item por oferta\n  let raws = [];\n  if (Array.isArray(body?.jobs)) raws = body.jobs;\n  else if (Array.isArray(body?.items)) raws = body.items;\n  else if (body?.hostedUrl || body?.absolute_url || body?.jobUrl) raws = [body];\n  if (!raws.length) return;\n\n  // Empresa de respaldo, solo si no se puede resolver por URL ni por dominio\n  const p = Array.isArray(item.pairedItem) ? item.pairedItem[0] : item.pairedItem;\n  const fallback = companies[p?.item ?? i]?.json || {};\n\n  for (const r of raws) {\n    const ats = detectAts(r);\n    const o = normalize(ats, r);\n    if (!o.apply_url) continue;\n\n    // Tres escalones: slug en la URL del ATS, dominio propio, respaldo\n    const c = bySlug.get(slugFromUrl(o.apply_url).toLowerCase())\n           || byHost.get(hostOf(o.apply_url))\n           || fallback;\n    if (!c.slug) continue;\n\n    // Las banderas se calculan sobre el texto COMPLETO, antes de recortarlo.\n    const full = String(o.description || '');\n\n    out.push({ json: {\n      job_id: o.job_id,\n      source: ats,\n      title: o.title,\n      department: o.department || '',\n      locations: o.locations,\n      description: cap(full),\n      us_only: US_ONLY_RE.test(full),\n      latam_hint: LATAM_HINT_RE.test(full),\n      visa_not_required: VISA_NOT_REQ_RE.test(full),\n      salary: o.salary,\n      salary_max_k: '',\n      published_at: o.published_at,\n      apply_url: o.apply_url,\n      company: c.company,\n      company_slug: c.slug,\n      company_id: c.company_id || '',\n      company_hq: c.hq || '',\n      company_size: c.size || '',\n      company_stage: c.stage || '',\n      company_linkedin: c.linkedin_slug ? `https://www.linkedin.com/company/${c.linkedin_slug}` : '',\n    }});\n  }\n});\n\nreturn out;"
       },
       "name": "Normalize ATS",
@@ -157,7 +144,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// =====================================================================\n//  Normalize GOB  —  reemplaza el contenido de \"Filter GOB\"\n//\n//  Solo traduce el formato de Get on Board al formato comun.\n//  NO filtra ni clasifica.\n//\n//  OJO con dos cosas propias de esta fuente:\n//\n//  1) El aviso no trae el nombre de la empresa, solo su id. Antes se pedia\n//     aca, despues de filtrar, para no gastar llamadas. Ahora se pide en el\n//     nodo \"Resolve GOB company\", que corre DESPUES de Classify & Filter:\n//     se siguen haciendo pocas llamadas, y ademas quedan menos que antes.\n//\n//  2) Get on Board trae la elegibilidad estructurada en remote_modality.\n//     Cuando dice fully_remote le creemos a ese campo y no a nuestro parseo\n//     del texto: va en match_override.\n// =====================================================================\n\n// Los sueldos vienen mensuales en USD\nfunction salaryInfo(a) {\n  const min = Number(a.min_salary) || 0;\n  const max = Number(a.max_salary) || 0;\n  if (!max) return { text: '', maxK: '' };\n  return {\n    text: `$${min} - $${max} USD/mes`,\n    maxK: Math.round((max * 12) / 1000),\n  };\n}\n\nconst out = [];\nconst seen = new Set();\n\nfor (const item of $input.all()) {\n  const j = item.json.job || {};\n  const a = j.attributes || {};\n  const title = a.title || '';\n  if (!title || !j.id || seen.has(j.id)) continue;\n  seen.add(j.id);\n\n  const countries = (a.countries || []).map(String);\n  const sal = salaryInfo(a);\n\n  out.push({ json: {\n    job_id: `gob:${j.id}`,\n    source: 'getonbrd',\n    title,\n    department: '',\n    locations: [...new Set([a.remote ? 'Remote' : null, ...countries].filter(Boolean))].join(' | '),\n    description: '',\n    salary: sal.text,\n    salary_max_k: sal.maxK,\n    published_at: a.published_at\n      ? new Date(a.published_at * 1000).toISOString().slice(0, 10)\n      : '',\n    apply_url: j.links?.public_url || '',\n    company: '',                 // se completa en \"Resolve GOB company\"\n    company_slug: '',\n    company_id: null,\n    company_hq: countries.filter(c => !/^remote$/i.test(c)).join(', '),\n    company_size: '',\n    company_stage: '',\n    company_linkedin: '',\n    // propios de esta fuente\n    gob_company_id: a.company?.data?.id || '',\n    match_override: a.remote_modality === 'fully_remote' ? ['yes', 'fully_remote'] : null,\n  }});\n}\n\nreturn out;"
+        "jsCode": "// =====================================================================\n//  Normalize GOB  —  reemplaza el contenido de \"Filter GOB\"\n//\n//  Solo traduce el formato de Get on Board al formato comun.\n//  NO filtra ni clasifica.\n//\n//  OJO con dos cosas propias de esta fuente:\n//\n//  1) El aviso no trae el nombre de la empresa, solo su id. Antes se pedia\n//     aca, despues de filtrar, para no gastar llamadas. Ahora se pide en el\n//     nodo \"Resolve GOB company\", que corre DESPUES de Classify & Filter:\n//     se siguen haciendo pocas llamadas, y ademas quedan menos que antes.\n//\n//  2) Get on Board trae la elegibilidad estructurada en remote_modality.\n//     Cuando dice fully_remote le creemos a ese campo y no a nuestro parseo\n//     del texto: va en match_override.\n//\n//  3) Tambien trae seniority y tags ya clasificados a mano por ellos. Eso es\n//     mejor que cualquier inferencia nuestra, asi que se los pasamos al\n//     modelo adentro del texto en vez de tirarlos.\n// =====================================================================\n\nconst MAX_DESC = 2000;\n\nfunction stripHtml(h) {\n  return String(h || '')\n    .replace(/<(script|style)[^>]*>[\\s\\S]*?<\\/\\1>/gi, ' ')\n    .replace(/<[^>]+>/g, ' ')\n    .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&')\n    .replace(/&lt;/g, '<').replace(/&gt;/g, '>')\n    .replace(/&#39;|&apos;/g, \"'\").replace(/&quot;/g, '\"')\n    .replace(/&#\\d+;/g, ' ')\n    .replace(/\\s+/g, ' ')\n    .trim();\n}\n\n// Los campos de Get on Board vienen a veces como texto, a veces como array,\n// a veces como { data: { id, name } }. Esto los aplana sin tener que saber cual.\nfunction txtOf(v) {\n  if (v == null) return '';\n  if (typeof v === 'string') return v.trim();\n  if (typeof v === 'number') return String(v);\n  if (Array.isArray(v)) return v.map(txtOf).filter(Boolean).join(', ');\n  if (typeof v === 'object') return txtOf(v.name ?? v.title ?? v.data ?? '');\n  return '';\n}\n\n// El texto del aviso vive partido en varios campos. Los juntamos, y adelante\n// ponemos lo que Get on Board ya clasifico: al modelo le sirve mas una linea\n// que diga \"Seniority: senior\" que mil palabras de marketing.\nfunction descOf(a) {\n  const pistas = [\n    txtOf(a.seniority) && `Seniority: ${txtOf(a.seniority)}`,\n    txtOf(a.tags)      && `Tags: ${txtOf(a.tags)}`,\n    txtOf(a.modality)  && `Modality: ${txtOf(a.modality)}`,\n  ].filter(Boolean).join(' · ');\n\n  const cuerpo = [a.description, a.functions, a.desirable]\n    .filter(Boolean)\n    .map(stripHtml)\n    .filter(Boolean)\n    .join(' ');\n\n  return [pistas, cuerpo].filter(Boolean).join(' — ').slice(0, MAX_DESC);\n}\n\n// Los sueldos vienen mensuales en USD\nfunction salaryInfo(a) {\n  const min = Number(a.min_salary) || 0;\n  const max = Number(a.max_salary) || 0;\n  if (!max) return { text: '', maxK: '' };\n  return {\n    text: `$${min} - $${max} USD/mes`,\n    maxK: Math.round((max * 12) / 1000),\n  };\n}\n\nconst out = [];\nconst seen = new Set();\n\nfor (const item of $input.all()) {\n  const j = item.json.job || {};\n  const a = j.attributes || {};\n  const title = a.title || '';\n  if (!title || !j.id || seen.has(j.id)) continue;\n  seen.add(j.id);\n\n  const countries = (a.countries || []).map(String);\n  const sal = salaryInfo(a);\n\n  out.push({ json: {\n    job_id: `gob:${j.id}`,\n    source: 'getonbrd',\n    title,\n    department: txtOf(a.category_name),\n    locations: [...new Set([a.remote ? 'Remote' : null, ...countries].filter(Boolean))].join(' | '),\n    description: descOf(a),\n    salary: sal.text,\n    salary_max_k: sal.maxK,\n    published_at: a.published_at\n      ? new Date(a.published_at * 1000).toISOString().slice(0, 10)\n      : '',\n    apply_url: j.links?.public_url || '',\n    company: '',                 // se completa en \"Resolve GOB company\"\n    company_slug: '',\n    company_id: null,\n    company_hq: countries.filter(c => !/^remote$/i.test(c)).join(', '),\n    company_size: '',\n    company_stage: '',\n    company_linkedin: '',\n    // propios de esta fuente\n    gob_company_id: a.company?.data?.id || '',\n    match_override: a.remote_modality === 'fully_remote' ? ['yes', 'fully_remote'] : null,\n  }});\n}\n\nreturn out;"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -443,7 +430,8 @@
         -1008,
         -112
       ],
-      "id": "f6aeb7db-d64a-4367-b011-19adfe2ca799"
+      "id": "f6aeb7db-d64a-4367-b011-19adfe2ca799",
+      "disabled": true
     },
     {
       "parameters": {
@@ -544,8 +532,8 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.7,
       "position": [
-        2848,
-        -384
+        2832,
+        -272
       ],
       "id": "7de6c4d4-7045-4925-b1c0-83c4ad23fcbe",
       "name": "Mark Closed Local",
@@ -566,8 +554,8 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.7,
       "position": [
-        2848,
-        80
+        2832,
+        0
       ],
       "id": "a7d4da62-f253-4dc8-b071-217917928987",
       "name": "Mark Closed Prod",
@@ -581,161 +569,32 @@
     },
     {
       "parameters": {
-        "modelId": {
-          "__rl": true,
-          "value": "models/gemini-3.5-flash-lite",
-          "mode": "list",
-          "cachedResultName": "models/gemini-3.5-flash-lite"
-        },
-        "messages": {
-          "values": [
-            {
-              "content": "=={{ $json.body.contents[0].parts[0].text }}"
-            }
-          ]
-        },
-        "jsonOutput": true,
-        "builtInTools": {},
-        "options": {
-          "systemMessage": "=={{ $json.body.systemInstruction.parts[0].text }}",
-          "temperature": 0
-        }
-      },
-      "type": "@n8n/n8n-nodes-langchain.googleGemini",
-      "typeVersion": 1.2,
-      "position": [
-        3264,
-        -160
-      ],
-      "id": "cc3eea79-8c0a-431c-806f-1a930bd86c88",
-      "name": "Classify (Gemini)",
-      "retryOnFail": true,
-      "waitBetweenTries": 2000,
-      "credentials": {
-        "googlePalmApi": {
-          "id": "hOwFtIuJGrAX05lM",
-          "name": "JobsManager - Gemini"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "jsCode": "// Arma un solo UPDATE para todas las clasificaciones de la corrida.\n// Mismo patron que Build jobs SQL: los datos viajan como parametro JSON ($1),\n// no dentro del texto del SQL.\n\nconst rows = $input.all().map(i => {\n  const o = i.json;\n  return {\n    db_id: o.db_id,\n    job_function: o.job_function,\n    level: o.level,                       // puede ser null: \"unknown\"\n    tags: o.tags || [],\n    suggested_tags: o.suggested_tags || [],\n    eligible: o.eligible,\n    is_agency: o.is_agency,\n    is_evergreen: o.is_evergreen,\n    note: o.note,\n    taxonomy_version: o.taxonomy_version,\n  };\n});\n\n// Sin nada que clasificar, no se dispara ninguna query.\nif (!rows.length) return [];\n\n// tags y suggested_tags viajan como jsonb y se convierten a text[] del lado de\n// Postgres: jsonb_to_recordset no convierte arrays JSON a text[] de forma confiable.\nconst sql = `\nUPDATE jobs j SET\n  job_function        = v.job_function,\n  level               = v.level,\n  tags                = ARRAY(SELECT jsonb_array_elements_text(v.tags)),\n  suggested_tags      = ARRAY(SELECT jsonb_array_elements_text(v.suggested_tags)),\n  eligible            = v.eligible,\n  is_agency           = v.is_agency,\n  is_evergreen        = v.is_evergreen,\n  classification_note = v.note,\n  classified_at       = now(),\n  taxonomy_version    = v.taxonomy_version\nFROM jsonb_to_recordset($1::jsonb) AS v(\n  db_id            int,\n  job_function     text,\n  level            text,\n  tags             jsonb,\n  suggested_tags   jsonb,\n  eligible         boolean,\n  is_agency        boolean,\n  is_evergreen     boolean,\n  note             text,\n  taxonomy_version smallint\n)\nWHERE j.id = v.db_id;\n`;\n\nconst params = JSON.stringify(rows);\n\nconsole.log('=== UPDATE SQL ===');\nconsole.log('filas a actualizar: ' + rows.length);\n\nreturn [{ json: { sql, params, rows: rows.length } }];"
+        "jsCode": "// =====================================================================\n//  Filtrar  —  decide QUE ENTRA al indice, nada mas.\n//\n//  Lo que este nodo descarta se pierde para siempre, asi que solo descarta\n//  cosas que no son opinables:\n//\n//    - avisos rotos (sin id, sin titulo, sin link de postulacion)\n//    - duplicados dentro de la misma corrida\n//    - elegibilidad geografica, que es la compuerta de volumen\n//\n//  Todo lo demas —si es ingenieria o ventas, que nivel es, si la empresa es\n//  una consultora, si es un evergreen, si el sueldo alcanza, si el aviso es\n//  viejo— es configuracion del usuario o trabajo del clasificador. Una\n//  etiqueta mal puesta se corrige reclasificando; un descarte no se corrige.\n//\n//  POR QUE LA GEOGRAFIA SE QUEDA ACA Y NO VA AL MODELO:\n//  entran ~51.700 avisos por corrida y el chequeo geografico deja pasar el\n//  4,5%. Si esa decision la tomara el modelo habria que clasificar los 51.700\n//  todos los dias. Es la unica razon, y es de costo, no de diseno.\n//\n//  PENDIENTE: esta logica esta escrita Argentina-primero y el producto es\n//  para toda LATAM. La forma de arreglarlo sin que cueste una fortuna es una\n//  tabla `locations` cacheada: el modelo clasifica cada string de ubicacion\n//  UNA vez, no cada aviso. Ver el contador ubicaciones_distintas del resumen.\n//\n//  Las lineas marcadas // [INSTR] son instrumentacion: cuentan descartes y\n//  emiten un item de resumen al principio. Se sacan borrandolas.\n// =====================================================================\n\nconst LATAM = /latam|latin america|south america|\\bamericas\\b/i;\nconst GLOBAL = /\\b(anywhere|worldwide|global)\\b/i;\nconst REMOTE_ONLY = /^(remote|remoto|fully remote)$/i;\nconst US_ONLY = /(must|need to|required to)\\s+(be\\s+)?(based|located|live|reside)[^.]{0,40}(united states|u\\.s\\.|\\busa\\b)|(authorized|authorization|eligible)\\s+to\\s+work\\s+in\\s+the\\s+(united states|u\\.s\\.)|u\\.s\\.\\s+(citizen|work authorization)|citizen\\/visa only/i;\n\nconst LATAM_COUNTRY = /\\b(argentin|brazil|brasil|colombia|chile|uruguay|per[úu]|paraguay|bolivia|ecuador|venezuela|(?<!new )m[ée]xico|costa rica|panam[áa]|guatemala)\\b|\\b(ARG|BRA|COL|CHL|URY|PER|MEX|CRI)\\b|\\b(bogot[áa]|medell[íi]n|barranquilla|cartagena|s[ãa]o paulo|rio de janeiro|porto alegre|belo horizonte|curitiba|florian[óo]polis|joinville|recife|montevideo|asunci[óo]n|guadalajara|monterrey|cdmx|quito|guayaquil|san salvador|tegucigalpa|managua)\\b/i;\nconst OTHER_LATAM_CODE = /\\b(BR|CO|CL|UY|PE|MX|EC|BO|PY|VE|CR)\\b/;\nconst NY_STREET = /ave(nue)?\\.?\\s+of\\s+(the\\s+)?americas/ig;\n\n// \"Americas\" a secas es ambiguo; \"LATAM\" y \"Latin America\" no lo son.\nconst AMERICAS_GENERIC = /\\bamericas\\b/i;\nconst EXPLICIT_LATAM   = /latam|latin america|south america/i;\nconst NORTH_AM_COUNTRY = /\\b(usa|u\\.s\\.a?\\.?|united states|canada|canad[áa])\\b/i;\n// El titulo nombra EE.UU. aunque la ubicacion diga solo \"Remote\"\nconst US_IN_TITLE = /\\busa\\b|\\bu\\.s\\.a?\\.|\\bunited states\\b/i;\n\n// TRANSITORIO — paso 3.4 del plan.\n// priority y role_category son columnas de `jobs` que la app todavia puede\n// estar leyendo, y role_category es un enum. Dejar de escribirlas sin tocar\n// la app rompe Hunter. Se van las tres cuando el orden se calcule al leer,\n// desde el array `levels` del usuario.\nconst MANAGER = /manager|gerente|jefe|head of|director|\\bvp\\b|vice president|\\bcto\\b/i;\nconst LEAD = /lead|l[íi]der|staff|principal|forward deployed|product engineer|founding/i;\nconst PRIORITY = { manager: 1, lead_staff: 2, ic: 3 };\n\n// Las descripciones vienen en HTML crudo y pesan 10-20 KB cada una.\n// Se guardan limpias y recortadas: el payload baja ~90% y el modelo\n// no paga tokens por etiquetas ni por el boilerplate del final.\nconst MAX_DESC_CHARS = 4000;\nfunction limpiarDesc(s) {\n  if (!s) return '';\n  return String(s)\n    .replace(/<(script|style)[^>]*>[\\s\\S]*?<\\/\\1>/gi, ' ')\n    .replace(/<[^>]*>/g, ' ')\n    .replace(/&nbsp;/g, ' ')\n    .replace(/&amp;/g, '&')\n    .replace(/&lt;/g, '<')\n    .replace(/&gt;/g, '>')\n    .replace(/&#39;|&apos;|&rsquo;/g, \"'\")\n    .replace(/&quot;|&ldquo;|&rdquo;/g, '\"')\n    .replace(/&#\\d+;/g, ' ')\n    .replace(/\\s+/g, ' ')\n    .trim()\n    .slice(0, MAX_DESC_CHARS);\n}\n\n// ---------------------------------------------------------------------\nfunction classify(rawLoc, extra, title, o) {\n  const t = title || '';\n  const loc = String(rawLoc || '').replace(NY_STREET, '');\n\n  // \"Americas (USA or Canada)\": nombra la region pero enumera paises de afuera.\n  // Va primero porque es una trampa, no una senal.\n  if (AMERICAS_GENERIC.test(loc) && NORTH_AM_COUNTRY.test(loc)\n      && !EXPLICIT_LATAM.test(loc) && !LATAM_COUNTRY.test(loc)) {\n    return ['no', 'descartado_americas_us_ca'];\n  }\n\n  // Cualquier pais o ciudad de LATAM nombrado en la ubicacion la hace elegible.\n  // Antes esto era \"si dice Argentina\" y ademas exigia que dijera \"remote\":\n  // un aviso presencial en Bogota se descartaba. El producto es para toda la\n  // region, asi que ese aviso entra y despues cada usuario filtra por su pais.\n  if (LATAM_COUNTRY.test(loc)) return ['yes', 'latam_country_in_location'];\n\n  // Codigos de dos letras: \"AR\" solo seria ambiguo (Arkansas). Si viene con\n  // otro codigo LATAM al lado, es Argentina y no Estados Unidos.\n  if (/\\bAR\\b/.test(loc) && OTHER_LATAM_CODE.test(loc)) return ['yes', 'latam_code_in_location'];\n\n  // La region nombrada como region\n  if (LATAM.test(loc)) return ['yes', 'latam_in_location'];\n  if (LATAM.test(t) || LATAM_COUNTRY.test(t)) return ['yes', 'latam_in_title'];\n\n  // \"Team Lead, Android Core Product - Boise, ID, USA\" con ubicacion \"Remote\"\n  if (US_IN_TITLE.test(t)) return ['no', 'descartado_us_en_titulo'];\n\n  // La bandera viene calculada sobre el texto completo en Normalize.\n  // El test sobre `extra` queda de respaldo para las fuentes que todavia\n  // no la mandan (Workday, YC, Get on Board).\n  const restricted = (o && o.us_only === true) || US_ONLY.test(extra);\n  const parts = loc.split(/\\s*[|\\/;]\\s*/).map(p => p.trim()).filter(Boolean);\n  const remoteOnly = parts.length > 0 && parts.every(p => REMOTE_ONLY.test(p) || GLOBAL.test(p));\n\n  if (remoteOnly && !restricted) {\n    return ((o && o.visa_not_required === true) || /not required/i.test(extra))\n      ? ['maybe', 'remote_visa_not_required']\n      : ['maybe', 'remote_no_country'];\n  }\n\n  const hasCountryInfo = parts.some(p => !REMOTE_ONLY.test(p) && !GLOBAL.test(p));\n  if (!hasCountryInfo && (LATAM.test(extra) || LATAM_COUNTRY.test(extra)) && !restricted) {\n    return ['maybe', 'latam_in_description'];\n  }\n\n  return ['no', restricted ? 'descartado_us_only_en_descripcion' : 'descartado_sin_senal_latam'];\n}\n\nfunction salaryMaxK(s) {\n  const m = (s || '').match(/\\$([\\d.,]+)\\s*(K?)\\s*[-–]\\s*\\$([\\d.,]+)\\s*(K?)/i);\n  if (!m) return null;\n  let max = parseFloat(m[3].replace(/,/g, ''));\n  if (!m[4]) max = max / 1000;\n  return max < 20 ? Math.round(max * 12) : max;\n}\n\n// TRANSITORIO — ver el comentario de PRIORITY arriba.\nfunction roleCategory(title) {\n  if (MANAGER.test(title)) return 'manager';\n  if (LEAD.test(title)) return 'lead_staff';\n  return 'ic';\n}\n\nfunction guessHq(locations) {\n  const count = {};\n  for (const raw of locations) {\n    for (const p of String(raw || '').split(/\\s*[|\\/;]\\s*/)) {\n      const v = p.trim();\n      if (!v || /remote|remoto|anywhere|worldwide|global|latam|latin america/i.test(v)) continue;\n      count[v] = (count[v] || 0) + 1;\n    }\n  }\n  const top = Object.entries(count).sort((a, b) => b[1] - a[1])[0];\n  return top ? top[0] : '';\n}\n\n// ---------------------------------------------------------------------\n// [INSTR] contadores\nconst drops = {};\nconst motivosNoElegible = {};\nconst ubicaciones = new Set();\nconst bump = (obj, k) => { if (!k) return; obj[k] = (obj[k] || 0) + 1; };\nconst drop = (motivo) => bump(drops, motivo);\n// [INSTR] fin\n\nconst items = $input.all().map(i => i.json || {});\n\nconst locsByCompany = {};\nfor (const o of items) {\n  if (!o.company_slug) continue;\n  (locsByCompany[o.company_slug] = locsByCompany[o.company_slug] || []).push(o.locations);\n}\n\nconst out = [];\nconst seen = new Set();\n\nfor (const o of items) {\n  if (!o.job_id) { drop('sin_job_id'); continue; }                        // [INSTR]\n  if (seen.has(o.job_id)) { drop('duplicado_en_corrida'); continue; }     // [INSTR]\n  seen.add(o.job_id);\n\n  ubicaciones.add(String(o.locations || '').trim().toLowerCase());        // [INSTR]\n\n  const title = String(o.title || '');\n  if (!title) { drop('sin_titulo'); continue; }                           // [INSTR]\n  if (!o.apply_url) { drop('sin_link'); continue; }                       // [INSTR]\n\n  // OJO: classify() recibe la descripcion CRUDA, sin recortar.\n  // Con la version recortada se perderian las detecciones de\n  // \"must be based in the US\" que viven al final del texto.\n  const [accepts, match] = Array.isArray(o.match_override)\n    ? o.match_override\n    : classify(o.locations, o.description, title, o);\n  if (accepts === 'no') {\n    drop('no_elegible_latam');                                            // [INSTR]\n    bump(motivosNoElegible, match || 'sin_motivo');                       // [INSTR]\n    continue;\n  }\n\n  const maxK = (o.salary_max_k === '' || o.salary_max_k === null || o.salary_max_k === undefined)\n    ? salaryMaxK(o.salary)\n    : Number(o.salary_max_k);\n\n  const role = roleCategory(title);\n  const li = o.company_linkedin || '';\n\n  out.push({ json: {\n    job_id: o.job_id,\n    company_id: o.company_id ?? '',\n    priority: PRIORITY[role],\n    role_category: role,\n    accepts_argentina: accepts,\n    location_match: match,\n    company: o.company || '',\n    company_slug: o.company_slug || '',\n    company_hq: o.company_hq || guessHq(locsByCompany[o.company_slug] || []),\n    company_size: o.company_size || '',\n    company_stage: o.company_stage || '',\n    title: title.trim(),\n    department: o.department || '',\n    description: limpiarDesc(o.description),\n    salary: o.salary || '',\n    salary_max_k: (maxK === null || Number.isNaN(maxK)) ? '' : maxK,\n    locations: o.locations || '',\n    published_at: o.published_at || '',\n    apply_url: o.apply_url || '',\n    company_linkedin: li,\n    linkedin_people_ar: li ? `${li}/people/?facetGeoRegion=100446943` : '',\n    source: o.source || '',\n    gob_company_id: o.gob_company_id || '',\n  }});\n}\n\n// [INSTR] resumen como primer item. Muere en \"Deduplicate and complete\"\n// porque no tiene company ni title, asi que no llega a la base.\nout.unshift({ json: {\n  __RESUMEN__: true,\n  entrada: items.length,\n  ubicaciones_distintas: ubicaciones.size,\n  pasaron: out.length,\n  descartados: Object.values(drops).reduce((a, b) => a + b, 0),\n  descartes_por_motivo: Object.fromEntries(\n    Object.entries(drops).sort((a, b) => b[1] - a[1])\n  ),\n  motivos_no_elegible: Object.fromEntries(\n    Object.entries(motivosNoElegible).sort((a, b) => b[1] - a[1])\n  ),\n}});\n// [INSTR] fin\n\nconsole.log('=== RESUMEN ===\\n' + JSON.stringify(out[0].json, null, 2));\n\nreturn out;"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        3824,
-        -160
+        1168,
+        -128
       ],
-      "id": "25b46dbd-2b32-4434-817a-134866fe120c",
-      "name": "Build classification SQL"
+      "id": "d159b346-4728-457c-bfad-1b1f4373ab90",
+      "name": "Filter"
     },
     {
       "parameters": {
-        "jsCode": "// Toma la respuesta de Gemini, la valida contra las listas cerradas y la deja\n// lista para el UPDATE.\n//\n// La validacion no es decorativa: el nodo nativo de Gemini no fuerza el esquema,\n// asi que un valor fuera de lista es posible. Aca deja de ser silencioso.\n\nconst FUNCIONES = ['engineering','product','design','marketing','sales','operations','support','other'];\nconst NIVELES   = ['junior','mid','senior','staff','lead','manager','director','vp'];\nconst TAGS      = ['backend','frontend','fullstack','mobile','infra','data','ml','ai','security','qa','sap','salesforce'];\n\n// Cada version del nodo de Gemini envuelve la respuesta distinto, asi que en\n// vez de adivinar la ruta, buscamos en profundidad el primer objeto que tenga\n// job_function — venga como objeto o como texto JSON adentro de algun campo.\nfunction buscar(v, depth = 0) {\n  if (v == null || depth > 8) return null;\n\n  if (typeof v === 'string') {\n    const s = v.trim()\n      .replace(/^\\s*```(?:json)?\\s*/i, '')\n      .replace(/\\s*```\\s*$/, '')\n      .trim();\n    if (!s.startsWith('{')) return null;\n    try {\n      const o = JSON.parse(s);\n      return (o && o.job_function) ? o : null;\n    } catch (e) { return null; }\n  }\n\n  if (typeof v === 'object') {\n    if (v.job_function) return v;\n    for (const k of Object.keys(v)) {\n      const r = buscar(v[k], depth + 1);\n      if (r) return r;\n    }\n  }\n  return null;\n}\n\nconst respuestas = $input.all();\nconst entradas   = $('New to classify').all();\n\nconst out = [];\nconst problemas = [];\nlet sinNivel = 0;\n\nrespuestas.forEach((r, i) => {\n  const entrada = entradas[i]?.json || {};\n  const c = buscar(r.json);\n\n  if (!c) {\n    problemas.push(`[${i}] ${entrada.title || '?'} -> no se pudo parsear la respuesta`);\n    return;\n  }\n\n  const malos = [];\n\n  if (!FUNCIONES.includes(c.job_function)) malos.push(`job_function=\"${c.job_function}\"`);\n\n  // \"unknown\" es una respuesta legitima: se guarda como NULL, no como texto.\n  // Asi el frontend puede tratarlo como \"mostralo igual\" en vez de excluirlo.\n  const nivelOk = c.level === 'unknown' || NIVELES.includes(c.level);\n  if (!nivelOk) malos.push(`level=\"${c.level}\"`);\n  const level = NIVELES.includes(c.level) ? c.level : null;\n  if (level === null) sinNivel++;\n\n  const tags = Array.isArray(c.tags) ? c.tags.filter(t => TAGS.includes(t)) : [];\n  const tagsFuera = (Array.isArray(c.tags) ? c.tags : []).filter(t => !TAGS.includes(t));\n  if (tagsFuera.length) malos.push(`tags fuera de lista: ${tagsFuera.join(', ')}`);\n\n  // Texto libre: se normaliza pero no se valida contra ninguna lista.\n  // Nunca llega a los filtros; solo alimenta la revision mensual.\n  const sugeridos = (Array.isArray(c.suggested_tags) ? c.suggested_tags : [])\n    .map(t => String(t || '').toLowerCase().trim())\n    .filter(t => t && t.length <= 40 && !TAGS.includes(t))\n    .slice(0, 3);\n\n  if (malos.length) problemas.push(`[${i}] ${entrada.title || '?'} -> ${malos.join(' · ')}`);\n\n  out.push({ json: {\n    db_id: entrada.db_id,\n    external_id: entrada.external_id,\n    title: entrada.title,\n    job_function: FUNCIONES.includes(c.job_function) ? c.job_function : 'other',\n    level,\n    tags,\n    suggested_tags: sugeridos,\n    eligible: c.eligible === true,\n    is_agency: c.is_agency === true,\n    is_evergreen: c.is_evergreen === true,\n    note: String(c.note || '').slice(0, 300),\n    taxonomy_version: entrada.taxonomy_version ?? 1,\n  }});\n});\n\nconsole.log('=== PARSE ===');\nconsole.log('respuestas: ' + respuestas.length + '  ·  parseadas: ' + out.length + '  ·  sin nivel: ' + sinNivel);\nconsole.log(problemas.length ? 'PROBLEMAS:\\n  ' + problemas.join('\\n  ') : 'sin problemas de formato');\nconsole.log('---');\nfor (const { json: o } of out) {\n  console.log(\n    `${(o.job_function || '?').padEnd(12)} ${(o.level || 'unknown').padEnd(9)} ` +\n    `[${o.tags.join(',')}]`.padEnd(22) +\n    ` elig=${o.eligible ? 'si' : 'NO'}  ${o.title}`\n  );\n  console.log(`              ↳ ${o.note}` +\n    (o.suggested_tags.length ? `   ⟨sugeridos: ${o.suggested_tags.join(', ')}⟩` : ''));\n}\n\nreturn out;"
+        "content": "## PIPELINE GO - \n\nCuando haga el pipeline, hacer cada funcion por ATS (osea por sitio) no englobar como esta aca)\n",
+        "height": 208,
+        "width": 592,
+        "color": 4
       },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
+      "type": "n8n-nodes-base.stickyNote",
       "position": [
-        3584,
-        -160
+        464,
+        -864
       ],
-      "id": "4256ee94-d3b6-4d5a-a2b3-ece0ac65dbe9",
-      "name": "Parse classification"
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict",
-            "version": 2
-          },
-          "conditions": [
-            {
-              "id": "cond-save-1",
-              "leftValue": "={{ $('ENV').first().json.env }}",
-              "rightValue": "local",
-              "operator": {
-                "type": "string",
-                "operation": "equals",
-                "name": "filter.operator.equals"
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [
-        4048,
-        -160
-      ],
-      "id": "9f1dace0-2dff-414e-8eec-223ac0e61ae9",
-      "name": "¿Local? update"
-    },
-    {
-      "parameters": {
-        "operation": "executeQuery",
-        "query": "{{ $json.sql }}",
-        "options": {
-          "queryReplacement": "=   {{ $json.params }}"
-        }
-      },
-      "name": "Update jobs LOCAL",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.6,
-      "position": [
-        4320,
-        -288
-      ],
-      "id": "282919a7-6a75-45b8-a9ce-d6631e6d536a",
-      "credentials": {
-        "postgres": {
-          "id": "s5Wde8B9bo2Et8hN",
-          "name": "Jobs-Manager - LOCAL"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "operation": "executeQuery",
-        "query": "{{ $json.sql }}",
-        "options": {
-          "queryReplacement": "=   {{ $json.params }}"
-        }
-      },
-      "name": "Update jobs PROD",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.6,
-      "position": [
-        4320,
-        -48
-      ],
-      "id": "42ee1986-91af-4839-88a4-2df7adc87b9e",
-      "credentials": {
-        "postgres": {
-          "id": "5Ggn116ONj0zb4KN",
-          "name": "Jobs Manager - PROD Neon"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "jsCode": "// Arma el pedido de clasificacion para cada aviso nuevo.\n// El prompt y las listas cerradas viven aca, en un solo lugar.\n//\n// El nodo \"Classify (Gemini)\" lee de este body dos cosas:\n//   body.contents[0].parts[0].text        -> el Prompt\n//   body.systemInstruction.parts[0].text  -> el System Message\n//\n// generationConfig y SCHEMA no los usa el nodo nativo de Gemini: quedan armados\n// por si migramos a un HTTP Request, donde responseSchema fuerza la salida a\n// nivel del modelo en vez de confiar en el prompt.\n//\n// Las listas son las de taxonomia.md. Si cambian ahi, cambian aca, y hay que\n// subir TAXONOMY_VERSION para poder reclasificar lo viejo.\n//\n// OJO: las listas de level y tags viven en TRES lugares y tienen que decir lo\n// mismo: el SYSTEM de abajo, el SCHEMA de abajo, y las constantes NIVELES y\n// TAGS del nodo \"Parse classification\". Si se desincronizan, el modelo devuelve\n// un valor valido y el validador lo tira en silencio.\n\nconst MODEL = 'gemini-3.5-flash-lite';\nconst TAXONOMY_VERSION = 1;\n\nconst SYSTEM = `You classify job postings for a job board that lists roles which can be filled from Latin America.\n\nChoose values ONLY from the lists below. Never invent a value.\n\njob_function — pick exactly one:\n  engineering  software, data engineering, ML engineering, SRE, DevOps, QA, security, architecture\n  product      product management, product operations\n  design       UX, UI, product design, user research, brand, graphic\n  marketing    growth, content, demand generation, brand, SEO, communications\n  sales        account executive, SDR, sales engineering, partnerships, account management\n  operations   business operations, finance, legal, HR / people, logistics, administration\n  support      customer support, customer success, technical support\n  other        anything that fits none of the above, including non-tech roles such as\n               field work, retail, manufacturing, healthcare, drivers, data labeling\n\n  The words after each function are EXAMPLES, not an exhaustive list. Generalize\n  from them: a role that is not listed still belongs to the closest function.\n\n  Management roles belong to the function of the team they manage, NOT to a\n  separate management category:\n    Engineering Manager  -> job_function: engineering, level: manager\n    Sales Director       -> job_function: sales,       level: director\n    Head of Design       -> job_function: design,      level: manager\n    VP of Product        -> job_function: product,     level: vp\n\nlevel — pick exactly one, based on SCOPE, not on the words in the title:\n  junior    0-2 years, \"junior\", \"associate\", \"entry level\", intern\n  mid       3-5 years, no seniority word in the title\n  senior    \"senior\", or a clearly senior individual contributor\n  staff     \"staff\", \"principal\", \"distinguished\" — an individual contributor\n            ABOVE senior, with scope across teams, but WITHOUT direct reports\n  lead      HAS DIRECT REPORTS or owns a team's delivery\n  manager   \"manager\", \"head of\", manages a team\n  director  \"director\", manages other managers\n  vp        \"VP\", \"chief\", C-level\n  unknown   the posting gives no reliable signal about seniority\n\n  CRITICAL: a \"Tech Lead\" with no direct reports is senior or staff, NOT lead.\n  An \"Engineering Lead\" who manages people is lead. The description decides,\n  not the title.\n\n  Use \"unknown\" honestly. A bare \"Software Engineer\" with no description is\n  unknown, NOT mid. Only answer mid when the posting actually points there.\n\ntags — zero or more, only from this list:\n  backend, frontend, fullstack, mobile, infra, data, ml, ai, security, qa, sap, salesforce\n\n  Three of these are easy to confuse:\n    ml    training, fine-tuning or evaluating models; MLOps; data science pipelines\n    ai    building on top of existing foundation models: prompting, RAG, agents,\n          LLM-powered features inside a product\n    data  data engineering, pipelines, warehouses, analytics, BI\n\n  A role can carry both ml and ai when it genuinely does both. Management roles\n  usually carry no tags at all. Leave tags empty when the posting gives you\n  nothing to go on — do not guess.\n\nsuggested_tags — technologies or specialties that are clearly central to this\n  posting but are NOT in the tag list above. Free text, lowercase, at most 3.\n  Examples: terraform, kubernetes, shopify, blockchain, unity, servicenow\n  Leave it empty when the list above already covers the posting. This field\n  never reaches the filters — it only feeds a monthly review of what the\n  taxonomy is missing.\n\neligible — true if a person living in Latin America could hold this job.\n  false when the posting requires residence or work authorization in the US, Canada,\n  the EU or any country outside Latin America, or requires on-site presence outside\n  Latin America. When the posting says only \"Remote\" with no country restriction, true.\n\nis_agency — true when the employer is a staffing, consulting, outsourcing or recruiting\n  firm hiring on behalf of a client, rather than hiring for itself.\n\nis_evergreen — true when this is a talent pool, \"general interest\" or \"future\n  opportunities\" posting rather than a real open role.\n\nnote — ONE short sentence IN SPANISH explaining your call. Always explain when\n  job_function is \"other\", and when the level was ambiguous. Maximum 160 characters.`;\n\nconst SCHEMA = {\n  type: 'OBJECT',\n  properties: {\n    job_function:   { type: 'STRING', enum: ['engineering','product','design','marketing','sales','operations','support','other'] },\n    level:          { type: 'STRING', enum: ['junior','mid','senior','staff','lead','manager','director','vp','unknown'] },\n    tags:           { type: 'ARRAY', items: { type: 'STRING', enum: ['backend','frontend','fullstack','mobile','infra','data','ml','ai','security','qa','sap','salesforce'] } },\n    suggested_tags: { type: 'ARRAY', items: { type: 'STRING' } },\n    eligible:       { type: 'BOOLEAN' },\n    is_agency:      { type: 'BOOLEAN' },\n    is_evergreen:   { type: 'BOOLEAN' },\n    note:           { type: 'STRING' },\n  },\n  required: ['job_function','level','tags','suggested_tags','eligible','is_agency','is_evergreen','note'],\n  propertyOrdering: ['job_function','level','tags','suggested_tags','eligible','is_agency','is_evergreen','note'],\n};\n\n// ---------------------------------------------------------------------\n\nconst all    = $input.all();\nconst nuevos = all.filter(i => i.json.inserted === true);\n\nconst out = nuevos.map(i => {\n  const j = i.json;\n\n  const posting = [\n    `TITLE: ${j.title || ''}`,\n    `DEPARTMENT: ${j.department || '(none)'}`,\n    `LOCATIONS: ${j.locations || '(none)'}`,\n    `DESCRIPTION: ${j.description || '(none)'}`,\n  ].join('\\n');\n\n  return { json: {\n    db_id: j.id,\n    external_id: j.external_id,\n    title: j.title,\n    model: MODEL,\n    taxonomy_version: TAXONOMY_VERSION,\n    body: {\n      systemInstruction: { parts: [{ text: SYSTEM }] },\n      contents: [{ role: 'user', parts: [{ text: posting }] }],\n      generationConfig: {\n        temperature: 0,\n        responseMimeType: 'application/json',\n        responseSchema: SCHEMA,\n      },\n    },\n  }};\n});\n\nconsole.log('=== CLASIFICAR ===');\nconsole.log('filas que devolvio Save jobs : ' + all.length);\nconsole.log('nuevos (inserted = true)     : ' + out.length);\nconsole.log('ejemplo de posting           :\\n' +\n  (out[0] ? out[0].json.body.contents[0].parts[0].text.slice(0, 600) : '(ninguno)'));\n\nreturn out;"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        3072,
-        -160
-      ],
-      "id": "eb6a780f-6dd2-4295-9fe5-eff5cdfe4808",
-      "name": "New jobs to classify"
+      "typeVersion": 1,
+      "id": "65f1f3c1-051c-4d2b-8b67-cb0728a8719d",
+      "name": "Sticky Note9"
     }
   ],
   "connections": {
@@ -754,7 +613,7 @@
       "main": [
         [
           {
-            "node": "Classify & Filter",
+            "node": "Filter",
             "type": "main",
             "index": 0
           }
@@ -845,17 +704,6 @@
             "node": "Merge sources",
             "type": "main",
             "index": 3
-          }
-        ]
-      ]
-    },
-    "Classify & Filter": {
-      "main": [
-        [
-          {
-            "node": "Resolve GOB company",
-            "type": "main",
-            "index": 0
           }
         ]
       ]
@@ -982,11 +830,6 @@
             "node": "Mark Closed Local",
             "type": "main",
             "index": 0
-          },
-          {
-            "node": "New jobs to classify",
-            "type": "main",
-            "index": 0
           }
         ]
       ]
@@ -996,11 +839,6 @@
         [
           {
             "node": "Mark Closed Prod",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "New jobs to classify",
             "type": "main",
             "index": 0
           }
@@ -1025,62 +863,11 @@
         ]
       ]
     },
-    "Classify (Gemini)": {
+    "Filter": {
       "main": [
         [
           {
-            "node": "Parse classification",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Parse classification": {
-      "main": [
-        [
-          {
-            "node": "Build classification SQL",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Build classification SQL": {
-      "main": [
-        [
-          {
-            "node": "¿Local? update",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "¿Local? update": {
-      "main": [
-        [
-          {
-            "node": "Update jobs LOCAL",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Update jobs PROD",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "New jobs to classify": {
-      "main": [
-        [
-          {
-            "node": "Classify (Gemini)",
+            "node": "Resolve GOB company",
             "type": "main",
             "index": 0
           }
@@ -1102,9 +889,9 @@
   },
   "nodeGroups": [],
   "pinData": {},
-  "versionId": "af0057d6-5bc9-40db-94b4-e3d004764409",
+  "versionId": "6c1b11de-f4d6-4570-8cd4-07d6262210c9",
   "activeVersionId": null,
-  "versionCounter": 117,
+  "versionCounter": 144,
   "triggerCount": 0,
   "sourceWorkflowId": null,
   "tags": [],

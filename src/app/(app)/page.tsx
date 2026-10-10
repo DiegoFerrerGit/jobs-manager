@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { jobs, userJobs, ignoredKeywords, companies, favoriteCompanies, hiddenCompanies } from "@/db/schema";
-import { desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, isNotNull, or, sql } from "drizzle-orm";
 import JobsClientView from "@/components/JobsClientView";
 import { getCurrentUser } from "@/lib/auth";
 import Image from "next/image";
@@ -9,6 +9,11 @@ import type { JobWithUserState } from "@/db/schema";
 import hunterBanner from "@/assets/background-hunter.jpg";
 
 export const revalidate = 0 // dynamically render since data changes
+
+// Flag de servidor (sin NEXT_PUBLIC: no llega al cliente). Se prende el día que
+// producción tenga los avisos clasificados (classified_at); mientras esté apagado,
+// Hunter muestra todos los avisos como antes. Se activa con HUNTER_CLASSIFIED_ONLY=true.
+const CLASSIFIED_ONLY = process.env.HUNTER_CLASSIFIED_ONLY === 'true';
 
 export default async function Home() {
   const user = await getCurrentUser();
@@ -57,6 +62,21 @@ export default async function Home() {
     .leftJoin(
       userJobs,
       sql`${userJobs.jobId} = ${jobs.id} AND ${userJobs.userId} = ${userId}`
+    )
+    .where(
+      CLASSIFIED_ONLY
+        ? or(
+            // El usuario ya interactuo con este aviso: nunca se esconde,
+            // aunque no este clasificado o sea de otra funcion.
+            isNotNull(userJobs.jobId),
+            and(
+              // Permanente: un aviso sin clasificar todavia no esta listo.
+              isNotNull(jobs.classifiedAt),
+              // TODO: PROVISORIO - quitar cuando exista el onboarding.
+              eq(jobs.jobFunction, 'engineering')
+            )
+          )
+        : undefined
     )
     .orderBy(desc(jobs.createdAt));
 

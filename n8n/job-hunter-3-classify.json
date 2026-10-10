@@ -1,0 +1,480 @@
+{
+  "updatedAt": "2026-10-10T20:36:15.301Z",
+  "createdAt": "2026-10-10T18:10:50.261Z",
+  "id": "nkQDAF881J0RIguL",
+  "name": "Job Hunter 3 - Classify",
+  "description": null,
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -160,
+        -64
+      ],
+      "id": "b50293ea-e527-4bcc-83d3-f75791d31475",
+      "name": "Local"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "env-assign-1",
+              "name": "env",
+              "value": "={{ $execution.mode === 'production' ? 'prod' : ($('Local').isExecuted ? 'local' : 'prod') }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        64,
+        32
+      ],
+      "id": "1b757b8b-c0e0-4b22-a664-5d121101243c",
+      "name": "ENV"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cond-read-1",
+              "leftValue": "={{ $('ENV').first().json.env }}",
+              "rightValue": "local",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        288,
+        32
+      ],
+      "id": "c0dc7fc8-7ab8-48f3-b304-3b87e86bda73",
+      "name": "¿Local? (read)"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours"
+            }
+          ]
+        }
+      },
+      "name": "Prod - every 1 hour",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -160,
+        128
+      ],
+      "id": "f70a1edc-30ff-4b90-9da2-11c9883aa3a1",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT id, external_id, title, department, locations, description\nFROM jobs\nWHERE classified_at IS NULL\n  AND closed_at IS NULL\n  AND classification_attempts < 3\nORDER BY created_at DESC\nLIMIT 1000; ",
+        "options": {}
+      },
+      "name": "Read unclassified LOCAL",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        512,
+        -64
+      ],
+      "alwaysOutputData": true,
+      "id": "a73025f6-2f3c-4dd9-8ffc-2d66177d36fe",
+      "credentials": {
+        "postgres": {
+          "id": "s5Wde8B9bo2Et8hN",
+          "name": "Jobs-Manager - LOCAL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT id, external_id, title, department, locations, description\nFROM jobs\nWHERE classified_at IS NULL\n  AND closed_at IS NULL\n  AND classification_attempts < 3\nORDER BY created_at DESC\nLIMIT 150;",
+        "options": {}
+      },
+      "name": "Read unclassified PROD",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        512,
+        128
+      ],
+      "alwaysOutputData": true,
+      "id": "2ca04491-aee8-41f2-bc65-63d01c8dad70",
+      "credentials": {
+        "postgres": {
+          "id": "5Ggn116ONj0zb4KN",
+          "name": "Jobs Manager - PROD Neon"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Arma el pedido de clasificacion para cada aviso que todavia no tiene categoria.\n//\n// La entrada son filas de la base (Read unclassified): el criterio es\n// \"classified_at IS NULL\", asi que lo que falla se reintenta solo en la\n// corrida siguiente y el backfill se drena sin tarea aparte.\n//\n// El nodo \"Classify (Gemini)\" lee de este body dos cosas:\n//   body.contents[0].parts[0].text        -> el Prompt\n//   body.systemInstruction.parts[0].text  -> el System Message\n//\n// Las listas son las de taxonomia.md y locations-with-ai.md. Si cambian ahi,\n// cambian aca, y hay que subir TAXONOMY_VERSION.\n//\n// OJO: las listas viven en TRES lugares y tienen que decir lo mismo:\n// el SYSTEM de abajo, el SCHEMA de abajo, y las constantes del nodo\n// \"Parse classification\".\n//\n// v2: se agrega la geografia (work_mode, countries, regions). El pipeline\n// guarda hechos; el usuario filtra.\n\nconst TAXONOMY_VERSION = 2;\n\nconst SYSTEM = `You classify job postings for a job board that centralizes jobs relevant to people in Latin America: remote jobs open to the region, and on-site or hybrid jobs located in it.\n\nChoose values ONLY from the lists below. Never invent a value.\n\njob_function — pick exactly one:\n  engineering  software, data engineering, ML engineering, SRE, DevOps, QA, security, architecture\n  product      product management, product operations\n  design       UX, UI, product design, user research, brand, graphic\n  marketing    growth, content, demand generation, brand, SEO, communications\n  sales        account executive, SDR, sales engineering, partnerships, account management\n  operations   business operations, finance, legal, HR / people, logistics, administration\n  support      customer support, customer success, technical support\n  other        anything that fits none of the above, including non-tech roles such as\n               field work, retail, manufacturing, healthcare, drivers, data labeling\n\n  The words after each function are EXAMPLES, not an exhaustive list. Generalize\n  from them: a role that is not listed still belongs to the closest function.\n\n  Judge by what the person actually does all day, NOT by which words appear in\n  the title. A title can contain the name of a function it does not belong to:\n    Product Engineer          -> engineering\n    Growth Engineer           -> engineering\n    Design Engineer           -> engineering\n    Forward Deployed Engineer -> engineering\n    Sales Engineer            -> sales       (pre-sales: technical but commercial)\n    Solutions Engineer        -> sales       unless the posting shows they build\n                                             the product itself\n    Support Engineer          -> support\n    Product Designer          -> design\n    Product Marketing Manager -> marketing\n    Product Operations        -> product\n\n  Management roles belong to the function of the team they manage, NOT to a\n  separate management category:\n    Engineering Manager  -> job_function: engineering, level: manager\n    Sales Director       -> job_function: sales,       level: director\n    Head of Design       -> job_function: design,      level: manager\n    VP of Product        -> job_function: product,     level: vp\n\nlevel — pick exactly one, based on SCOPE, not on the words in the title:\n  junior    0-2 years, \"junior\", \"associate\", \"entry level\", intern\n  mid       3-5 years, no seniority word in the title\n  senior    \"senior\", or a clearly senior individual contributor\n  staff     \"staff\", \"principal\", \"distinguished\" — an individual contributor\n            ABOVE senior, with scope across teams, but WITHOUT direct reports\n  lead      HAS DIRECT REPORTS or owns a team's delivery\n  manager   \"manager\", \"head of\", manages a team\n  director  \"director\", manages other managers\n  vp        \"VP\", \"chief\", C-level\n  unknown   the posting gives no reliable signal about seniority\n\n  CRITICAL: a \"Tech Lead\" with no direct reports is senior or staff, NOT lead.\n  An \"Engineering Lead\" who manages people is lead. The description decides,\n  not the title.\n\n  Use \"unknown\" honestly. A bare \"Software Engineer\" with no description is\n  unknown, NOT mid. Only answer mid when the posting actually points there.\n\ntags — zero or more, only from this list:\n  backend, frontend, fullstack, mobile, infra, data, ml, ai, security, qa, sap, salesforce\n\n  Three of these are easy to confuse:\n    ml    training, fine-tuning or evaluating models; MLOps; data science pipelines\n    ai    building on top of existing foundation models: prompting, RAG, agents,\n          LLM-powered features inside a product\n    data  data engineering, pipelines, warehouses, analytics, BI\n\n  fullstack already means backend and frontend: do not add those two next to it.\n  A role can carry both ml and ai when it genuinely does both. Management roles\n  usually carry no tags at all. Leave tags empty when the posting gives you\n  nothing to go on — do not guess.\n\nsuggested_tags — technologies, tools, platforms or programming languages that\n  are clearly central to this posting but are NOT in the tag list above.\n  Free text, lowercase, at most 3.\n  Examples: python, terraform, kubernetes, shopify, servicenow, hubspot\n  Do NOT put industries (fintech), skills (negotiation) or areas of work\n  (compliance, partnerships) here: only things a person learns to use.\n  Leave it empty when nothing qualifies. This field never reaches the\n  filters — it only feeds a monthly review of what the taxonomy is missing.\n\nwork_mode — pick exactly one:\n  remote    the job can be done fully away from an office\n  hybrid    some days in an office, some away\n  onsite    the person must work from a specific office or site\n  unknown   the posting does not say\n\ncountries — where the person can be based, as ISO 3166-1 alpha-2 codes in\n  UPPERCASE: [\"AR\"], [\"BR\",\"MX\"].\n    - onsite or hybrid: the country of the office\n    - remote restricted to certain countries: those countries\n    - remote open worldwide or to a whole region without naming countries:\n      leave EMPTY and use regions instead\n  List EVERY country the location mentions. \"São Paulo | Bogotá\" is [\"BR\",\"CO\"],\n  not just the first one: a person in either country must be able to find it.\n  The DESCRIPTION can restrict what the location says: \"Remote\" plus \"must be\n  based in the US\" means [\"US\"].\n  Never guess a country the posting does not support. Two known traps:\n    \"Lowell, AR\" or any US city followed by AR -> Arkansas, so [\"US\"], not Argentina\n    \"Avenue of the Americas\"                   -> a street in New York, [\"US\"]\n\nregions — zero or more of: latam, namerica, emea, apac, global\n  latam     Latin America, including Mexico, Central America and the Caribbean.\n            Spain and Portugal are NOT latam.\n  namerica  United States and Canada\n  emea      Europe, Middle East, Africa\n  apac      Asia and Pacific\n  global    open to anywhere in the world, with no country restriction\n  Include the region of every country you listed. Use global only when the\n  posting is genuinely open worldwide. \"Americas\" alone is ambiguous: if it\n  lists only the US and Canada, it is namerica, not latam.\n\neligible — true if a person living somewhere in Latin America could be hired\n  for this job. That includes on-site and hybrid jobs located in Latin America,\n  and remote jobs open to Latin America or worldwide. false when the posting\n  requires residence or work authorization outside Latin America.\n\nis_agency — true when the employer is a staffing, consulting, outsourcing or recruiting\n  firm hiring on behalf of a client, rather than hiring for itself.\n\nis_evergreen — true when this is a talent pool, \"general interest\" or \"future\n  opportunities\" posting rather than a real open role.\n\nnote — ONE short sentence IN SPANISH explaining your call. Always explain when\n  job_function is \"other\", when the level was ambiguous, and when the location\n  needed interpretation. Maximum 160 characters.`;\n\nconst SCHEMA = {\n  type: 'OBJECT',\n  properties: {\n    job_function:   { type: 'STRING', enum: ['engineering','product','design','marketing','sales','operations','support','other'] },\n    level:          { type: 'STRING', enum: ['junior','mid','senior','staff','lead','manager','director','vp','unknown'] },\n    tags:           { type: 'ARRAY', items: { type: 'STRING', enum: ['backend','frontend','fullstack','mobile','infra','data','ml','ai','security','qa','sap','salesforce'] } },\n    suggested_tags: { type: 'ARRAY', items: { type: 'STRING' } },\n    work_mode:      { type: 'STRING', enum: ['remote','hybrid','onsite','unknown'] },\n    countries:      { type: 'ARRAY', items: { type: 'STRING' } },\n    regions:        { type: 'ARRAY', items: { type: 'STRING', enum: ['latam','namerica','emea','apac','global'] } },\n    eligible:       { type: 'BOOLEAN' },\n    is_agency:      { type: 'BOOLEAN' },\n    is_evergreen:   { type: 'BOOLEAN' },\n    note:           { type: 'STRING' },\n  },\n  required: ['job_function','level','tags','suggested_tags','work_mode','countries','regions','eligible','is_agency','is_evergreen','note'],\n  propertyOrdering: ['job_function','level','tags','suggested_tags','work_mode','countries','regions','eligible','is_agency','is_evergreen','note'],\n};\n\n// ---------------------------------------------------------------------\n\nconst filas = $input.all();\n\nconst out = filas.map(i => {\n  const j = i.json;\n\n  const posting = [\n    `TITLE: ${j.title || ''}`,\n    `DEPARTMENT: ${j.department || '(none)'}`,\n    `LOCATIONS: ${j.locations || '(none)'}`,\n    `DESCRIPTION: ${j.description || '(none)'}`,\n  ].join('\\n');\n\n  return { json: {\n    db_id: j.id,\n    external_id: j.external_id,\n    title: j.title,\n    taxonomy_version: TAXONOMY_VERSION,\n    body: {\n      systemInstruction: { parts: [{ text: SYSTEM }] },\n      contents: [{ role: 'user', parts: [{ text: posting }] }],\n      generationConfig: {\n        temperature: 0,\n        responseMimeType: 'application/json',\n        responseSchema: SCHEMA,\n      },\n    },\n  }};\n});\n\nconsole.log('=== PROMPTS ===');\nconsole.log('sin clasificar en esta corrida: ' + out.length);\nconsole.log('ejemplo:\\n' +\n  (out[0] ? out[0].json.body.contents[0].parts[0].text.slice(0, 400) : '(ninguno)'));\n\nreturn out;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        736,
+        32
+      ],
+      "id": "235c912b-df6e-4297-ab7c-507d5d0d40d4",
+      "name": "Build prompts"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-3.5-flash-lite",
+          "mode": "list",
+          "cachedResultName": "models/gemini-3.5-flash-lite"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=={{ $json.body.contents[0].parts[0].text }}"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "builtInTools": {},
+        "options": {
+          "systemMessage": "=={{ $json.body.systemInstruction.parts[0].text }}",
+          "temperature": 0
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        960,
+        32
+      ],
+      "id": "44359a66-61fb-4a8a-a224-9b402b8c7778",
+      "name": "Classify (Gemini)",
+      "retryOnFail": true,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "googlePalmApi": {
+          "id": "hOwFtIuJGrAX05lM",
+          "name": "JobsManager - Gemini"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Arma un solo UPDATE para todo lo que se proceso en la corrida, haya salido\n// bien o mal.\n//\n// Un unico statement maneja los dos casos con CASE:\n//   - classification_attempts sube SIEMPRE, asi un aviso que falla sin parar\n//     llega a 3 y deja de reintentarse en vez de girar para siempre\n//   - las columnas de clasificacion solo se escriben cuando ok = true\n//   - classified_at solo se marca cuando ok = true, asi lo que fallo vuelve a\n//     entrar en la proxima corrida\n\nconst rows = $input.all().map(i => {\n  const o  = i.json;\n  const ok = o.ok === true;\n\n  return {\n    db_id: o.db_id,\n    ok,\n    error: ok ? null : String(o.error || 'error desconocido').slice(0, 500),\n    job_function:     ok ? o.job_function : null,\n    level:            ok ? o.level : null,\n    tags:             ok ? (o.tags || []) : [],\n    suggested_tags:   ok ? (o.suggested_tags || []) : [],\n    work_mode:        ok ? o.work_mode : null,\n    countries:        ok ? (o.countries || []) : [],\n    regions:          ok ? (o.regions || []) : [],\n    eligible:         ok ? o.eligible : null,\n    is_agency:        ok ? o.is_agency : null,\n    is_evergreen:     ok ? o.is_evergreen : null,\n    note:             ok ? o.note : null,\n    taxonomy_version: ok ? o.taxonomy_version : null,\n  };\n});\n\n// Sin nada que procesar, no se dispara ninguna query.\nif (!rows.length) return [];\n\n// Los arrays viajan como jsonb y se convierten a text[] del lado de Postgres:\n// jsonb_to_recordset no convierte arrays JSON a text[] de forma confiable.\nconst sql = `\nUPDATE jobs j SET\n  classification_attempts = j.classification_attempts + 1,\n  classification_error    = CASE WHEN v.ok THEN NULL ELSE v.error END,\n\n  job_function        = CASE WHEN v.ok THEN v.job_function ELSE j.job_function END,\n  level               = CASE WHEN v.ok THEN v.level        ELSE j.level END,\n  tags                = CASE WHEN v.ok THEN ARRAY(SELECT jsonb_array_elements_text(v.tags))\n                                       ELSE j.tags END,\n  suggested_tags      = CASE WHEN v.ok THEN ARRAY(SELECT jsonb_array_elements_text(v.suggested_tags))\n                                       ELSE j.suggested_tags END,\n  work_mode           = CASE WHEN v.ok THEN v.work_mode    ELSE j.work_mode END,\n  countries           = CASE WHEN v.ok THEN ARRAY(SELECT jsonb_array_elements_text(v.countries))\n                                       ELSE j.countries END,\n  regions             = CASE WHEN v.ok THEN ARRAY(SELECT jsonb_array_elements_text(v.regions))\n                                       ELSE j.regions END,\n  eligible            = CASE WHEN v.ok THEN v.eligible     ELSE j.eligible END,\n  is_agency           = CASE WHEN v.ok THEN v.is_agency    ELSE j.is_agency END,\n  is_evergreen        = CASE WHEN v.ok THEN v.is_evergreen ELSE j.is_evergreen END,\n  classification_note = CASE WHEN v.ok THEN v.note         ELSE j.classification_note END,\n  classified_at       = CASE WHEN v.ok THEN now()          ELSE j.classified_at END,\n  taxonomy_version    = CASE WHEN v.ok THEN v.taxonomy_version ELSE j.taxonomy_version END\nFROM jsonb_to_recordset($1::jsonb) AS v(\n  db_id            int,\n  ok               boolean,\n  error            text,\n  job_function     text,\n  level            text,\n  tags             jsonb,\n  suggested_tags   jsonb,\n  work_mode        text,\n  countries        jsonb,\n  regions          jsonb,\n  eligible         boolean,\n  is_agency        boolean,\n  is_evergreen     boolean,\n  note             text,\n  taxonomy_version smallint\n)\nWHERE j.id = v.db_id;\n`;\n\nconst params = JSON.stringify(rows);\nconst ok     = rows.filter(r => r.ok).length;\n\nconsole.log('=== UPDATE SQL ===');\nconsole.log('filas: ' + rows.length + '  ·  clasificadas: ' + ok + '  ·  fallidas: ' + (rows.length - ok));\n\nreturn [{ json: { sql, params, rows: rows.length } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1536,
+        32
+      ],
+      "id": "7bf30983-9664-45c8-94b5-d94727429d57",
+      "name": "Build classification SQL"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Toma la respuesta de Gemini, la valida contra las listas cerradas y la deja\n// lista para el UPDATE.\n//\n// Devuelve TODOS los avisos que proceso, no solo los que salieron bien:\n//   ok: true   -> se clasifico, el UPDATE escribe las columnas\n//   ok: false  -> fallo, el UPDATE solo suma el intento y guarda el motivo\n//\n// Que los fallos tambien salgan por aca es lo que permite contarlos. Si se\n// descartaran en silencio, un aviso que falla siempre se reintentaria para\n// siempre y nadie se enteraria.\n\nconst FUNCIONES  = ['engineering','product','design','marketing','sales','operations','support','other'];\nconst NIVELES    = ['junior','mid','senior','staff','lead','manager','director','vp'];\nconst TAGS       = ['backend','frontend','fullstack','mobile','infra','data','ml','ai','security','qa','sap','salesforce'];\nconst WORK_MODES = ['remote','hybrid','onsite'];\nconst REGIONES   = ['latam','namerica','emea','apac','global'];\n\n// Paises de LATAM y Norteamerica en ISO de dos letras. Sirven para una sola\n// cosa: garantizar que si el modelo puso un pais, la region correspondiente\n// tambien este. Si no, un aviso en ['BR'] sin 'latam' en regions se perderia\n// del filtro \"abierto a LATAM\" de la app.\nconst ISO_LATAM = new Set([\n  'AR','BO','BR','CL','CO','CR','CU','DO','EC','SV','GT','HN','MX','NI','PA',\n  'PY','PE','PR','UY','VE','JM','TT','BS','BB','HT','BZ','GY','SR',\n]);\nconst ISO_NAMERICA = new Set(['US','CA']);\n\n// Encuentra el primer objeto JSON *balanceado* dentro de un texto y lo parsea.\n//\n// Esto no es un parche para un caso puntual: el modelo a veces envuelve la\n// respuesta con basura — una llave de mas al principio ( {{...}] ), un corchete\n// al final, comillas de markdown, o texto suelto antes del JSON. En vez de\n// adivinar la forma del envoltorio, lo ignoramos entero y buscamos adentro.\nfunction extraerObjeto(txt) {\n  const s = String(txt || '');\n\n  for (let start = s.indexOf('{'); start !== -1; start = s.indexOf('{', start + 1)) {\n    let depth = 0, inStr = false, esc = false;\n\n    for (let i = start; i < s.length; i++) {\n      const ch = s[i];\n\n      // Las llaves adentro de un string no cuentan:  \"note\": \"usa {esto}\"\n      if (esc) { esc = false; continue; }\n      if (ch === '\\\\') { esc = true; continue; }\n      if (ch === '\"')  { inStr = !inStr; continue; }\n      if (inStr) continue;\n\n      if (ch === '{') depth++;\n      else if (ch === '}') {\n        depth--;\n        if (depth === 0) {\n          try {\n            const o = JSON.parse(s.slice(start, i + 1));\n            if (o && o.job_function) return o;\n          } catch (e) { /* no era: probamos desde el proximo '{' */ }\n          break;\n        }\n      }\n    }\n  }\n  return null;\n}\n\n// Cada version del nodo de Gemini envuelve la respuesta distinto, asi que en\n// vez de adivinar la ruta, buscamos en profundidad el primer objeto que tenga\n// job_function — venga como objeto o como texto adentro de algun campo.\nfunction buscar(v, depth = 0) {\n  if (v == null || depth > 8) return null;\n\n  if (typeof v === 'string') return extraerObjeto(v);\n\n  if (typeof v === 'object') {\n    if (v.job_function) return v;\n    for (const k of Object.keys(v)) {\n      const r = buscar(v[k], depth + 1);\n      if (r) return r;\n    }\n  }\n  return null;\n}\n\nconst lista = v => (Array.isArray(v) ? v : []);\n\nconst respuestas = $input.all();\nconst entradas   = $('Build prompts').all();\n\nconst out = [];\nconst problemas = [];\nlet sinNivel = 0;\nlet sinModo = 0;\nlet fallos = 0;\n\nrespuestas.forEach((r, i) => {\n  const entrada = entradas[i]?.json || {};\n\n  // Sin db_id no hay fila que actualizar: no tiene sentido ni contar el intento.\n  if (!entrada.db_id) return;\n\n  const c = buscar(r.json);\n\n  if (!c) {\n    fallos++;\n    problemas.push(`[${i}] ${entrada.title || '?'} -> respuesta no parseable`);\n    if (fallos === 1) {\n      console.log('=== RAW DEL PRIMER FALLO ===');\n      console.log(JSON.stringify(r.json).slice(0, 1500));\n    }\n    out.push({ json: {\n      ok: false,\n      db_id: entrada.db_id,\n      title: entrada.title,\n      error: 'respuesta no parseable',\n    }});\n    return;\n  }\n\n  // job_function es obligatoria. Si viene fuera de lista no inventamos un\n  // valor: lo tratamos como fallo, se reintenta, y queda el motivo escrito.\n  if (!FUNCIONES.includes(c.job_function)) {\n    fallos++;\n    const err = `job_function fuera de lista: \"${c.job_function}\"`;\n    problemas.push(`[${i}] ${entrada.title || '?'} -> ${err}`);\n    out.push({ json: {\n      ok: false,\n      db_id: entrada.db_id,\n      title: entrada.title,\n      error: err,\n    }});\n    return;\n  }\n\n  // \"unknown\" es una respuesta legitima: se guarda como NULL, no como texto.\n  // Asi el frontend puede tratarlo como \"mostralo igual\" en vez de excluirlo.\n  const level = NIVELES.includes(c.level) ? c.level : null;\n  if (level === null) sinNivel++;\n\n  const tags      = lista(c.tags).filter(t => TAGS.includes(t));\n  const tagsFuera = lista(c.tags).filter(t => !TAGS.includes(t));\n\n  // Texto libre: se normaliza pero no se valida contra ninguna lista.\n  // Nunca llega a los filtros; solo alimenta la revision periodica.\n  //\n  // Los tags que el modelo invento entran aca tambien: un tag fuera de lista\n  // y un suggested_tag dicen lo mismo — \"vi algo que tu taxonomia no cubre\".\n  const sugeridos = [...new Set(\n    [...lista(c.suggested_tags), ...tagsFuera]\n      .map(t => String(t || '').toLowerCase().trim())\n      .filter(t => t && t.length <= 40 && !TAGS.includes(t))\n  )].slice(0, 3);\n\n  // --- Geografia ---------------------------------------------------------\n\n  // \"unknown\" o cualquier cosa fuera de lista se guarda como NULL, igual que\n  // el nivel: es honesto y el frontend lo puede mostrar como \"no especifica\".\n  const modo = String(c.work_mode || '').toLowerCase().trim();\n  const work_mode = WORK_MODES.includes(modo) ? modo : null;\n  if (work_mode === null) sinModo++;\n\n  // ISO de dos letras en mayuscula, sin repetidos. Lo que no tenga esa forma\n  // (\"Argentina\", \"USA\") se descarta: el filtro de la app compara codigos.\n  const countries = [...new Set(\n    lista(c.countries)\n      .map(p => String(p || '').toUpperCase().trim())\n      .filter(p => /^[A-Z]{2}$/.test(p))\n  )].slice(0, 15);\n\n  const regions = new Set(\n    lista(c.regions)\n      .map(r => String(r || '').toLowerCase().trim())\n      .filter(r => REGIONES.includes(r))\n  );\n\n  // Consistencia: si hay un pais, su region tiene que estar.\n  if (countries.some(p => ISO_LATAM.has(p)))    regions.add('latam');\n  if (countries.some(p => ISO_NAMERICA.has(p))) regions.add('namerica');\n\n  // -----------------------------------------------------------------------\n\n  out.push({ json: {\n    ok: true,\n    db_id: entrada.db_id,\n    external_id: entrada.external_id,\n    title: entrada.title,\n    job_function: c.job_function,\n    level,\n    tags,\n    suggested_tags: sugeridos,\n    work_mode,\n    countries,\n    regions: [...regions],\n    eligible: c.eligible === true,\n    is_agency: c.is_agency === true,\n    is_evergreen: c.is_evergreen === true,\n    note: String(c.note || '').slice(0, 300),\n    taxonomy_version: entrada.taxonomy_version ?? 2,\n    error: null,\n  }});\n});\n\nconst ok = out.length - fallos;\n\nconsole.log('=== PARSE ===');\nconsole.log('respuestas: ' + respuestas.length +\n            '  ·  clasificadas: ' + ok +\n            '  ·  fallos: ' + fallos +\n            '  ·  sin nivel: ' + sinNivel +\n            '  ·  sin modo: ' + sinModo);\nconsole.log(problemas.length ? 'PROBLEMAS:\\n  ' + problemas.join('\\n  ') : 'sin problemas');\nconsole.log('---');\nfor (const { json: o } of out) {\n  if (!o.ok) {\n    console.log(`FALLO  ${o.title}`);\n    console.log(`       ↳ ${o.error}`);\n    continue;\n  }\n  console.log(\n    `${o.job_function.padEnd(12)} ${(o.level || 'unknown').padEnd(9)} ` +\n    `${(o.work_mode || '?').padEnd(7)} ` +\n    `[${o.countries.join(',')}]`.padEnd(10) +\n    `{${o.regions.join(',')}}`.padEnd(18) +\n    ` elig=${o.eligible ? 'si' : 'NO'}  ${o.title}`\n  );\n  console.log(`       ↳ ${o.note}` +\n    (o.suggested_tags.length ? `   ⟨sugeridos: ${o.suggested_tags.join(', ')}⟩` : ''));\n}\n\nreturn out;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1312,
+        32
+      ],
+      "id": "2096c824-714b-44ac-8c3e-854e40af8a69",
+      "name": "Parse classification"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cond-save-1",
+              "leftValue": "={{ $('ENV').first().json.env }}",
+              "rightValue": "local",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1760,
+        32
+      ],
+      "id": "67e33cd2-7586-49e0-8df7-e4cd49991e5b",
+      "name": "¿Local? update"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "{{ $json.sql }}",
+        "options": {
+          "queryReplacement": "=   {{ $json.params }}"
+        }
+      },
+      "name": "Update jobs LOCAL",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1984,
+        -64
+      ],
+      "id": "659c66f7-25c1-415c-aa3c-acaccc11d3e8",
+      "credentials": {
+        "postgres": {
+          "id": "s5Wde8B9bo2Et8hN",
+          "name": "Jobs-Manager - LOCAL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "{{ $json.sql }}",
+        "options": {
+          "queryReplacement": "=   {{ $json.params }}"
+        }
+      },
+      "name": "Update jobs PROD",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1984,
+        128
+      ],
+      "id": "6b1a4c21-b780-4743-9c6b-61a8a4c24bbf",
+      "credentials": {
+        "postgres": {
+          "id": "5Ggn116ONj0zb4KN",
+          "name": "Jobs Manager - PROD Neon"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Local": {
+      "main": [
+        [
+          {
+            "node": "ENV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ENV": {
+      "main": [
+        [
+          {
+            "node": "¿Local? (read)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prod - every 1 hour": {
+      "main": [
+        [
+          {
+            "node": "ENV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Local? (read)": {
+      "main": [
+        [
+          {
+            "node": "Read unclassified LOCAL",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Read unclassified PROD",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read unclassified PROD": {
+      "main": [
+        [
+          {
+            "node": "Build prompts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read unclassified LOCAL": {
+      "main": [
+        [
+          {
+            "node": "Build prompts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classify (Gemini)": {
+      "main": [
+        [
+          {
+            "node": "Parse classification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build classification SQL": {
+      "main": [
+        [
+          {
+            "node": "¿Local? update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse classification": {
+      "main": [
+        [
+          {
+            "node": "Build classification SQL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Local? update": {
+      "main": [
+        [
+          {
+            "node": "Update jobs LOCAL",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update jobs PROD",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build prompts": {
+      "main": [
+        [
+          {
+            "node": "Classify (Gemini)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "timezone": "Etc/UTC",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": null,
+  "nodeGroups": [],
+  "pinData": {},
+  "versionId": "279b3ccd-ac7d-4432-9bbc-197f0916f5e0",
+  "activeVersionId": null,
+  "versionCounter": 54,
+  "triggerCount": 0,
+  "sourceWorkflowId": null,
+  "tags": [],
+  "shared": [
+    {
+      "updatedAt": "2026-10-10T18:10:50.263Z",
+      "createdAt": "2026-10-10T18:10:50.263Z",
+      "role": "workflow:owner",
+      "workflowId": "nkQDAF881J0RIguL",
+      "projectId": "iNXI5R7gWjOyxfvE",
+      "project": {
+        "updatedAt": "2026-08-30T21:59:52.951Z",
+        "createdAt": "2026-08-30T21:59:22.385Z",
+        "id": "iNXI5R7gWjOyxfvE",
+        "name": "Diego diegoferrer.educacion.local@gmail.com <diegoferrer.educacion@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "customTelemetryTags": [],
+        "creatorId": "2d8c2ad2-7b9d-46e1-a3fe-e800e3bc9896"
+      }
+    }
+  ],
+  "versionMetadata": {
+    "name": null,
+    "description": null
+  }
+}

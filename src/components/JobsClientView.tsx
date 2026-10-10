@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, Fragment } from "react";
 import { Briefcase, Building2, MapPin, DollarSign, Calendar, ExternalLink, Globe2, LayoutGrid, List, SlidersHorizontal, ArrowUpDown, CheckCircle, XCircle, Search, EyeOff, Eye, Settings, X, Star, Info, Flag, Pencil } from "lucide-react";
 import Link from "next/link";
 import { JobWithUserState, IgnoredKeyword, Company } from "@/db/schema";
@@ -341,9 +341,10 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialFa
 
     // Filter by Status (using user-specific status from user_jobs)
     if (filterStatus === "unapplied") {
+      // Vista por defecto: pendientes primero y, al final, las aplicadas (ver sort más abajo).
       result = result.filter(j => {
         const s = getStatus(j);
-        return s !== "APPLIED" && s !== "REJECTED" && 
+        return s !== "REJECTED" && 
           (j.closedAt === null || s !== "SAVED");
       });
     } else if (filterStatus === "applied") {
@@ -393,8 +394,20 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialFa
       return cmp;
     });
 
+    // En la vista por defecto, las aplicadas van abajo de todo (orden estable: se conserva el sort elegido).
+    if (filterStatus === "unapplied") {
+      const pending = result.filter(j => getStatus(j) !== "APPLIED");
+      const applied = result.filter(j => getStatus(j) === "APPLIED");
+      result = [...pending, ...applied];
+    }
+
     return result;
   }, [jobsAfterKeywords, hiddenByKeywords, sortParam, sortOrder, sortParam2, sortOrder2, filterPriority, filterStatus, filterCompany, searchQuery, favoriteCompanies]);
+
+  // Divisor "Aplicadas": solo en la vista por defecto, justo donde empiezan las aplicadas.
+  const showAppliedDivider = filterStatus === "unapplied";
+  const firstAppliedIdx = processedJobs.findIndex(j => (j.userStatus ?? 'SAVED') === "APPLIED");
+  const appliedCount = firstAppliedIdx === -1 ? 0 : processedJobs.length - firstAppliedIdx;
 
   const handleHeaderSort = (param: "date" | "salary" | "priority") => {
     if (sortParam === param) {
@@ -498,7 +511,7 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialFa
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value as any)}
             >
-              <option value="unapplied">Por aplicar</option>
+              <option value="unapplied">Por aplicar y aplicadas</option>
               <option value="all">Mostrar todas</option>
               <option value="applied">Aplicadas</option>
               <option value="hidden">Archivadas</option>
@@ -627,8 +640,16 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialFa
         // GRID VIEW
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
           {processedJobs.map((job, idx) => (
+            <Fragment key={job.id}>
+            {showAppliedDivider && idx === firstAppliedIdx && (
+              <div className="col-span-full flex items-center gap-3 mt-6 mb-1">
+                <h3 className="text-lg font-extrabold tracking-tight text-foreground flex items-center gap-2">
+                  <CheckCircle className="w-5 h-5 text-emerald-400" /> Aplicadas ({appliedCount})
+                </h3>
+                <div className="flex-1 h-px bg-border" />
+              </div>
+            )}
             <div
-              key={job.id}
               className={`glass-card rounded-xl p-4 hover-lift flex flex-col h-full relative group overflow-hidden animate-fade-in-up ${visitedJobs.has(job.id) ? 'bg-secondary/30 opacity-75' : ''}`}
               style={{ animationDelay: `${idx * 40}ms` }}
             >
@@ -644,18 +665,12 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialFa
                   <span className={`inline-flex items-center justify-center rounded-full px-2 py-0.5 text-[11px] font-semibold border ${job.priority === 1 ? "bg-red-500/10 text-red-400 border-red-500/20" : job.priority === 2 ? "bg-blue-500/10 text-blue-400 border-blue-500/20" : "bg-gray-500/10 text-gray-400 border-gray-500/20"}`}>
                     {job.priority === 1 ? "Alta" : job.priority === 2 ? "Media" : "Baja"}
                   </span>
-                  {(job.acceptsArgentina === "yes" || job.acceptsArgentina === "maybe") && (
-                    <span className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-semibold border ${job.acceptsArgentina === "yes" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "bg-yellow-500/10 text-yellow-400 border-yellow-500/20"}`}>
-                      🇦🇷 {job.acceptsArgentina === "yes" ? "LATAM Ok" : "Posible"}
-                    </span>
-                  )}
                   {job.closedAt && (
                     <span className="inline-flex items-center justify-center rounded-full px-2 py-0.5 text-[11px] font-semibold border bg-secondary/80 text-muted-foreground border-border/60 shadow-sm">
                       Cerrada
                     </span>
                   )}
                 </div>
-                {getSourceBadge(job.source, job.externalId)}
               </div>
 
               <div className="flex items-start justify-between gap-2 mb-1.5">
@@ -734,7 +749,7 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialFa
                   <div className="p-1 rounded-md bg-orange-500/10 text-orange-400 shrink-0">
                     <Calendar className="w-3.5 h-3.5" />
                   </div>
-                  <span className="line-clamp-1 text-muted-foreground">{job.publishedAt || job.detectedAt}</span>
+                  <span className="line-clamp-1 text-muted-foreground">Publicado: {job.publishedAt || job.detectedAt}</span>
                 </div>
               </div>
 
@@ -763,6 +778,7 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialFa
                   )}
               </div>
             </div>
+            </Fragment>
           ))}
         </div>
       ) : (
@@ -794,9 +810,6 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialFa
                     <ArrowUpDown className={`w-3 h-3 ${sortParam === 'priority' ? 'text-primary' : 'opacity-0 group-hover:opacity-50'}`} />
                   </div>
                 </th>
-                <th className="px-6 py-4 whitespace-nowrap">
-                  LATAM
-                </th>
                 <th
                   className="px-6 py-4 whitespace-nowrap cursor-pointer hover:bg-secondary/50 transition-colors select-none group"
                   onClick={() => handleHeaderSort("date")}
@@ -811,8 +824,17 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialFa
             </thead>
             <tbody>
               {processedJobs.map((job, idx) => (
+                <Fragment key={job.id}>
+                {showAppliedDivider && idx === firstAppliedIdx && (
+                  <tr className="bg-secondary/30 border-b border-border">
+                    <td colSpan={7} className="px-6 py-3 text-sm font-extrabold text-foreground">
+                      <span className="inline-flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4 text-emerald-400" /> Aplicadas ({appliedCount})
+                      </span>
+                    </td>
+                  </tr>
+                )}
                 <tr
-                  key={job.id}
                   className={`border-b border-border/50 hover:bg-secondary/20 transition-colors group animate-fade-in-up ${visitedJobs.has(job.id) ? 'bg-secondary/10 opacity-75' : ''}`}
                   style={{ animationDelay: `${idx * 20}ms` }}
                 >
@@ -890,15 +912,6 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialFa
                       {job.priority === 1 ? "Alta" : job.priority === 2 ? "Media" : "Baja"}
                     </span>
                   </td>
-                  <td className="px-6 py-4">
-                    {(job.acceptsArgentina === "yes" || job.acceptsArgentina === "maybe") ? (
-                      <span className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold border ${job.acceptsArgentina === "yes" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "bg-yellow-500/10 text-yellow-400 border-yellow-500/20"}`}>
-                        🇦🇷 {job.acceptsArgentina === "yes" ? "Ok" : "Posible"}
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground text-xs">-</span>
-                    )}
-                  </td>
                   <td className="px-6 py-4 text-muted-foreground text-xs whitespace-nowrap">
                     {job.publishedAt || job.detectedAt || "-"}
                   </td>
@@ -930,6 +943,7 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialFa
                     </div>
                   </td>
                 </tr>
+                </Fragment>
               ))}
             </tbody>
           </table>

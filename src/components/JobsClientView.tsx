@@ -716,9 +716,6 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialFa
                     </button>
                   </div>
                 )}
-                <button onClick={() => handleToggleHiddenCompany(job.company)} className="p-0.5 rounded text-muted-foreground/50 hover:text-red-400 hover:bg-secondary transition-colors" title="Ocultar propuestas de esta empresa">
-                  <EyeOff className="w-3.5 h-3.5" />
-                </button>
                 {job.companySize != null && job.companySize > 0 && (
                   <span className="text-[10px] px-1 py-0.5 rounded-sm bg-secondary/50 whitespace-nowrap">
                     {job.companySize} empleados
@@ -893,9 +890,6 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialFa
                           </button>
                         </div>
                       )}
-                      <button onClick={() => handleToggleHiddenCompany(job.company)} className="p-0.5 rounded text-muted-foreground/50 hover:text-red-400 hover:bg-secondary transition-colors" title="Ocultar propuestas de esta empresa">
-                        <EyeOff className="w-3.5 h-3.5" />
-                      </button>
                     </div>
                   </td>
                   <td className="px-6 py-4 text-muted-foreground text-xs font-medium">
@@ -1062,13 +1056,13 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialFa
         </div>
       )}
 
-      {/* LINKEDIN MODAL */}
+      {/* COMPANY DETAIL MODAL */}
       {linkedinModal?.isOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setLinkedinModal(null)} />
           <div className="relative w-full max-w-sm bg-background rounded-2xl shadow-2xl border border-border overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             <div className="flex justify-between items-center p-4 border-b border-border bg-secondary/20">
-              <h2 className="text-lg font-bold text-foreground flex items-center gap-2"><Globe2 className="w-5 h-5 text-primary" /> Link de LinkedIn</h2>
+              <h2 className="text-lg font-bold text-foreground flex items-center gap-2 truncate pr-2"><Building2 className="w-5 h-5 text-primary shrink-0" /> <span className="truncate">Detalle de {linkedinModal.companyName}</span></h2>
               <button
                 onClick={() => setLinkedinModal(null)}
                 className="p-1 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
@@ -1086,6 +1080,26 @@ export default function JobsClientView({ initialJobs, initialKeywords, initialFa
                 onChange={e => setLinkedinInput(e.target.value)}
                 className="w-full px-3 py-2 bg-secondary/50 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground mb-4"
               />
+
+              <div className="pt-3 border-t border-border/60 mb-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const company = linkedinModal.companyName;
+                    setLinkedinModal(null);
+                    handleToggleHiddenCompany(company);
+                  }}
+                  className="w-full flex items-center justify-between p-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 text-xs transition-colors cursor-pointer group"
+                >
+                  <span className="text-left font-medium">
+                    {hiddenCompanies.has(linkedinModal.companyName)
+                      ? "Volver a mostrar esta empresa en Hunter"
+                      : "¿No quieres ver más esta empresa y sus avisos?"}
+                  </span>
+                  <EyeOff className="w-4 h-4 shrink-0 ml-2 group-hover:scale-110 transition-transform" />
+                </button>
+              </div>
+
               <div className="flex justify-end gap-2">
                 <button type="button" onClick={() => setLinkedinModal(null)} className="px-4 py-2 rounded-lg text-sm font-medium hover:bg-secondary text-muted-foreground transition-colors cursor-pointer">Cancelar</button>
                 <button type="submit" className="px-4 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors cursor-pointer shadow-sm">Guardar</button>

@@ -72,8 +72,7 @@ export default async function Home() {
             and(
               // Permanente: un aviso sin clasificar todavia no esta listo.
               isNotNull(jobs.classifiedAt),
-              // TODO: PROVISORIO - quitar cuando exista el onboarding.
-              eq(jobs.jobFunction, 'engineering')
+              eq(jobs.eligible, true)
             )
           )
         : undefined
